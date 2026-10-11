@@ -1,0 +1,12 @@
+name: one_v_one_workspace
+publish_to: none
+
+environment:
+  sdk: '^3.12.2'
+
+workspace:
+  - one_v_one_client
+  - one_v_one_server
+  - one_v_one_flutter
+  - packages/game_core
+  - packages/game_test_support

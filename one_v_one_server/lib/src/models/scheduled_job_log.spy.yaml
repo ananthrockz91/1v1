@@ -1,0 +1,11 @@
+class: ScheduledJobLog
+table: scheduled_job_log
+fields:
+  jobName: String
+  executedAt: DateTime
+  targetDate: String
+  staleLobbiesCleaned: int
+  abandonedMatchesProcessed: int
+  leaderboardsAggregated: int
+  success: bool
+  errorDetails: String?

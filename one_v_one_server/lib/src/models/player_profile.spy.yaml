@@ -1,0 +1,17 @@
+class: PlayerProfile
+table: player_profile
+fields:
+  playerId: String
+  displayName: String
+  avatarSeed: String
+  totalMatches: int
+  wins: int
+  losses: int
+  draws: int
+  trianglesCaptured: int
+  createdAt: DateTime
+  lastActiveAt: DateTime
+indexes:
+  player_profile_id_idx:
+    fields: playerId
+    unique: true

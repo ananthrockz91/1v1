@@ -1,0 +1,28 @@
+class: GameMatch
+table: game_match
+fields:
+  matchId: String
+  gameType: String
+  rulesetVersion: String
+  boardSize: int
+  roomCode: String?
+  isPublic: bool
+  status: String
+  player1Id: String
+  player2Id: String?
+  activePlayerId: String
+  player1Score: int
+  player2Score: int
+  stateVersion: int
+  winnerId: String?
+  isDraw: bool
+  stateJson: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  completedAt: DateTime?
+indexes:
+  game_match_id_idx:
+    fields: matchId
+    unique: true
+  game_match_room_idx:
+    fields: roomCode

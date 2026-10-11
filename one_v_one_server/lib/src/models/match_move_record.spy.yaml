@@ -1,0 +1,18 @@
+class: MatchMoveRecord
+table: match_move_record
+fields:
+  matchId: String
+  moveIndex: int
+  playerId: String
+  node1R: int
+  node1C: int
+  node2R: int
+  node2C: int
+  edgeId: String
+  claimedTrianglesJson: String
+  extraTurn: bool
+  stateVersion: int
+  createdAt: DateTime
+indexes:
+  match_move_match_idx:
+    fields: matchId

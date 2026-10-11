@@ -1,0 +1,16 @@
+class: DailyLeaderboard
+table: daily_leaderboard
+fields:
+  dateString: String
+  playerId: String
+  displayName: String
+  wins: int
+  losses: int
+  draws: int
+  trianglesCaptured: int
+  rank: int
+  winRate: double
+  updatedAt: DateTime
+indexes:
+  daily_leaderboard_date_idx:
+    fields: dateString

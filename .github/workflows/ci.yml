@@ -1,0 +1,64 @@
+name: 1v1 Platform CI Gates
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate-release:
+    name: Release Quality Gates
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: one_v_one
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Initialize PostgreSQL Test Database
+        run: |
+          sudo apt-get install -y postgresql-client
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE one_v_one_test;"
+
+      - name: Install Workspace Dependencies
+        run: |
+          dart pub get
+
+      - name: Apply Database Migrations
+        run: |
+          cd one_v_one_server
+          dart bin/main.dart --mode production --apply-migrations || true
+          cd ..
+
+      - name: Execute 1v1 Release Validation Gates
+        run: |
+          dart run tool/release_check.dart
+
+      - name: Upload Release Check Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-validation-report
+          path: tool/release_check_report.json

@@ -1,0 +1,16 @@
+class: MatchEvent
+fields:
+  matchId: String
+  eventType: String
+  stateVersion: int
+  activePlayerId: String
+  edgeId: String?
+  claimedTriangles: List<String>?
+  extraTurn: bool?
+  player1Score: int
+  player2Score: int
+  isTerminal: bool
+  winnerId: String?
+  isDraw: bool
+  stateJson: String?
+  timestamp: DateTime

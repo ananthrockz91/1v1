@@ -190,6 +190,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
 
     final gState = matchState.gameState;
     final match = matchState.match;
+    final isLocal = matchState.isLocal;
 
     if (gState != null && gState.isTerminal) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -197,7 +198,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
       });
     }
 
-    if (match == null || gState == null) {
+    if (gState == null || (!isLocal && match == null)) {
       return Scaffold(
         backgroundColor: AppColors.background,
         body: const Center(
@@ -206,8 +207,11 @@ class _GameScreenState extends ConsumerState<GameScreen> {
       );
     }
 
-    final isMyTurn = gState.activePlayerId == currentUserId;
-    final isP1Me = match.player1Id == currentUserId;
+    final isMatchActive = isLocal || match?.status == 'in_progress';
+    final isMyTurn = isLocal ? true : (gState.activePlayerId == currentUserId);
+    final isP1Me = isLocal ? true : (match?.player1Id == currentUserId);
+    final p1Id = isLocal ? 'Player 1' : match?.player1Id;
+    final p2Id = isLocal ? 'Player 2' : match?.player2Id;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -217,14 +221,16 @@ class _GameScreenState extends ConsumerState<GameScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Triangle Tactics',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            Text(
+              isLocal ? 'Triangle Tactics (Pass & Play)' : 'Triangle Tactics',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             Text(
-              match.roomCode != null
-                  ? 'Room: ${match.roomCode}'
-                  : 'Public Match',
+              isLocal
+                  ? 'Local 2-Player Match'
+                  : (match?.roomCode != null
+                        ? 'Room: ${match!.roomCode}'
+                        : 'Public Online Match'),
               style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
             ),
           ],
@@ -275,12 +281,12 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: gState.activePlayerId == match.player1Id
+                        color: gState.activePlayerId == p1Id
                             ? AppColors.player1Surface
                             : AppColors.surfaceElevated,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: gState.activePlayerId == match.player1Id
+                          color: gState.activePlayerId == p1Id
                               ? AppColors.player1
                               : Colors.transparent,
                           width: 2,
@@ -348,12 +354,12 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: gState.activePlayerId == match.player2Id
+                        color: gState.activePlayerId == p2Id
                             ? AppColors.player2Surface
                             : AppColors.surfaceElevated,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: gState.activePlayerId == match.player2Id
+                          color: gState.activePlayerId == p2Id
                               ? AppColors.player2
                               : Colors.transparent,
                           width: 2,
@@ -375,7 +381,13 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  !isP1Me ? 'You (P2)' : 'Player 2',
+                                  isLocal
+                                      ? 'Player 2'
+                                      : (match?.player2Id == null
+                                            ? 'Waiting...'
+                                            : (!isP1Me
+                                                  ? 'You (P2)'
+                                                  : 'Player 2')),
                                   style: const TextStyle(
                                     color: AppColors.textPrimary,
                                     fontSize: 12,
@@ -412,27 +424,51 @@ class _GameScreenState extends ConsumerState<GameScreen> {
             // Turn Indicator Subheader
             Container(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              color: isMyTurn
-                  ? AppColors.player1Surface
-                  : AppColors.surfaceElevated,
+              color: !isMatchActive
+                  ? AppColors.surfaceElevated
+                  : (isMyTurn
+                        ? (isLocal && gState.activePlayerId == 'Player 2'
+                              ? AppColors.player2Surface
+                              : AppColors.player1Surface)
+                        : AppColors.surfaceElevated),
               child: Center(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      isMyTurn ? Icons.touch_app : Icons.hourglass_top,
+                      !isMatchActive
+                          ? Icons.hourglass_top
+                          : (isMyTurn ? Icons.touch_app : Icons.hourglass_top),
                       size: 16,
-                      color: isMyTurn ? AppColors.player1 : AppColors.textMuted,
+                      color: !isMatchActive
+                          ? AppColors.player2
+                          : (isMyTurn
+                                ? (isLocal &&
+                                          gState.activePlayerId == 'Player 2'
+                                      ? AppColors.player2
+                                      : AppColors.player1)
+                                : AppColors.textMuted),
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      isMyTurn
-                          ? 'YOUR TURN — Tap 2 adjacent pegs to connect an edge'
-                          : 'OPPONENT\'S TURN — Waiting for move...',
+                      !isMatchActive
+                          ? 'WAITING FOR OPPONENT TO JOIN...'
+                          : (isLocal
+                                ? (gState.activePlayerId == 'Player 1'
+                                      ? 'PLAYER 1 (Teal) — Connect an edge'
+                                      : 'PLAYER 2 (Amber) — Connect an edge')
+                                : (isMyTurn
+                                      ? 'YOUR TURN — Tap 2 adjacent pegs to connect an edge'
+                                      : 'OPPONENT\'S TURN — Waiting for move...')),
                       style: TextStyle(
-                        color: isMyTurn
-                            ? AppColors.player1
-                            : AppColors.textMuted,
+                        color: !isMatchActive
+                            ? AppColors.player2
+                            : (isMyTurn
+                                  ? (isLocal &&
+                                            gState.activePlayerId == 'Player 2'
+                                        ? AppColors.player2
+                                        : AppColors.player1)
+                                  : AppColors.textMuted),
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
@@ -457,8 +493,11 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                       ),
                       child: TriangleTacticsBoard(
                         state: gState,
-                        currentUserId: currentUserId,
-                        isInteractive: isMyTurn && !gState.isTerminal,
+                        currentUserId: isLocal
+                            ? gState.activePlayerId
+                            : currentUserId,
+                        isInteractive:
+                            isMatchActive && isMyTurn && !gState.isTerminal,
                         onMoveSubmitted: (n1, n2) {
                           ref.read(matchProvider.notifier).submitMove(n1, n2);
                         },

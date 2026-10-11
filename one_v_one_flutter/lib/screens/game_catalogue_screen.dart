@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/match_provider.dart';
 import '../theme/app_colors.dart';
 import 'game_screen.dart';
+import 'lobby_screen.dart';
 
 class GameCatalogueScreen extends ConsumerWidget {
   const GameCatalogueScreen({super.key});
@@ -46,10 +47,19 @@ class GameCatalogueScreen extends ConsumerWidget {
             onPlay: () async {
               await ref.read(matchProvider.notifier).playOnline(boardSize: 4);
               if (!context.mounted) return;
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const GameScreen()),
-              );
+              final match = ref.read(matchProvider).match;
+              if (match == null) return;
+              if (match.status == 'in_progress') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const GameScreen()),
+                );
+              } else {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LobbyScreen()),
+                );
+              }
             },
           ),
           const SizedBox(height: 24),

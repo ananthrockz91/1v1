@@ -102,10 +102,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Navigator.pop(dialogContext);
                 await ref.read(matchProvider.notifier).joinPrivateMatch(code);
                 if (!mounted) return;
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const GameScreen()),
-                );
+                final match = ref.read(matchProvider).match;
+                if (match != null && match.status == 'in_progress') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const GameScreen()),
+                  );
+                }
               }
             },
             child: const Text(
@@ -375,12 +378,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   .read(matchProvider.notifier)
                                   .playOnline(boardSize: 4);
                               if (!context.mounted) return;
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const GameScreen(),
-                                ),
-                              );
+                              final match = ref.read(matchProvider).match;
+                              if (match == null) return;
+                              if (match.status == 'in_progress') {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const GameScreen(),
+                                  ),
+                                );
+                              } else {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const LobbyScreen(),
+                                  ),
+                                );
+                              }
                             },
                       child: matchState.isLoading
                           ? const SizedBox(
@@ -405,6 +419,44 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 ),
                               ],
                             ),
+                    ),
+                    const SizedBox(height: 10),
+                    OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.player1,
+                        side: BorderSide(
+                          color: AppColors.player1.withValues(alpha: 0.6),
+                        ),
+                        minimumSize: const Size.fromHeight(44),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () {
+                        ref
+                            .read(matchProvider.notifier)
+                            .startLocalMatch(boardSize: 4);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const GameScreen(),
+                          ),
+                        );
+                      },
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.people_outline, size: 18),
+                          SizedBox(width: 8),
+                          Text(
+                            'Pass & Play (Local 2-Player)',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),

@@ -13,6 +13,7 @@ class MatchUiState {
   final String? errorMessage;
   final bool isConnected;
   final bool showExtraTurnNotice;
+  final bool isLocal;
 
   const MatchUiState({
     this.match,
@@ -21,6 +22,7 @@ class MatchUiState {
     this.errorMessage,
     this.isConnected = true,
     this.showExtraTurnNotice = false,
+    this.isLocal = false,
   });
 
   MatchUiState copyWith({
@@ -30,6 +32,7 @@ class MatchUiState {
     String? errorMessage,
     bool? isConnected,
     bool? showExtraTurnNotice,
+    bool? isLocal,
   }) {
     return MatchUiState(
       match: match ?? this.match,
@@ -38,6 +41,7 @@ class MatchUiState {
       errorMessage: errorMessage,
       isConnected: isConnected ?? this.isConnected,
       showExtraTurnNotice: showExtraTurnNotice ?? this.showExtraTurnNotice,
+      isLocal: isLocal ?? this.isLocal,
     );
   }
 }
@@ -53,6 +57,21 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
     super.dispose();
   }
 
+  void startLocalMatch({int boardSize = 4}) {
+    _streamSub?.cancel();
+    final initialState = TriangleTacticsState.initial(
+      boardSize: boardSize,
+      player1Id: 'Player 1',
+      player2Id: 'Player 2',
+    );
+    state = MatchUiState(
+      gameState: initialState,
+      isLocal: true,
+      isLoading: false,
+      isConnected: true,
+    );
+  }
+
   void _onMatchUpdated(GameMatch match) {
     TriangleTacticsState? gState;
     try {
@@ -65,6 +84,7 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
       gameState: gState,
       isLoading: false,
       errorMessage: null,
+      isLocal: false,
     );
 
     _listenToMatchStream(match.matchId);
@@ -81,7 +101,27 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
               final json = jsonDecode(event.stateJson!) as Map<String, dynamic>;
               final nextGameState = TriangleTacticsState.fromJson(json);
 
+              var updatedMatch = state.match;
+              if (updatedMatch != null) {
+                final isMatchStarted = event.eventType == 'matchStarted';
+                final isCompleted = event.isTerminal;
+                final newStatus = isCompleted
+                    ? 'completed'
+                    : (isMatchStarted ? 'in_progress' : updatedMatch.status);
+
+                updatedMatch = updatedMatch.copyWith(
+                  status: newStatus,
+                  player2Id: nextGameState.player2Id,
+                  activePlayerId: event.activePlayerId,
+                  stateVersion: event.stateVersion,
+                  player1Score: event.player1Score,
+                  player2Score: event.player2Score,
+                  stateJson: event.stateJson!,
+                );
+              }
+
               state = state.copyWith(
+                match: updatedMatch,
                 gameState: nextGameState,
                 showExtraTurnNotice: event.extraTurn == true,
               );
@@ -144,9 +184,47 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
   }
 
   Future<void> submitMove(GridNode node1, GridNode node2) async {
-    final currentMatch = state.match;
     final currentGameState = state.gameState;
-    if (currentMatch == null || currentGameState == null) return;
+    if (currentGameState == null) return;
+
+    if (state.isLocal) {
+      try {
+        final engine = TriangleTacticsEngine();
+        final result = engine.applyMove(
+          currentGameState,
+          currentGameState.activePlayerId,
+          TriangleTacticsMove(node1: node1, node2: node2),
+        );
+        if (result is MoveAccepted) {
+          state = state.copyWith(
+            gameState: result.nextState,
+            showExtraTurnNotice: result.extraTurnAwarded,
+          );
+          if (result.extraTurnAwarded) {
+            Future.delayed(const Duration(milliseconds: 1800), () {
+              if (mounted) {
+                state = state.copyWith(showExtraTurnNotice: false);
+              }
+            });
+          }
+        } else if (result is MoveRejected) {
+          state = state.copyWith(errorMessage: result.violation.message);
+        }
+      } catch (e) {
+        state = state.copyWith(errorMessage: e.toString());
+      }
+      return;
+    }
+
+    final currentMatch = state.match;
+    if (currentMatch == null) return;
+
+    if (currentMatch.status != 'in_progress') {
+      state = state.copyWith(
+        errorMessage: 'Match is waiting for opponent to join.',
+      );
+      return;
+    }
 
     try {
       final updatedMatch = await client.match.submitMove(

@@ -381,13 +381,15 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  isLocal
-                                      ? 'Player 2'
-                                      : (match?.player2Id == null
-                                            ? 'Waiting...'
-                                            : (!isP1Me
-                                                  ? 'You (P2)'
-                                                  : 'Player 2')),
+                                  matchState.isAiMatch
+                                      ? 'Tactical Bot (AI)'
+                                      : (isLocal
+                                            ? 'Player 2'
+                                            : (match?.player2Id == null
+                                                  ? 'Waiting...'
+                                                  : (!isP1Me
+                                                        ? 'You (P2)'
+                                                        : 'Player 2'))),
                                   style: const TextStyle(
                                     color: AppColors.textPrimary,
                                     fontSize: 12,
@@ -430,7 +432,9 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                         ? (isLocal && gState.activePlayerId == 'Player 2'
                               ? AppColors.player2Surface
                               : AppColors.player1Surface)
-                        : AppColors.surfaceElevated),
+                        : (matchState.isAiMatch
+                              ? AppColors.player2Surface
+                              : AppColors.surfaceElevated)),
               child: Center(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -438,7 +442,11 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                     Icon(
                       !isMatchActive
                           ? Icons.hourglass_top
-                          : (isMyTurn ? Icons.touch_app : Icons.hourglass_top),
+                          : (matchState.isAiMatch && !isMyTurn
+                                ? Icons.smart_toy
+                                : (isMyTurn
+                                      ? Icons.touch_app
+                                      : Icons.hourglass_top)),
                       size: 16,
                       color: !isMatchActive
                           ? AppColors.player2
@@ -447,19 +455,25 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                                           gState.activePlayerId == 'Player 2'
                                       ? AppColors.player2
                                       : AppColors.player1)
-                                : AppColors.textMuted),
+                                : (matchState.isAiMatch
+                                      ? AppColors.player2
+                                      : AppColors.textMuted)),
                     ),
                     const SizedBox(width: 8),
                     Text(
                       !isMatchActive
                           ? 'WAITING FOR OPPONENT TO JOIN...'
-                          : (isLocal
-                                ? (gState.activePlayerId == 'Player 1'
-                                      ? 'PLAYER 1 (Teal) — Drag rubber band or tap to connect'
-                                      : 'PLAYER 2 (Amber) — Drag rubber band or tap to connect')
-                                : (isMyTurn
-                                      ? 'YOUR TURN — Drag rubber band or tap 2 pegs to connect'
-                                      : 'OPPONENT\'S TURN — Waiting for move...')),
+                          : (matchState.isAiMatch
+                                ? (isMyTurn
+                                      ? 'YOUR TURN — Outsmart Tactical Bot! Drag or tap pegs'
+                                      : '🤖 TACTICAL BOT THINKING... Calculating moves...')
+                                : (isLocal
+                                      ? (gState.activePlayerId == 'Player 1'
+                                            ? 'PLAYER 1 (Teal) — Drag rubber band or tap to connect'
+                                            : 'PLAYER 2 (Amber) — Drag rubber band or tap to connect')
+                                      : (isMyTurn
+                                            ? 'YOUR TURN — Drag rubber band or tap 2 pegs to connect'
+                                            : 'OPPONENT\'S TURN — Waiting for move...'))),
                       style: TextStyle(
                         color: !isMatchActive
                             ? AppColors.player2
@@ -468,7 +482,9 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                                             gState.activePlayerId == 'Player 2'
                                         ? AppColors.player2
                                         : AppColors.player1)
-                                  : AppColors.textMuted),
+                                  : (matchState.isAiMatch
+                                        ? AppColors.player2
+                                        : AppColors.textMuted)),
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
@@ -514,15 +530,16 @@ class _GameScreenState extends ConsumerState<GameScreen> {
               ),
             ),
 
-            // Instructions Footer
+            // Strategic Instructions Footer
             Padding(
               padding: const EdgeInsets.only(bottom: 12, left: 16, right: 16),
               child: Text(
-                'Drag elastic rubber bands or tap pegs to connect • Form triangles to capture 3D tokens & score!',
+                '👑 Crown Sockets • ⚡ Green preview: Capture • ⚠️ Amber preview: Blunder threat • Extra turn on capture!',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: AppColors.textMuted,
-                  fontSize: 12,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),

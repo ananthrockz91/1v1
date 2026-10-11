@@ -5,6 +5,7 @@ import 'package:game_core/game_core.dart';
 import 'package:one_v_one_client/one_v_one_client.dart';
 import '../client.dart';
 import '../models/player_session.dart';
+import '../services/tactical_bot.dart';
 
 class MatchUiState {
   final GameMatch? match;
@@ -14,6 +15,7 @@ class MatchUiState {
   final bool isConnected;
   final bool showExtraTurnNotice;
   final bool isLocal;
+  final bool isAiMatch;
 
   const MatchUiState({
     this.match,
@@ -23,6 +25,7 @@ class MatchUiState {
     this.isConnected = true,
     this.showExtraTurnNotice = false,
     this.isLocal = false,
+    this.isAiMatch = false,
   });
 
   MatchUiState copyWith({
@@ -33,6 +36,7 @@ class MatchUiState {
     bool? isConnected,
     bool? showExtraTurnNotice,
     bool? isLocal,
+    bool? isAiMatch,
   }) {
     return MatchUiState(
       match: match ?? this.match,
@@ -42,6 +46,7 @@ class MatchUiState {
       isConnected: isConnected ?? this.isConnected,
       showExtraTurnNotice: showExtraTurnNotice ?? this.showExtraTurnNotice,
       isLocal: isLocal ?? this.isLocal,
+      isAiMatch: isAiMatch ?? this.isAiMatch,
     );
   }
 }
@@ -67,6 +72,23 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
     state = MatchUiState(
       gameState: initialState,
       isLocal: true,
+      isAiMatch: false,
+      isLoading: false,
+      isConnected: true,
+    );
+  }
+
+  void startAiMatch({int boardSize = 4}) {
+    _streamSub?.cancel();
+    final initialState = TriangleTacticsState.initial(
+      boardSize: boardSize,
+      player1Id: 'Player 1',
+      player2Id: 'Tactical Bot (AI)',
+    );
+    state = MatchUiState(
+      gameState: initialState,
+      isLocal: true,
+      isAiMatch: true,
       isLoading: false,
       isConnected: true,
     );
@@ -204,6 +226,25 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
             Future.delayed(const Duration(milliseconds: 1800), () {
               if (mounted) {
                 state = state.copyWith(showExtraTurnNotice: false);
+              }
+            });
+          }
+
+          if (state.isAiMatch &&
+              result.nextState.activePlayerId == 'Tactical Bot (AI)' &&
+              !result.nextState.isTerminal) {
+            Future.delayed(const Duration(milliseconds: 650), () {
+              if (mounted &&
+                  state.isAiMatch &&
+                  state.gameState?.activePlayerId == 'Tactical Bot (AI)' &&
+                  !(state.gameState?.isTerminal ?? true)) {
+                final aiMove = TacticalBot.selectBestMove(
+                  state: state.gameState!,
+                  botPlayerId: 'Tactical Bot (AI)',
+                );
+                if (aiMove != null) {
+                  submitMove(aiMove.node1, aiMove.node2);
+                }
               }
             });
           }

@@ -368,7 +368,19 @@ class _BoardPainter extends CustomPainter {
       );
     }
 
-    // 7. Draw active dragging rubber band (elastic stretch animation)
+    // 7. Tactical Threat Radar (Preview capture vs danger threat)
+    if (currentFocusNode != null && hoveredSnapNode != null) {
+      _drawThreatRadar(
+        canvas,
+        geometry,
+        positions,
+        currentFocusNode,
+        hoveredSnapNode!,
+        activeColor,
+      );
+    }
+
+    // 8. Draw active dragging rubber band (elastic stretch animation)
     if (dragStartNode != null && dragPosition != null) {
       _drawDraggingRubberBand(
         canvas,
@@ -380,7 +392,7 @@ class _BoardPainter extends CustomPainter {
       );
     }
 
-    // 8. Draw 3D tactile pegs
+    // 9. Draw 3D tactile pegs
     _drawPegs(
       canvas,
       positions,
@@ -388,6 +400,21 @@ class _BoardPainter extends CustomPainter {
       hoveredSnapNode,
       activeColor,
     );
+  }
+
+  bool _isCrownTriangle(String triId, int boardSize) {
+    if (boardSize == 3) {
+      return triId == 'tri_down_1_0';
+    } else if (boardSize == 4) {
+      return triId == 'tri_down_1_0' ||
+          triId == 'tri_down_2_0' ||
+          triId == 'tri_down_2_1';
+    } else if (boardSize == 5) {
+      return triId == 'tri_down_2_1' ||
+          triId == 'tri_up_2_1' ||
+          triId == 'tri_down_2_0';
+    }
+    return false;
   }
 
   void _drawBoardTray(Canvas canvas, Size size) {
@@ -483,8 +510,94 @@ class _BoardPainter extends CustomPainter {
         grooveShine,
       );
 
-      // Center socket pin hole
-      canvas.drawCircle(centroid, 3.2, centerPinPaint);
+      final isCrown = _isCrownTriangle(tri.id, state.boardSize);
+      if (isCrown && !state.claimedTriangles.containsKey(tri.id)) {
+        // Glowing Golden Crown Socket
+        final crownGlow = Paint()
+          ..color = const Color(
+            0xFFFFD700,
+          ).withValues(alpha: 0.35 + 0.25 * pulseValue)
+          ..style = PaintingStyle.fill;
+        canvas.drawCircle(centroid, 8.5 + 2.0 * pulseValue, crownGlow);
+
+        final crownRing = Paint()
+          ..color = const Color(0xFFFFD700)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5;
+        canvas.drawCircle(centroid, 6.0, crownRing);
+
+        // Center golden gem
+        canvas.drawCircle(
+          centroid,
+          3.2,
+          Paint()..color = const Color(0xFFFFD700),
+        );
+        canvas.drawCircle(
+          centroid + const Offset(-1, -1),
+          1.0,
+          Paint()..color = Colors.white,
+        );
+      } else {
+        // Standard center socket pin hole
+        canvas.drawCircle(centroid, 3.2, centerPinPaint);
+      }
+    }
+  }
+
+  void _drawThreatRadar(
+    Canvas canvas,
+    BoardGeometry geometry,
+    Map<GridNode, Offset> positions,
+    GridNode startNode,
+    GridNode targetNode,
+    Color activeColor,
+  ) {
+    final edge = BoardEdge(startNode, targetNode);
+    if (!edge.isAdjacent || state.occupiedEdges.contains(edge.id)) return;
+
+    final adjTriangles = geometry.edgeToTriangles[edge.id] ?? [];
+
+    for (final tri in adjTriangles) {
+      if (state.claimedTriangles.containsKey(tri.id)) continue;
+
+      int occupiedCount = 0;
+      for (final eId in tri.edgeIds) {
+        if (state.occupiedEdges.contains(eId)) {
+          occupiedCount++;
+        }
+      }
+
+      final p0 = positions[tri.vertices[0]]!;
+      final p1 = positions[tri.vertices[1]]!;
+      final p2 = positions[tri.vertices[2]]!;
+      final path = Path()
+        ..moveTo(p0.dx, p0.dy)
+        ..lineTo(p1.dx, p1.dy)
+        ..lineTo(p2.dx, p2.dy)
+        ..close();
+
+      if (occupiedCount == 2) {
+        // ⚡ VICTORY CAPTURE MOVE: Completes this triangle!
+        final captureFill = Paint()
+          ..color = activeColor.withValues(alpha: 0.35 + 0.25 * pulseValue)
+          ..style = PaintingStyle.fill;
+        canvas.drawPath(path, captureFill);
+
+        final captureStroke = Paint()
+          ..color = activeColor
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.8;
+        canvas.drawPath(path, captureStroke);
+      } else if (occupiedCount == 1) {
+        // ⚠️ THREAT WARNING: Leaves triangle with 2 edges (gives free triangle to opponent!)
+        final warningStroke = Paint()
+          ..color = const Color(
+            0xFFFF9800,
+          ).withValues(alpha: 0.6 + 0.35 * pulseValue)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.2;
+        canvas.drawPath(path, warningStroke);
+      }
     }
   }
 
@@ -493,6 +606,10 @@ class _BoardPainter extends CustomPainter {
     BoardGeometry geometry,
     Map<GridNode, Offset> positions,
   ) {
+    // Calculate token scale dynamically based on board size
+    final n = state.boardSize;
+    final tokenScale = (55.0 / n).clamp(9.5, 15.0);
+
     for (final entry in state.claimedTriangles.entries) {
       final triId = entry.key;
       final ownerId = entry.value;
@@ -505,6 +622,7 @@ class _BoardPainter extends CustomPainter {
 
       final isP1 = ownerId == state.player1Id;
       final baseColor = isP1 ? AppColors.player1 : AppColors.player2;
+      final isCrown = _isCrownTriangle(triId, state.boardSize);
 
       // 1. Subtle territory fill with colored border
       final triPath = Path()
@@ -514,14 +632,18 @@ class _BoardPainter extends CustomPainter {
         ..close();
 
       final fillPaint = Paint()
-        ..color = baseColor.withValues(alpha: 0.18)
+        ..color = isCrown
+            ? const Color(0xFFFFD700).withValues(alpha: 0.25)
+            : baseColor.withValues(alpha: 0.18)
         ..style = PaintingStyle.fill;
       canvas.drawPath(triPath, fillPaint);
 
       final borderPaint = Paint()
-        ..color = baseColor.withValues(alpha: 0.45)
+        ..color = isCrown
+            ? const Color(0xFFFFD700)
+            : baseColor.withValues(alpha: 0.45)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5;
+        ..strokeWidth = isCrown ? 2.2 : 1.5;
       canvas.drawPath(triPath, borderPaint);
 
       // 2. 3D Molded plastic Arrow/Shield token inserted into the socket
@@ -530,7 +652,14 @@ class _BoardPainter extends CustomPainter {
         (p0.dy + p1.dy + p2.dy) / 3,
       );
 
-      _draw3DToken(canvas, centroid, tri.orientation, baseColor);
+      _draw3DToken(
+        canvas,
+        centroid,
+        tri.orientation,
+        baseColor,
+        isCrown: isCrown,
+        tokenScale: tokenScale,
+      );
     }
   }
 
@@ -538,24 +667,26 @@ class _BoardPainter extends CustomPainter {
     Canvas canvas,
     Offset center,
     TriangleOrientation orientation,
-    Color baseColor,
-  ) {
-    const s = 14.0; // Token scale
+    Color baseColor, {
+    bool isCrown = false,
+    double tokenScale = 14.0,
+  }) {
+    final s = tokenScale;
     final isUp = orientation == TriangleOrientation.upright;
 
     // Token geometry: 3D arrow head with spine and wings
     final apex = isUp
-        ? center + const Offset(0, -s * 1.05)
-        : center + const Offset(0, s * 1.05);
+        ? center + Offset(0, -s * 1.05)
+        : center + Offset(0, s * 1.05);
     final leftWing = isUp
-        ? center + const Offset(-s * 0.9, s * 0.75)
-        : center + const Offset(-s * 0.9, -s * 0.75);
+        ? center + Offset(-s * 0.9, s * 0.75)
+        : center + Offset(-s * 0.9, -s * 0.75);
     final rightWing = isUp
-        ? center + const Offset(s * 0.9, s * 0.75)
-        : center + const Offset(s * 0.9, -s * 0.75);
+        ? center + Offset(s * 0.9, s * 0.75)
+        : center + Offset(s * 0.9, -s * 0.75);
     final notch = isUp
-        ? center + const Offset(0, s * 0.35)
-        : center + const Offset(0, -s * 0.35);
+        ? center + Offset(0, s * 0.35)
+        : center + Offset(0, -s * 0.35);
 
     // Drop shadow
     const shadowOffset = Offset(1.5, 3.0);
@@ -612,22 +743,37 @@ class _BoardPainter extends CustomPainter {
 
     // Spine highlight ridge
     final spinePaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.9)
+      ..color = isCrown
+          ? const Color(0xFFFFD700)
+          : Colors.white.withValues(alpha: 0.9)
       ..strokeWidth = 1.4
       ..strokeCap = StrokeCap.round;
     canvas.drawLine(apex, notch, spinePaint);
 
-    // Center circular jewel / rivet
-    canvas.drawCircle(
-      center,
-      3.2,
-      Paint()..color = Colors.white.withValues(alpha: 0.95),
-    );
-    canvas.drawCircle(
-      center,
-      1.6,
-      Paint()..color = baseColor,
-    );
+    // Center circular jewel / rivet (Crown gem if crown)
+    if (isCrown) {
+      canvas.drawCircle(
+        center,
+        3.8,
+        Paint()..color = const Color(0xFFFFD700),
+      );
+      canvas.drawCircle(
+        center,
+        2.0,
+        Paint()..color = Colors.white,
+      );
+    } else {
+      canvas.drawCircle(
+        center,
+        3.2,
+        Paint()..color = Colors.white.withValues(alpha: 0.95),
+      );
+      canvas.drawCircle(
+        center,
+        1.6,
+        Paint()..color = baseColor,
+      );
+    }
   }
 
   void _drawGuideChannels(

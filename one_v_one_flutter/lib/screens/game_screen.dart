@@ -455,10 +455,10 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                           ? 'WAITING FOR OPPONENT TO JOIN...'
                           : (isLocal
                                 ? (gState.activePlayerId == 'Player 1'
-                                      ? 'PLAYER 1 (Teal) — Connect an edge'
-                                      : 'PLAYER 2 (Amber) — Connect an edge')
+                                      ? 'PLAYER 1 (Teal) — Drag rubber band or tap to connect'
+                                      : 'PLAYER 2 (Amber) — Drag rubber band or tap to connect')
                                 : (isMyTurn
-                                      ? 'YOUR TURN — Tap 2 adjacent pegs to connect an edge'
+                                      ? 'YOUR TURN — Drag rubber band or tap 2 pegs to connect'
                                       : 'OPPONENT\'S TURN — Waiting for move...')),
                       style: TextStyle(
                         color: !isMatchActive
@@ -487,9 +487,15 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                     aspectRatio: 1.0,
                     child: Container(
                       decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppColors.surfaceBorder),
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.55),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
                       ),
                       child: TriangleTacticsBoard(
                         state: gState,
@@ -512,9 +518,12 @@ class _GameScreenState extends ConsumerState<GameScreen> {
             Padding(
               padding: const EdgeInsets.only(bottom: 12, left: 16, right: 16),
               child: Text(
-                'Complete any triangle to capture it (+1 point) and earn an extra turn.',
+                'Drag elastic rubber bands or tap pegs to connect • Form triangles to capture 3D tokens & score!',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+                style: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 12,
+                ),
               ),
             ),
           ],

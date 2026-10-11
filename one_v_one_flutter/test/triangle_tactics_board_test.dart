@@ -139,5 +139,92 @@ void main() {
 
       expect(submittedN1, isNull);
     });
+
+    testWidgets(
+      'drag and connect gesture submits move between adjacent nodes',
+      (
+        tester,
+      ) async {
+        GridNode? submittedN1;
+        GridNode? submittedN2;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 300,
+                  height: 300,
+                  child: TriangleTacticsBoard(
+                    state: initialState,
+                    currentUserId: 'p1',
+                    isInteractive: true,
+                    onMoveSubmitted: (n1, n2) {
+                      submittedN1 = n1;
+                      submittedN2 = n2;
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final boardFinder = find.byType(TriangleTacticsBoard);
+        final boardTopLeft = tester.getTopLeft(boardFinder);
+        final n0Pos = boardTopLeft + const Offset(150, 30);
+        final n1Pos = boardTopLeft + const Offset(110, 110);
+
+        // Drag from n0 to n1
+        final gesture = await tester.startGesture(n0Pos);
+        await tester.pump();
+        await gesture.moveTo(n1Pos);
+        await tester.pump();
+        await gesture.up();
+        await tester.pump();
+
+        expect(submittedN1, equals(const GridNode(0, 0)));
+        expect(submittedN2, equals(const GridNode(1, 0)));
+      },
+    );
+
+    testWidgets('drag into empty space does not submit move', (tester) async {
+      GridNode? submittedN1;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: 300,
+                height: 300,
+                child: TriangleTacticsBoard(
+                  state: initialState,
+                  currentUserId: 'p1',
+                  isInteractive: true,
+                  onMoveSubmitted: (n1, n2) {
+                    submittedN1 = n1;
+                  },
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final boardFinder = find.byType(TriangleTacticsBoard);
+      final boardTopLeft = tester.getTopLeft(boardFinder);
+      final n0Pos = boardTopLeft + const Offset(150, 30);
+      final emptySpace = boardTopLeft + const Offset(10, 10);
+
+      final gesture = await tester.startGesture(n0Pos);
+      await tester.pump();
+      await gesture.moveTo(emptySpace);
+      await tester.pump();
+      await gesture.up();
+      await tester.pump();
+
+      expect(submittedN1, isNull);
+    });
   });
 }

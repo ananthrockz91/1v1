@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../client.dart';
-import '../models/player_session.dart';
 import '../providers/match_provider.dart';
+import '../providers/player_provider.dart';
 import '../theme/app_colors.dart';
 import 'game_catalogue_screen.dart';
 import 'game_screen.dart';
 import 'leaderboard_screen.dart';
 import 'lobby_screen.dart';
+import 'sign_in_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -169,6 +170,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
 
     final matchState = ref.watch(matchProvider);
+    final playerState = ref.watch(playerProfileProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -182,52 +184,109 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppColors.surfaceBorder),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: AppColors.player1,
-                            shape: BoxShape.circle,
-                          ),
+                  GestureDetector(
+                    onTap: () => SignInScreen.show(context),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: playerState.isAuthenticated
+                              ? AppColors.player1.withValues(alpha: 0.6)
+                              : AppColors.surfaceBorder,
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          PlayerSession.displayName,
-                          style: const TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: playerState.isAuthenticated
+                                  ? AppColors.player1
+                                  : AppColors.player2,
+                              shape: BoxShape.circle,
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 8),
+                          Text(
+                            playerState.displayName,
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: playerState.isAuthenticated
+                                  ? AppColors.player1.withValues(alpha: 0.15)
+                                  : AppColors.surfaceElevated,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              playerState.isAuthenticated
+                                  ? 'VERIFIED'
+                                  : 'GUEST',
+                              style: TextStyle(
+                                color: playerState.isAuthenticated
+                                    ? AppColors.player1
+                                    : AppColors.textMuted,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(
+                            Icons.keyboard_arrow_down,
+                            size: 16,
+                            color: AppColors.textMuted,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.leaderboard_outlined,
-                      color: AppColors.player2,
-                    ),
-                    tooltip: 'Leaderboards',
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const LeaderboardScreen(),
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          playerState.isAuthenticated
+                              ? Icons.account_circle
+                              : Icons.account_circle_outlined,
+                          color: playerState.isAuthenticated
+                              ? AppColors.player1
+                              : AppColors.textSecondary,
                         ),
-                      );
-                    },
+                        tooltip: 'Player Onboarding & Auth',
+                        onPressed: () => SignInScreen.show(context),
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.leaderboard_outlined,
+                          color: AppColors.player2,
+                        ),
+                        tooltip: 'Leaderboards',
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const LeaderboardScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),

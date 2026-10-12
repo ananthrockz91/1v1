@@ -4,6 +4,8 @@ import 'package:one_v_one_client/one_v_one_client.dart';
 import 'package:serverpod_auth_idp_flutter/serverpod_auth_idp_flutter.dart';
 import 'package:serverpod_flutter/serverpod_flutter.dart';
 
+export 'package:serverpod_auth_idp_flutter/serverpod_auth_idp_flutter.dart';
+
 // When you are running the app on a physical device, you need to set the
 // server URL to the IP address of your computer. You can find the IP
 // address by running `ipconfig` on Windows or `ifconfig` on Mac/Linux.

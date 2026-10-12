@@ -1,0 +1,248 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:one_v_one_client/one_v_one_client.dart';
+import '../client.dart';
+import '../models/player_session.dart';
+
+class PlayerProfileState {
+  final PlayerProfile? profile;
+  final bool isLoading;
+  final String? errorMessage;
+  final String? successMessage;
+  final bool isAuthenticated;
+  final String playerId;
+  final String displayName;
+
+  const PlayerProfileState({
+    this.profile,
+    this.isLoading = false,
+    this.errorMessage,
+    this.successMessage,
+    required this.isAuthenticated,
+    required this.playerId,
+    required this.displayName,
+  });
+
+  PlayerProfileState copyWith({
+    PlayerProfile? profile,
+    bool? isLoading,
+    String? errorMessage,
+    String? successMessage,
+    bool? isAuthenticated,
+    String? playerId,
+    String? displayName,
+  }) {
+    return PlayerProfileState(
+      profile: profile ?? this.profile,
+      isLoading: isLoading ?? this.isLoading,
+      errorMessage: errorMessage,
+      successMessage: successMessage,
+      isAuthenticated: isAuthenticated ?? this.isAuthenticated,
+      playerId: playerId ?? this.playerId,
+      displayName: displayName ?? this.displayName,
+    );
+  }
+}
+
+class PlayerProfileNotifier extends StateNotifier<PlayerProfileState> {
+  PlayerProfileNotifier()
+    : super(
+        PlayerProfileState(
+          isAuthenticated: PlayerSession.isAuthenticated,
+          playerId: PlayerSession.currentId,
+          displayName: PlayerSession.displayName,
+        ),
+      ) {
+    try {
+      client.auth.authInfoListenable.addListener(_onAuthStatusChanged);
+      refreshProfile();
+    } catch (_) {
+      // In test environments where client is not initialized, fallback smoothly
+    }
+  }
+
+  void _onAuthStatusChanged() {
+    state = state.copyWith(
+      isAuthenticated: PlayerSession.isAuthenticated,
+      playerId: PlayerSession.currentId,
+      displayName: PlayerSession.displayName,
+    );
+    refreshProfile();
+  }
+
+  @override
+  void dispose() {
+    try {
+      client.auth.authInfoListenable.removeListener(_onAuthStatusChanged);
+    } catch (_) {}
+    super.dispose();
+  }
+
+  Future<void> refreshProfile() async {
+    try {
+      final profile = await client.player.getOrCreateProfile(
+        playerId: PlayerSession.currentId,
+        displayName: PlayerSession.displayName,
+      );
+      if (profile.displayName.isNotEmpty) {
+        PlayerSession.setDisplayName(profile.displayName);
+      }
+      state = state.copyWith(
+        profile: profile,
+        isLoading: false,
+        playerId: PlayerSession.currentId,
+        displayName: PlayerSession.displayName,
+        isAuthenticated: PlayerSession.isAuthenticated,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+      );
+    }
+  }
+
+  Future<bool> updateDisplayName(String newName) async {
+    final clean = newName.trim();
+    if (clean.isEmpty) return false;
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    try {
+      final updated = await client.player.getOrCreateProfile(
+        playerId: PlayerSession.currentId,
+        displayName: clean,
+      );
+      PlayerSession.setDisplayName(clean);
+      state = state.copyWith(
+        profile: updated,
+        displayName: clean,
+        isLoading: false,
+        successMessage: 'Callsign updated to $clean',
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Failed to update callsign: $e',
+      );
+      return false;
+    }
+  }
+
+  Future<bool> login({
+    required String email,
+    required String password,
+  }) async {
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    try {
+      final authSuccess = await client.emailIdp.login(
+        email: email.trim(),
+        password: password,
+      );
+      await client.auth.updateSignedInUser(authSuccess);
+      PlayerSession.setDisplayName(email.trim().split('@').first);
+      await refreshProfile();
+      state = state.copyWith(
+        isLoading: false,
+        successMessage: 'Welcome back, ${PlayerSession.displayName}!',
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage:
+            'Login failed: ${e.toString().replaceAll('Exception: ', '')}',
+      );
+      return false;
+    }
+  }
+
+  Future<UuidValue?> startRegistration({required String email}) async {
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    try {
+      final requestId = await client.emailIdp.startRegistration(
+        email: email.trim(),
+      );
+      state = state.copyWith(
+        isLoading: false,
+        successMessage:
+            'Verification code sent to $email (logged in console for dev).',
+      );
+      return requestId;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage:
+            'Registration failed: ${e.toString().replaceAll('Exception: ', '')}',
+      );
+      return null;
+    }
+  }
+
+  Future<bool> completeRegistration({
+    required UuidValue accountRequestId,
+    required String verificationCode,
+    required String password,
+    String? displayName,
+  }) async {
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    try {
+      final regToken = await client.emailIdp.verifyRegistrationCode(
+        accountRequestId: accountRequestId,
+        verificationCode: verificationCode.trim(),
+      );
+      final authSuccess = await client.emailIdp.finishRegistration(
+        registrationToken: regToken,
+        password: password,
+      );
+      await client.auth.updateSignedInUser(authSuccess);
+      if (displayName != null && displayName.trim().isNotEmpty) {
+        PlayerSession.setDisplayName(displayName.trim());
+        await client.player.getOrCreateProfile(
+          playerId: authSuccess.authUserId.toString(),
+          displayName: displayName.trim(),
+        );
+      }
+      await refreshProfile();
+      state = state.copyWith(
+        isLoading: false,
+        successMessage: 'Account successfully registered and logged in!',
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage:
+            'Verification failed: ${e.toString().replaceAll('Exception: ', '')}',
+      );
+      return false;
+    }
+  }
+
+  Future<void> signOut() async {
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    try {
+      await client.auth.signOutDevice();
+      PlayerSession.clear();
+      state = state.copyWith(
+        isAuthenticated: false,
+        playerId: PlayerSession.currentId,
+        displayName: PlayerSession.displayName,
+        isLoading: false,
+        successMessage: 'Signed out successfully. Switched to Guest mode.',
+      );
+      await refreshProfile();
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Sign out failed: $e',
+      );
+    }
+  }
+
+  void clearMessages() {
+    state = state.copyWith(errorMessage: null, successMessage: null);
+  }
+}
+
+final playerProfileProvider =
+    StateNotifierProvider<PlayerProfileNotifier, PlayerProfileState>(
+      (ref) => PlayerProfileNotifier(),
+    );

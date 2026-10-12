@@ -1001,6 +1001,7 @@ class _PlayerEndpoint {
     _ist.TestSessionBuilder sessionBuilder, {
     required String playerId,
     String? displayName,
+    String? avatarSeed,
   }) async {
     return _ist.callAwaitableFunctionAndHandleExceptions(() async {
       var _localUniqueSession =
@@ -1016,6 +1017,44 @@ class _PlayerEndpoint {
           parameters: _ist.testObjectToJson({
             'playerId': playerId,
             'displayName': displayName,
+            'avatarSeed': avatarSeed,
+          }),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<_ieqwrllr.PlayerProfile>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _ida.Future<_ieqwrllr.PlayerProfile> updateProfile(
+    _ist.TestSessionBuilder sessionBuilder, {
+    required String playerId,
+    String? displayName,
+    String? avatarSeed,
+  }) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'player',
+            method: 'updateProfile',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'player',
+          methodName: 'updateProfile',
+          parameters: _ist.testObjectToJson({
+            'playerId': playerId,
+            'displayName': displayName,
+            'avatarSeed': avatarSeed,
           }),
           serializationManager: _serializationManager,
         );

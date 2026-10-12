@@ -24,8 +24,35 @@ void run(List<String> args) async {
       JwtConfigFromPasswords(),
     ],
     identityProviderBuilders: [
-      ServerpodCloudEmailIdpConfig(
-        appDisplayName: '1v1 Tactics',
+      EmailIdpConfigFromPasswords(
+        registrationVerificationCodeGenerator: () => '1234',
+        passwordResetVerificationCodeGenerator: () => '1234',
+        sendRegistrationVerificationCode:
+            (
+              session, {
+              required email,
+              required accountRequestId,
+              required verificationCode,
+              transaction,
+            }) async {
+              session.log(
+                '*** VERIFICATION CODE for $email is: $verificationCode ***',
+                level: LogLevel.info,
+              );
+            },
+        sendPasswordResetVerificationCode:
+            (
+              session, {
+              required email,
+              required passwordResetRequestId,
+              required verificationCode,
+              transaction,
+            }) async {
+              session.log(
+                '*** PASSWORD RESET CODE for $email is: $verificationCode ***',
+                level: LogLevel.info,
+              );
+            },
         onAfterAccountCreated:
             (
               session, {

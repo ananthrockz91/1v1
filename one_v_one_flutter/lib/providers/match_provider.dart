@@ -16,6 +16,8 @@ class MatchUiState {
   final bool showExtraTurnNotice;
   final bool isLocal;
   final bool isAiMatch;
+  final PlayerProfile? player1Profile;
+  final PlayerProfile? player2Profile;
 
   const MatchUiState({
     this.match,
@@ -26,7 +28,53 @@ class MatchUiState {
     this.showExtraTurnNotice = false,
     this.isLocal = false,
     this.isAiMatch = false,
+    this.player1Profile,
+    this.player2Profile,
   });
+
+  String get player1Name {
+    if (player1Profile != null && player1Profile!.displayName.isNotEmpty) {
+      return player1Profile!.displayName;
+    }
+    if (match?.player1Id == PlayerSession.currentId) {
+      return PlayerSession.displayName;
+    }
+    return 'Player 1';
+  }
+
+  String get player1Avatar {
+    if (player1Profile != null && player1Profile!.avatarSeed.isNotEmpty) {
+      return player1Profile!.avatarSeed;
+    }
+    if (match?.player1Id == PlayerSession.currentId) {
+      return PlayerSession.avatarSeed;
+    }
+    return 'avatar_1';
+  }
+
+  String get player2Name {
+    if (isAiMatch) return 'Tactical Bot (AI)';
+    if (isLocal) return 'Player 2';
+    if (player2Profile != null && player2Profile!.displayName.isNotEmpty) {
+      return player2Profile!.displayName;
+    }
+    if (match?.player2Id == PlayerSession.currentId) {
+      return PlayerSession.displayName;
+    }
+    return match?.player2Id != null ? 'Player 2' : 'Waiting...';
+  }
+
+  String get player2Avatar {
+    if (isAiMatch) return 'avatar_5';
+    if (isLocal) return 'avatar_2';
+    if (player2Profile != null && player2Profile!.avatarSeed.isNotEmpty) {
+      return player2Profile!.avatarSeed;
+    }
+    if (match?.player2Id == PlayerSession.currentId) {
+      return PlayerSession.avatarSeed;
+    }
+    return 'avatar_2';
+  }
 
   MatchUiState copyWith({
     GameMatch? match,
@@ -37,6 +85,8 @@ class MatchUiState {
     bool? showExtraTurnNotice,
     bool? isLocal,
     bool? isAiMatch,
+    PlayerProfile? player1Profile,
+    PlayerProfile? player2Profile,
   }) {
     return MatchUiState(
       match: match ?? this.match,
@@ -47,6 +97,8 @@ class MatchUiState {
       showExtraTurnNotice: showExtraTurnNotice ?? this.showExtraTurnNotice,
       isLocal: isLocal ?? this.isLocal,
       isAiMatch: isAiMatch ?? this.isAiMatch,
+      player1Profile: player1Profile ?? this.player1Profile,
+      player2Profile: player2Profile ?? this.player2Profile,
     );
   }
 }
@@ -112,7 +164,24 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
       isLocal: false,
     );
 
+    _fetchProfiles(match.player1Id, match.player2Id);
     _listenToMatchStream(match.matchId);
+  }
+
+  Future<void> _fetchProfiles(String p1Id, String? p2Id) async {
+    try {
+      PlayerProfile? p1 = state.player1Profile;
+      PlayerProfile? p2 = state.player2Profile;
+      if (p1Id.isNotEmpty && p1?.playerId != p1Id) {
+        p1 = await client.player.getProfile(p1Id);
+      }
+      if (p2Id != null && p2Id.isNotEmpty && p2?.playerId != p2Id) {
+        p2 = await client.player.getProfile(p2Id);
+      }
+      if (mounted) {
+        state = state.copyWith(player1Profile: p1, player2Profile: p2);
+      }
+    } catch (_) {}
   }
 
   void _listenToMatchStream(String matchId) {
@@ -154,6 +223,11 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
                 gameState: nextGameState,
                 showExtraTurnNotice: false,
               );
+              if (updatedMatch != null &&
+                  updatedMatch.player2Id != null &&
+                  state.player2Profile?.playerId != updatedMatch.player2Id) {
+                _fetchProfiles(updatedMatch.player1Id, updatedMatch.player2Id);
+              }
             } catch (_) {}
           }
         },
@@ -177,7 +251,13 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
       );
       _onMatchUpdated(match);
     } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      final msg = e
+          .toString()
+          .replaceAll('ServerpodClientInternalServerError: ', '')
+          .replaceAll('ServerpodClientException: ', '')
+          .replaceAll('Exception: ', '')
+          .trim();
+      state = state.copyWith(isLoading: false, errorMessage: msg);
     }
   }
 
@@ -190,7 +270,20 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
       );
       _onMatchUpdated(match);
     } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      var msg = e
+          .toString()
+          .replaceAll('ServerpodClientInternalServerError: ', '')
+          .replaceAll('ServerpodClientException: ', '')
+          .replaceAll('Exception: ', '')
+          .replaceAll('ArgumentError: ', '')
+          .trim();
+      if (msg.contains('You cannot play against yourself') ||
+          msg.contains('500') ||
+          msg.contains('Internal server error')) {
+        msg =
+            'You cannot join a room created by yourself. To test 2 players on this computer, open the room code in an Incognito / Private window or another browser.';
+      }
+      state = state.copyWith(isLoading: false, errorMessage: msg);
     }
   }
 
@@ -203,7 +296,13 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
       );
       _onMatchUpdated(match);
     } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      final msg = e
+          .toString()
+          .replaceAll('ServerpodClientInternalServerError: ', '')
+          .replaceAll('ServerpodClientException: ', '')
+          .replaceAll('Exception: ', '')
+          .trim();
+      state = state.copyWith(isLoading: false, errorMessage: msg);
     }
   }
 
@@ -278,14 +377,30 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
     }
   }
 
-  Future<void> resign() async {
+  Future<void> resign({String? timedOutPlayerId}) async {
+    if (state.isLocal) {
+      final currentGameState = state.gameState;
+      if (currentGameState == null) return;
+      final resigningPlayer =
+          timedOutPlayerId ?? currentGameState.activePlayerId;
+      final winner = resigningPlayer == 'Player 1'
+          ? (state.isAiMatch ? 'Tactical Bot (AI)' : 'Player 2')
+          : 'Player 1';
+      final terminalState = currentGameState.copyWith(
+        isTerminal: true,
+        winnerId: winner,
+      );
+      state = state.copyWith(gameState: terminalState);
+      return;
+    }
+
     final currentMatch = state.match;
     if (currentMatch == null) return;
 
     try {
       final updatedMatch = await client.match.resign(
         matchId: currentMatch.matchId,
-        playerId: PlayerSession.currentId,
+        playerId: timedOutPlayerId ?? PlayerSession.currentId,
       );
       _onMatchUpdated(updatedMatch);
     } catch (e) {

@@ -397,6 +397,18 @@ class MatchService {
           : match.player1Id;
       final now = DateTime.now();
 
+      // Ensure inner engine state is also terminal
+      try {
+        final existingState = TriangleTacticsState.fromJson(
+          jsonDecode(match.stateJson) as Map<String, dynamic>,
+        );
+        final terminalState = existingState.copyWith(
+          isTerminal: true,
+          winnerId: winnerId,
+        );
+        match.stateJson = jsonEncode(terminalState.toJson());
+      } catch (_) {}
+
       match.status = 'completed';
       match.winnerId = winnerId;
       match.isDraw = false;
@@ -408,6 +420,31 @@ class MatchService {
         match,
         transaction: tx,
       );
+
+      final p1Won = winnerId == match.player1Id;
+      final p2Won = winnerId == match.player2Id;
+
+      await PlayerService.recordMatchResult(
+        session,
+        playerId: match.player1Id,
+        isWin: p1Won,
+        isLoss: p2Won,
+        isDraw: false,
+        trianglesCaptured: match.player1Score,
+        transaction: tx,
+      );
+
+      if (match.player2Id != null) {
+        await PlayerService.recordMatchResult(
+          session,
+          playerId: match.player2Id!,
+          isWin: p2Won,
+          isLoss: p1Won,
+          isDraw: false,
+          trianglesCaptured: match.player2Score,
+          transaction: tx,
+        );
+      }
 
       broadcastEvent = MatchEvent(
         matchId: matchId,

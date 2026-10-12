@@ -4,6 +4,7 @@ import '../client.dart';
 class PlayerSession {
   static String? _guestId;
   static String? _customName;
+  static String? _avatarSeed;
 
   static bool get isAuthenticated {
     try {
@@ -30,29 +31,38 @@ class PlayerSession {
     return _guestId!;
   }
 
+  static bool get hasCustomName =>
+      _customName != null &&
+      _customName!.trim().isNotEmpty &&
+      !_customName!.startsWith('Player_') &&
+      !_customName!.startsWith('Guest_');
+
   static String get displayName {
     if (_customName != null && _customName!.trim().isNotEmpty) {
       return _customName!;
     }
-    try {
-      if (client.auth.isAuthenticated) {
-        return 'Player_${currentId.substring(0, min(6, currentId.length))}';
-      }
-    } catch (_) {}
     return 'Guest_${currentId.split('_').last}';
   }
+
+  static String get avatarSeed => _avatarSeed ?? 'avatar_1';
 
   static void setDisplayName(String name) {
     _customName = name.trim();
   }
 
-  static void setCustomId(String id, [String? name]) {
+  static void setAvatarSeed(String seed) {
+    _avatarSeed = seed.trim();
+  }
+
+  static void setCustomId(String id, [String? name, String? avatar]) {
     _guestId = id;
     if (name != null) _customName = name.trim();
+    if (avatar != null) _avatarSeed = avatar.trim();
   }
 
   static void clear() {
     _guestId = null;
     _customName = null;
+    _avatarSeed = null;
   }
 }

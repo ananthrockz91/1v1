@@ -623,6 +623,11 @@ class Endpoints extends _is.EndpointDispatch {
               type: _is.getType<String?>(),
               nullable: true,
             ),
+            'avatarSeed': _is.ParameterDescription(
+              name: 'avatarSeed',
+              type: _is.getType<String?>(),
+              nullable: true,
+            ),
           },
           call:
               (
@@ -633,6 +638,38 @@ class Endpoints extends _is.EndpointDispatch {
                     session,
                     playerId: params['playerId'],
                     displayName: params['displayName'],
+                    avatarSeed: params['avatarSeed'],
+                  ),
+        ),
+        'updateProfile': _is.MethodConnector(
+          name: 'updateProfile',
+          params: {
+            'playerId': _is.ParameterDescription(
+              name: 'playerId',
+              type: _is.getType<String>(),
+              nullable: false,
+            ),
+            'displayName': _is.ParameterDescription(
+              name: 'displayName',
+              type: _is.getType<String?>(),
+              nullable: true,
+            ),
+            'avatarSeed': _is.ParameterDescription(
+              name: 'avatarSeed',
+              type: _is.getType<String?>(),
+              nullable: true,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['player'] as _ip5fnzx4.PlayerEndpoint)
+                  .updateProfile(
+                    session,
+                    playerId: params['playerId'],
+                    displayName: params['displayName'],
+                    avatarSeed: params['avatarSeed'],
                   ),
         ),
         'getProfile': _is.MethodConnector(

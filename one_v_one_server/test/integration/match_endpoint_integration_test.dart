@@ -216,5 +216,46 @@ void main() {
         expect(completed.completedAt, isNotNull);
       },
     );
+
+    test(
+      'guest player resignation and completion works without UUID errors',
+      () async {
+        final match = await endpoints.match.createMatch(
+          sessionBuilder,
+          playerId: 'player_11111_111',
+          boardSize: 3,
+          isPublic: false,
+        );
+
+        await endpoints.match.joinMatch(
+          sessionBuilder,
+          playerId: 'player_22222_222',
+          roomCode: match.roomCode!,
+        );
+
+        final completed = await endpoints.match.resign(
+          sessionBuilder,
+          matchId: match.matchId,
+          playerId: 'player_11111_111',
+        );
+
+        expect(completed.status, equals('completed'));
+        expect(completed.winnerId, equals('player_22222_222'));
+        expect(completed.completedAt, isNotNull);
+
+        final p1Profile = await endpoints.player.getProfile(
+          sessionBuilder,
+          'player_11111_111',
+        );
+        final p2Profile = await endpoints.player.getProfile(
+          sessionBuilder,
+          'player_22222_222',
+        );
+        expect(p1Profile, isNotNull);
+        expect(p1Profile!.losses, equals(1));
+        expect(p2Profile, isNotNull);
+        expect(p2Profile!.wins, equals(1));
+      },
+    );
   });
 }

@@ -20,97 +20,104 @@ class GameCatalogueScreen extends ConsumerWidget {
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          const Text(
-            'ACTIVE TITLES',
-            style: TextStyle(
-              color: AppColors.textMuted,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.5,
-            ),
-          ),
-          const SizedBox(height: 12),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: ListView(
+            padding: const EdgeInsets.all(20),
+            children: [
+              const Text(
+                'ACTIVE TITLES',
+                style: TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const SizedBox(height: 12),
 
-          // Triangle Tactics (Playable)
-          _buildGameCard(
-            title: 'Triangle Tactics',
-            tagline: 'Territory Strategy on a Triangular Lattice',
-            description:
-                'Connect discrete lattice nodes with lines to complete elementary triangular faces. Every triangle captured awards points and grants an immediate extra turn.',
-            isPlayable: true,
-            accentColor: AppColors.player1,
-            badge: 'PLAYABLE NOW',
-            icon: Icons.change_history,
-            onPlay: () async {
-              await ref.read(matchProvider.notifier).playOnline(boardSize: 4);
-              if (!context.mounted) return;
-              final match = ref.read(matchProvider).match;
-              if (match == null) return;
-              if (match.status == 'in_progress') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const GameScreen()),
-                );
-              } else {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LobbyScreen()),
-                );
-              }
-            },
-          ),
-          const SizedBox(height: 24),
+              // Triangle Tactics (Playable)
+              _buildGameCard(
+                title: 'Triangle Tactics',
+                tagline: 'Territory Strategy on a Triangular Lattice',
+                description:
+                    'Connect discrete lattice nodes with lines to complete elementary triangular faces. Every triangle captured awards points and grants an immediate extra turn.',
+                isPlayable: true,
+                accentColor: AppColors.player1,
+                badge: 'PLAYABLE NOW',
+                icon: Icons.change_history,
+                onPlay: () async {
+                  await ref
+                      .read(matchProvider.notifier)
+                      .playOnline(boardSize: 4);
+                  if (!context.mounted) return;
+                  final match = ref.read(matchProvider).match;
+                  if (match == null) return;
+                  if (match.status == 'in_progress') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const GameScreen()),
+                    );
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const LobbyScreen()),
+                    );
+                  }
+                },
+              ),
+              const SizedBox(height: 24),
 
-          const Text(
-            'COMING SOON',
-            style: TextStyle(
-              color: AppColors.textMuted,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.5,
-            ),
-          ),
-          const SizedBox(height: 12),
+              const Text(
+                'COMING SOON',
+                style: TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const SizedBox(height: 12),
 
-          // Future Titles
-          _buildGameCard(
-            title: 'Tic-Tac-Toe Duel',
-            tagline: 'Classic 3x3 Deterministic Grid Match',
-            description:
-                'Turn-based alignment strategy. First to align 3 consecutive marks takes the round.',
-            isPlayable: false,
-            accentColor: Colors.purpleAccent,
-            badge: 'COMING SOON',
-            icon: Icons.grid_3x3,
-          ),
-          const SizedBox(height: 12),
+              // Future Titles
+              _buildGameCard(
+                title: 'Tic-Tac-Toe Duel',
+                tagline: 'Classic 3x3 Deterministic Grid Match',
+                description:
+                    'Turn-based alignment strategy. First to align 3 consecutive marks takes the round.',
+                isPlayable: false,
+                accentColor: Colors.purpleAccent,
+                badge: 'COMING SOON',
+                icon: Icons.grid_3x3,
+              ),
+              const SizedBox(height: 12),
 
-          _buildGameCard(
-            title: 'Connect Four',
-            tagline: 'Vertical Gravity Drop Tactics',
-            description:
-                'Drop discs into columns to form vertical, horizontal, or diagonal quadruples.',
-            isPlayable: false,
-            accentColor: Colors.blueAccent,
-            badge: 'COMING SOON',
-            icon: Icons.blur_linear,
-          ),
-          const SizedBox(height: 12),
+              _buildGameCard(
+                title: 'Connect Four',
+                tagline: 'Vertical Gravity Drop Tactics',
+                description:
+                    'Drop discs into columns to form vertical, horizontal, or diagonal quadruples.',
+                isPlayable: false,
+                accentColor: Colors.blueAccent,
+                badge: 'COMING SOON',
+                icon: Icons.blur_linear,
+              ),
+              const SizedBox(height: 12),
 
-          _buildGameCard(
-            title: 'Memory Duel',
-            tagline: 'Simultaneous Grid Recall',
-            description:
-                'Reveal tiles to find matched pairs in real time with quick combo bonuses.',
-            isPlayable: false,
-            accentColor: Colors.tealAccent,
-            badge: 'COMING SOON',
-            icon: Icons.psychology_outlined,
+              _buildGameCard(
+                title: 'Memory Duel',
+                tagline: 'Simultaneous Grid Recall',
+                description:
+                    'Reveal tiles to find matched pairs in real time with quick combo bonuses.',
+                isPlayable: false,
+                accentColor: Colors.tealAccent,
+                badge: 'COMING SOON',
+                icon: Icons.psychology_outlined,
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

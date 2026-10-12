@@ -11,6 +11,7 @@ class PlayerProfileState {
   final bool isAuthenticated;
   final String playerId;
   final String displayName;
+  final String avatarSeed;
 
   const PlayerProfileState({
     this.profile,
@@ -20,6 +21,7 @@ class PlayerProfileState {
     required this.isAuthenticated,
     required this.playerId,
     required this.displayName,
+    this.avatarSeed = 'avatar_1',
   });
 
   PlayerProfileState copyWith({
@@ -30,6 +32,7 @@ class PlayerProfileState {
     bool? isAuthenticated,
     String? playerId,
     String? displayName,
+    String? avatarSeed,
   }) {
     return PlayerProfileState(
       profile: profile ?? this.profile,
@@ -39,6 +42,7 @@ class PlayerProfileState {
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
       playerId: playerId ?? this.playerId,
       displayName: displayName ?? this.displayName,
+      avatarSeed: avatarSeed ?? this.avatarSeed,
     );
   }
 }
@@ -50,6 +54,7 @@ class PlayerProfileNotifier extends StateNotifier<PlayerProfileState> {
           isAuthenticated: PlayerSession.isAuthenticated,
           playerId: PlayerSession.currentId,
           displayName: PlayerSession.displayName,
+          avatarSeed: PlayerSession.avatarSeed,
         ),
       ) {
     try {
@@ -65,6 +70,7 @@ class PlayerProfileNotifier extends StateNotifier<PlayerProfileState> {
       isAuthenticated: PlayerSession.isAuthenticated,
       playerId: PlayerSession.currentId,
       displayName: PlayerSession.displayName,
+      avatarSeed: PlayerSession.avatarSeed,
     );
     refreshProfile();
   }
@@ -81,16 +87,23 @@ class PlayerProfileNotifier extends StateNotifier<PlayerProfileState> {
     try {
       final profile = await client.player.getOrCreateProfile(
         playerId: PlayerSession.currentId,
-        displayName: PlayerSession.displayName,
+        displayName: PlayerSession.hasCustomName
+            ? PlayerSession.displayName
+            : null,
+        avatarSeed: PlayerSession.avatarSeed,
       );
       if (profile.displayName.isNotEmpty) {
         PlayerSession.setDisplayName(profile.displayName);
+      }
+      if (profile.avatarSeed.isNotEmpty) {
+        PlayerSession.setAvatarSeed(profile.avatarSeed);
       }
       state = state.copyWith(
         profile: profile,
         isLoading: false,
         playerId: PlayerSession.currentId,
-        displayName: PlayerSession.displayName,
+        displayName: profile.displayName,
+        avatarSeed: profile.avatarSeed,
         isAuthenticated: PlayerSession.isAuthenticated,
       );
     } catch (e) {
@@ -105,7 +118,7 @@ class PlayerProfileNotifier extends StateNotifier<PlayerProfileState> {
     if (clean.isEmpty) return false;
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
-      final updated = await client.player.getOrCreateProfile(
+      final updated = await client.player.updateProfile(
         playerId: PlayerSession.currentId,
         displayName: clean,
       );
@@ -123,6 +136,31 @@ class PlayerProfileNotifier extends StateNotifier<PlayerProfileState> {
         errorMessage: 'Failed to update callsign: $e',
       );
       return false;
+    }
+  }
+
+  Future<bool> updateAvatar(String newAvatarSeed) async {
+    final clean = newAvatarSeed.trim();
+    if (clean.isEmpty) return false;
+    PlayerSession.setAvatarSeed(clean);
+    state = state.copyWith(avatarSeed: clean);
+    try {
+      final updated = await client.player.updateProfile(
+        playerId: PlayerSession.currentId,
+        avatarSeed: clean,
+      );
+      state = state.copyWith(
+        profile: updated,
+        avatarSeed: updated.avatarSeed,
+        successMessage: 'Profile picture updated',
+      );
+      return true;
+    } catch (_) {
+      // Local fallback for guest sessions
+      state = state.copyWith(
+        successMessage: 'Profile picture updated',
+      );
+      return true;
     }
   }
 

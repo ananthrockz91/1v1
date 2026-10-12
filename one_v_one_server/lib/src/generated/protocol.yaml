@@ -26,6 +26,7 @@ match:
   - streamMatchEvents:
 player:
   - getOrCreateProfile:
+  - updateProfile:
   - getProfile:
 greeting:
   - hello:

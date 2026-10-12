@@ -4,6 +4,7 @@ import '../client.dart';
 import '../providers/match_provider.dart';
 import '../providers/player_provider.dart';
 import '../theme/app_colors.dart';
+import '../widgets/player_avatar.dart';
 import 'game_catalogue_screen.dart';
 import 'game_screen.dart';
 import 'leaderboard_screen.dart';
@@ -79,6 +80,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.player1.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: AppColors.player1.withValues(alpha: 0.2),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.lightbulb_outline,
+                    size: 16,
+                    color: AppColors.player1,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Testing on 1 computer? Open an Incognito / Private window to join as Player 2.',
+                      style: TextStyle(
+                        color: AppColors.player1.withValues(alpha: 0.9),
+                        fontSize: 11.5,
+                        height: 1.3,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
         actions: [
@@ -114,6 +147,67 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             },
             child: const Text(
               'Join Room',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAuthPrompt(BuildContext context, String action) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: AppColors.surfaceBorder),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.lock_outline, color: AppColors.player1, size: 22),
+            SizedBox(width: 8),
+            Text(
+              'Sign In Required',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Please sign in or create an account to $action. It only takes a few seconds and keeps your matches and stats saved!',
+          style: const TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 13.5,
+            height: 1.4,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textMuted),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.player1,
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              SignInScreen.show(context);
+            },
+            child: const Text(
+              'Sign In / Register',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
@@ -175,570 +269,648 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Top Player Status Chip
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 580),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  GestureDetector(
-                    onTap: () => SignInScreen.show(context),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 7,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: playerState.isAuthenticated
-                              ? AppColors.player1.withValues(alpha: 0.6)
-                              : AppColors.surfaceBorder,
+                  // Top Player Status Chip
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: playerState.isAuthenticated
+                                ? AppColors.player1.withValues(alpha: 0.6)
+                                : AppColors.surfaceBorder,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            GestureDetector(
+                              onTap: () {
+                                AvatarPickerSheet.show(
+                                  context: context,
+                                  initialSeed: playerState.avatarSeed,
+                                  onSelected: (newSeed) {
+                                    ref
+                                        .read(playerProfileProvider.notifier)
+                                        .updateAvatar(newSeed);
+                                  },
+                                );
+                              },
+                              child: Tooltip(
+                                message: 'Change Profile Picture',
+                                child: Stack(
+                                  children: [
+                                    PlayerAvatar(
+                                      avatarSeed: playerState.avatarSeed,
+                                      displayName: playerState.displayName,
+                                      size: 24,
+                                      borderColor: playerState.isAuthenticated
+                                          ? AppColors.player1
+                                          : AppColors.player2,
+                                    ),
+                                    Positioned(
+                                      right: 0,
+                                      bottom: 0,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(1.5),
+                                        decoration: const BoxDecoration(
+                                          color: AppColors.surface,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.photo_camera,
+                                          size: 8,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: () => SignInScreen.show(context),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 120,
+                                    ),
+                                    child: Text(
+                                      playerState.displayName,
+                                      style: const TextStyle(
+                                        color: AppColors.textPrimary,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: playerState.isAuthenticated
+                                          ? AppColors.player1.withValues(
+                                              alpha: 0.15,
+                                            )
+                                          : AppColors.surfaceElevated,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      playerState.isAuthenticated
+                                          ? 'VERIFIED'
+                                          : 'GUEST',
+                                      style: TextStyle(
+                                        color: playerState.isAuthenticated
+                                            ? AppColors.player1
+                                            : AppColors.textMuted,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  const Icon(
+                                    Icons.keyboard_arrow_down,
+                                    size: 16,
+                                    color: AppColors.textMuted,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      child: Row(
+                      Row(
                         children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
+                          IconButton(
+                            icon: Icon(
+                              playerState.isAuthenticated
+                                  ? Icons.account_circle
+                                  : Icons.account_circle_outlined,
                               color: playerState.isAuthenticated
                                   ? AppColors.player1
-                                  : AppColors.player2,
-                              shape: BoxShape.circle,
+                                  : AppColors.textSecondary,
                             ),
+                            tooltip: 'Player Account',
+                            onPressed: () => SignInScreen.show(context),
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            playerState.displayName,
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
+                          IconButton(
+                            icon: const Icon(
+                              Icons.leaderboard_outlined,
+                              color: AppColors.player2,
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: playerState.isAuthenticated
-                                  ? AppColors.player1.withValues(alpha: 0.15)
-                                  : AppColors.surfaceElevated,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              playerState.isAuthenticated
-                                  ? 'VERIFIED'
-                                  : 'GUEST',
-                              style: TextStyle(
-                                color: playerState.isAuthenticated
-                                    ? AppColors.player1
-                                    : AppColors.textMuted,
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Icon(
-                            Icons.keyboard_arrow_down,
-                            size: 16,
-                            color: AppColors.textMuted,
+                            tooltip: 'Leaderboards',
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const LeaderboardScreen(),
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Brand Hero Banner
+                  Center(
+                    child: Column(
+                      children: [
+                        RichText(
+                          text: const TextSpan(
+                            children: [
+                              TextSpan(
+                                text: '1',
+                                style: TextStyle(
+                                  fontSize: 54,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppColors.player1,
+                                  letterSpacing: -2,
+                                ),
+                              ),
+                              TextSpan(
+                                text: 'v',
+                                style: TextStyle(
+                                  fontSize: 36,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppColors.textMuted,
+                                ),
+                              ),
+                              TextSpan(
+                                text: '1',
+                                style: TextStyle(
+                                  fontSize: 54,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppColors.player2,
+                                  letterSpacing: -2,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'PLAY. COMPETE. WIN.',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 4,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                  const SizedBox(height: 40),
+
+                  // Featured Game Card (Triangle Tactics)
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppColors.surfaceElevated,
+                          AppColors.surface,
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: AppColors.player1.withValues(alpha: 0.3),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.player1.withValues(alpha: 0.08),
+                          blurRadius: 24,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.player1.withValues(
+                                  alpha: 0.15,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text(
+                                'NOW PLAYING',
+                                style: TextStyle(
+                                  color: AppColors.player1,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.5,
+                                ),
+                              ),
+                            ),
+                            const Text(
+                              'Standard Board',
+                              style: TextStyle(
+                                color: AppColors.textMuted,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Triangle Tactics',
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Tactical territory strategy. Connect pegs, complete triangles, capture territory, and claim victory.',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 13,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+
+                        // Play vs AI (Tactical Bot)
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.player2,
+                            foregroundColor: Colors.black,
+                            minimumSize: const Size.fromHeight(46),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          onPressed: () {
+                            ref.read(matchProvider.notifier).startAiMatch();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const GameScreen(),
+                              ),
+                            );
+                          },
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.smart_toy_outlined, size: 20),
+                              SizedBox(width: 8),
+                              Text(
+                                'Play vs AI (Tactical Bot)',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+
+                        // Play Online (Quick Match)
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.player1,
+                            foregroundColor: Colors.black,
+                            minimumSize: const Size.fromHeight(46),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          onPressed: matchState.isLoading
+                              ? null
+                              : () async {
+                                  await ref
+                                      .read(matchProvider.notifier)
+                                      .playOnline();
+                                  if (!context.mounted) return;
+                                  final match = ref.read(matchProvider).match;
+                                  if (match == null) return;
+                                  if (match.status == 'in_progress') {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const GameScreen(),
+                                      ),
+                                    );
+                                  } else {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const LobbyScreen(),
+                                      ),
+                                    );
+                                  }
+                                },
+                          child: matchState.isLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.black,
+                                  ),
+                                )
+                              : const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.bolt, size: 20),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Play Online (Quick Match)',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ),
+                        const SizedBox(height: 10),
+
+                        // Pass & Play (Local 2-Player)
+                        OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.player1,
+                            side: BorderSide(
+                              color: AppColors.player1.withValues(alpha: 0.6),
+                            ),
+                            minimumSize: const Size.fromHeight(44),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: () {
+                            ref.read(matchProvider.notifier).startLocalMatch();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const GameScreen(),
+                              ),
+                            );
+                          },
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.people_outline, size: 18),
+                              SizedBox(width: 8),
+                              Text(
+                                'Pass & Play (Local 2-Player)',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Private Room Actions Grid
                   Row(
                     children: [
-                      IconButton(
-                        icon: Icon(
-                          playerState.isAuthenticated
-                              ? Icons.account_circle
-                              : Icons.account_circle_outlined,
-                          color: playerState.isAuthenticated
-                              ? AppColors.player1
-                              : AppColors.textSecondary,
-                        ),
-                        tooltip: 'Player Account',
-                        onPressed: () => SignInScreen.show(context),
-                      ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.leaderboard_outlined,
-                          color: AppColors.player2,
-                        ),
-                        tooltip: 'Leaderboards',
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const LeaderboardScreen(),
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: AppColors.surface,
+                            foregroundColor: AppColors.textPrimary,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            side: const BorderSide(
+                              color: AppColors.surfaceBorder,
                             ),
-                          );
-                        },
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          onPressed: () async {
+                            if (!ref
+                                .read(playerProfileProvider)
+                                .isAuthenticated) {
+                              _showAuthPrompt(context, 'create a private room');
+                              return;
+                            }
+                            await ref
+                                .read(matchProvider.notifier)
+                                .createPrivateMatch();
+                            if (!context.mounted) return;
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const LobbyScreen(),
+                              ),
+                            );
+                          },
+                          child: const Column(
+                            children: [
+                              Icon(
+                                Icons.add_circle_outline,
+                                color: AppColors.player2,
+                                size: 26,
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'Create Room',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: AppColors.surface,
+                            foregroundColor: AppColors.textPrimary,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            side: const BorderSide(
+                              color: AppColors.surfaceBorder,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          onPressed: () {
+                            if (!ref
+                                .read(playerProfileProvider)
+                                .isAuthenticated) {
+                              _showAuthPrompt(context, 'join a private room');
+                              return;
+                            }
+                            _showJoinDialog();
+                          },
+                          child: const Column(
+                            children: [
+                              Icon(
+                                Icons.meeting_room_outlined,
+                                color: AppColors.player1,
+                                size: 26,
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'Join Room',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 32),
+                  const SizedBox(height: 16),
 
-              // Brand Hero Banner
-              Center(
-                child: Column(
-                  children: [
-                    RichText(
-                      text: const TextSpan(
-                        children: [
-                          TextSpan(
-                            text: '1',
-                            style: TextStyle(
-                              fontSize: 54,
-                              fontWeight: FontWeight.w900,
-                              color: AppColors.player1,
-                              letterSpacing: -2,
-                            ),
-                          ),
-                          TextSpan(
-                            text: 'v',
-                            style: TextStyle(
-                              fontSize: 36,
-                              fontWeight: FontWeight.w900,
-                              color: AppColors.textMuted,
-                            ),
-                          ),
-                          TextSpan(
-                            text: '1',
-                            style: TextStyle(
-                              fontSize: 54,
-                              fontWeight: FontWeight.w900,
-                              color: AppColors.player2,
-                              letterSpacing: -2,
-                            ),
-                          ),
-                        ],
-                      ),
+                  // Game Catalogue Navigation Button
+                  ListTile(
+                    tileColor: AppColors.surface,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      side: const BorderSide(color: AppColors.surfaceBorder),
                     ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'PLAY. COMPETE. WIN.',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 4,
-                      ),
+                    leading: const Icon(
+                      Icons.grid_view_rounded,
+                      color: AppColors.textPrimary,
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 40),
-
-              // Featured Game Card (Triangle Tactics)
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.surfaceElevated,
-                      AppColors.surface,
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: AppColors.player1.withValues(alpha: 0.3),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.player1.withValues(alpha: 0.08),
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.player1.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text(
-                            'NOW PLAYING',
-                            style: TextStyle(
-                              color: AppColors.player1,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.5,
-                            ),
-                          ),
-                        ),
-                        const Text(
-                          'Standard Board',
-                          style: TextStyle(
-                            color: AppColors.textMuted,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Triangle Tactics',
+                    title: const Text(
+                      'Game Catalogue',
                       style: TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 22,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'Tactical territory strategy. Connect pegs, complete triangles, capture territory, and claim victory.',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-
-                    // Play vs AI (Tactical Bot)
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.player2,
-                        foregroundColor: Colors.black,
-                        minimumSize: const Size.fromHeight(46),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      onPressed: () {
-                        ref.read(matchProvider.notifier).startAiMatch();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const GameScreen(),
-                          ),
-                        );
-                      },
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.smart_toy_outlined, size: 20),
-                          SizedBox(width: 8),
-                          Text(
-                            'Play vs AI (Tactical Bot)',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-
-                    // Play Online (Quick Match)
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.player1,
-                        foregroundColor: Colors.black,
-                        minimumSize: const Size.fromHeight(46),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      onPressed: matchState.isLoading
-                          ? null
-                          : () async {
-                              await ref
-                                  .read(matchProvider.notifier)
-                                  .playOnline();
-                              if (!context.mounted) return;
-                              final match = ref.read(matchProvider).match;
-                              if (match == null) return;
-                              if (match.status == 'in_progress') {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => const GameScreen(),
-                                  ),
-                                );
-                              } else {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => const LobbyScreen(),
-                                  ),
-                                );
-                              }
-                            },
-                      child: matchState.isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.black,
-                              ),
-                            )
-                          : const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.bolt, size: 20),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Play Online (Quick Match)',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                    ),
-                    const SizedBox(height: 10),
-
-                    // Pass & Play (Local 2-Player)
-                    OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.player1,
-                        side: BorderSide(
-                          color: AppColors.player1.withValues(alpha: 0.6),
-                        ),
-                        minimumSize: const Size.fromHeight(44),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: () {
-                        ref.read(matchProvider.notifier).startLocalMatch();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const GameScreen(),
-                          ),
-                        );
-                      },
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.people_outline, size: 18),
-                          SizedBox(width: 8),
-                          Text(
-                            'Pass & Play (Local 2-Player)',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Private Room Actions Grid
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: AppColors.surface,
-                        foregroundColor: AppColors.textPrimary,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: const BorderSide(color: AppColors.surfaceBorder),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      onPressed: () async {
-                        await ref
-                            .read(matchProvider.notifier)
-                            .createPrivateMatch();
-                        if (!context.mounted) return;
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const LobbyScreen(),
-                          ),
-                        );
-                      },
-                      child: const Column(
-                        children: [
-                          Icon(
-                            Icons.add_circle_outline,
-                            color: AppColors.player2,
-                            size: 26,
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            'Create Room',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: AppColors.surface,
-                        foregroundColor: AppColors.textPrimary,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: const BorderSide(color: AppColors.surfaceBorder),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      onPressed: _showJoinDialog,
-                      child: const Column(
-                        children: [
-                          Icon(
-                            Icons.meeting_room_outlined,
-                            color: AppColors.player1,
-                            size: 26,
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            'Join Room',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Game Catalogue Navigation Button
-              ListTile(
-                tileColor: AppColors.surface,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  side: const BorderSide(color: AppColors.surfaceBorder),
-                ),
-                leading: const Icon(
-                  Icons.grid_view_rounded,
-                  color: AppColors.textPrimary,
-                ),
-                title: const Text(
-                  'Game Catalogue',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                subtitle: const Text(
-                  'View all games & upcoming titles',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                  ),
-                ),
-                trailing: const Icon(
-                  Icons.chevron_right,
-                  color: AppColors.textMuted,
-                ),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const GameCatalogueScreen(),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 28),
-
-              // Hackathon Demo Controls Banner
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceElevated.withValues(alpha: 0.6),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: Colors.amber.withValues(alpha: 0.2),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.terminal, color: Colors.amber, size: 18),
-                        SizedBox(width: 8),
-                        Text(
-                          'HACKATHON DEMO CONTROLS',
-                          style: TextStyle(
-                            color: Colors.amber,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Manually run the 1:00 AM IST scheduled processing to aggregate daily leaderboard rankings on demand.',
+                    subtitle: const Text(
+                      'View all games & upcoming titles',
                       style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 12,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.amber.withValues(alpha: 0.2),
-                        foregroundColor: Colors.amber,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          side: BorderSide(
-                            color: Colors.amber.withValues(alpha: 0.4),
+                    trailing: const Icon(
+                      Icons.chevron_right,
+                      color: AppColors.textMuted,
+                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const GameCatalogueScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 28),
+
+                  // Hackathon Demo Controls Banner
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceElevated.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: Colors.amber.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.terminal, color: Colors.amber, size: 18),
+                            SizedBox(width: 8),
+                            Text(
+                              'HACKATHON DEMO CONTROLS',
+                              style: TextStyle(
+                                color: Colors.amber,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Manually run the 1:00 AM IST scheduled processing to aggregate daily leaderboard rankings on demand.',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
                           ),
                         ),
-                      ),
-                      icon: const Icon(Icons.play_arrow, size: 18),
-                      label: const Text('Trigger Daily Scheduled Processing'),
-                      onPressed: _triggerDemoDailyJob,
+                        const SizedBox(height: 12),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.amber.withValues(
+                              alpha: 0.2,
+                            ),
+                            foregroundColor: Colors.amber,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              side: BorderSide(
+                                color: Colors.amber.withValues(alpha: 0.4),
+                              ),
+                            ),
+                          ),
+                          icon: const Icon(Icons.play_arrow, size: 18),
+                          label: const Text(
+                            'Trigger Daily Scheduled Processing',
+                          ),
+                          onPressed: _triggerDemoDailyJob,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

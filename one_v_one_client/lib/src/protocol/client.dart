@@ -440,12 +440,29 @@ class EndpointPlayer extends _isc.EndpointRef {
   _ida.Future<_i380unr6.PlayerProfile> getOrCreateProfile({
     required String playerId,
     String? displayName,
+    String? avatarSeed,
   }) => caller.callServerEndpoint<_i380unr6.PlayerProfile>(
     'player',
     'getOrCreateProfile',
     {
       'playerId': playerId,
       'displayName': displayName,
+      'avatarSeed': avatarSeed,
+    },
+  );
+
+  /// Updates player profile (displayName and avatarSeed).
+  _ida.Future<_i380unr6.PlayerProfile> updateProfile({
+    required String playerId,
+    String? displayName,
+    String? avatarSeed,
+  }) => caller.callServerEndpoint<_i380unr6.PlayerProfile>(
+    'player',
+    'updateProfile',
+    {
+      'playerId': playerId,
+      'displayName': displayName,
+      'avatarSeed': avatarSeed,
     },
   );
 

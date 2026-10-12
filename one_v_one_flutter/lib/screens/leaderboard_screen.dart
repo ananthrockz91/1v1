@@ -104,12 +104,17 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.player1),
             )
-          : TabBarView(
-              controller: _tabController,
-              children: [
-                _buildDailyTab(),
-                _buildAllTimeTab(),
-              ],
+          : Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 640),
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildDailyTab(),
+                    _buildAllTimeTab(),
+                  ],
+                ),
+              ),
             ),
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
@@ -117,22 +122,27 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
           color: AppColors.surface,
           border: Border(top: BorderSide(color: AppColors.surfaceBorder)),
         ),
-        child: ElevatedButton.icon(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.surfaceElevated,
-            foregroundColor: AppColors.player2,
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-              side: const BorderSide(color: AppColors.player2),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 640),
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.surfaceElevated,
+                foregroundColor: AppColors.player2,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  side: const BorderSide(color: AppColors.player2),
+                ),
+              ),
+              icon: const Icon(Icons.bolt, size: 18),
+              label: const Text(
+                'Trigger Daily Processing Job (Demo)',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              onPressed: _triggerMaintenance,
             ),
           ),
-          icon: const Icon(Icons.bolt, size: 18),
-          label: const Text(
-            'Trigger Daily Processing Job (Demo)',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          onPressed: _triggerMaintenance,
         ),
       ),
     );

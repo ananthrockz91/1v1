@@ -8,11 +8,28 @@ class PlayerEndpoint extends Endpoint {
     Session session, {
     required String playerId,
     String? displayName,
+    String? avatarSeed,
   }) async {
     return await PlayerService.getOrCreateProfile(
       session,
       playerId: playerId,
       displayName: displayName,
+      avatarSeed: avatarSeed,
+    );
+  }
+
+  /// Updates player profile (displayName and avatarSeed).
+  Future<PlayerProfile> updateProfile(
+    Session session, {
+    required String playerId,
+    String? displayName,
+    String? avatarSeed,
+  }) async {
+    return await PlayerService.updateProfile(
+      session,
+      playerId: playerId,
+      displayName: displayName,
+      avatarSeed: avatarSeed,
     );
   }
 
@@ -21,9 +38,9 @@ class PlayerEndpoint extends Endpoint {
     Session session,
     String playerId,
   ) async {
-    return await PlayerProfile.db.findFirstRow(
+    return await PlayerService.getOrCreateProfile(
       session,
-      where: (t) => t.playerId.equals(playerId),
+      playerId: playerId,
     );
   }
 }

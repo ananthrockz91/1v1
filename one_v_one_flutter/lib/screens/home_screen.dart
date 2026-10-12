@@ -126,7 +126,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text(
-          'Triggering Serverpod 1:00 AM IST Daily Maintenance Job...',
+          'Triggering 1:00 AM IST Daily Maintenance Job...',
         ),
         backgroundColor: AppColors.surfaceElevated,
       ),
@@ -268,7 +268,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               ? AppColors.player1
                               : AppColors.textSecondary,
                         ),
-                        tooltip: 'Player Onboarding & Auth',
+                        tooltip: 'Player Account',
                         onPressed: () => SignInScreen.show(context),
                       ),
                       IconButton(
@@ -712,7 +712,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Manually run the 1:00 AM IST Serverpod scheduled processing to aggregate daily leaderboard rankings on demand.',
+                      'Manually run the 1:00 AM IST scheduled processing to aggregate daily leaderboard rankings on demand.',
                       style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 12,

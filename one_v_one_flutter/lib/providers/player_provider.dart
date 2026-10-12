@@ -226,7 +226,7 @@ class PlayerProfileNotifier extends StateNotifier<PlayerProfileState> {
         playerId: PlayerSession.currentId,
         displayName: PlayerSession.displayName,
         isLoading: false,
-        successMessage: 'Signed out successfully. Switched to Guest mode.',
+        successMessage: 'Signed out successfully.',
       );
       await refreshProfile();
     } catch (e) {

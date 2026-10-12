@@ -301,6 +301,16 @@ class Endpoints extends _is.EndpointDispatch {
                     targetDate: params['targetDate'],
                   ),
         ),
+        'clearCaches': _is.MethodConnector(
+          name: 'clearCaches',
+          params: {},
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['admin'] as _i5t1w2d2.AdminEndpoint)
+                  .clearCaches(session),
+        ),
       },
     );
     connectors['leaderboard'] = _is.EndpointConnector(
@@ -689,6 +699,44 @@ class Endpoints extends _is.EndpointDispatch {
                   (endpoints['player'] as _ip5fnzx4.PlayerEndpoint).getProfile(
                     session,
                     params['playerId'],
+                  ),
+        ),
+        'getAvatarUploadDescription': _is.MethodConnector(
+          name: 'getAvatarUploadDescription',
+          params: {
+            'playerId': _is.ParameterDescription(
+              name: 'playerId',
+              type: _is.getType<String>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['player'] as _ip5fnzx4.PlayerEndpoint)
+                  .getAvatarUploadDescription(
+                    session,
+                    playerId: params['playerId'],
+                  ),
+        ),
+        'verifyAvatarUpload': _is.MethodConnector(
+          name: 'verifyAvatarUpload',
+          params: {
+            'playerId': _is.ParameterDescription(
+              name: 'playerId',
+              type: _is.getType<String>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['player'] as _ip5fnzx4.PlayerEndpoint)
+                  .verifyAvatarUpload(
+                    session,
+                    playerId: params['playerId'],
                   ),
         ),
       },

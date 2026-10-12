@@ -8,6 +8,7 @@ import 'src/cache_busting.dart';
 import 'src/generated/serverpod.dart';
 import 'src/services/player_service.dart';
 import 'src/web/routes/app_config_route.dart';
+import 'src/web/routes/health_route.dart';
 
 /// The starting point of the Serverpod server.
 void run(List<String> args) async {
@@ -86,6 +87,12 @@ void run(List<String> args) async {
   pod.webServer.addRoute(
     AppConfigRoute(apiConfig: pod.config.apiServer),
     '/assets/assets/config.json',
+  );
+
+  // Setup the public health check & diagnostics route for container orchestration & uptime monitors.
+  pod.webServer.addRoute(
+    HealthRoute(),
+    '/healthz',
   );
 
   // Checks if the flutter web app has been built and serves it if it has.

@@ -10,6 +10,7 @@ import 'game_screen.dart';
 import 'leaderboard_screen.dart';
 import 'lobby_screen.dart';
 import 'sign_in_screen.dart';
+import '../widgets/game_rules_dialog.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -565,6 +566,59 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             color: AppColors.textSecondary,
                             fontSize: 13,
                             height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        InkWell(
+                          onTap: () => GameRulesDialog.show(context),
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceElevated,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: AppColors.player1.withValues(
+                                  alpha: 0.35,
+                                ),
+                              ),
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(
+                                  Icons.menu_book_rounded,
+                                  size: 16,
+                                  color: AppColors.player1,
+                                ),
+                                SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'How to Play & Game Rules',
+                                    style: TextStyle(
+                                      color: AppColors.player1,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  'View Guide',
+                                  style: TextStyle(
+                                    color: AppColors.textMuted,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                SizedBox(width: 4),
+                                Icon(
+                                  Icons.chevron_right,
+                                  size: 16,
+                                  color: AppColors.textMuted,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                         const SizedBox(height: 18),

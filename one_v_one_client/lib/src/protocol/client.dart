@@ -271,6 +271,13 @@ class EndpointAdmin extends _isc.EndpointRef {
     'triggerDailyMaintenance',
     {'targetDate': targetDate},
   );
+
+  /// Clears in-memory caches across leaderboards and profiles.
+  _ida.Future<bool> clearCaches() => caller.callServerEndpoint<bool>(
+    'admin',
+    'clearCaches',
+    {},
+  );
 }
 
 /// {@category Endpoint}
@@ -281,6 +288,7 @@ class EndpointLeaderboard extends _isc.EndpointRef {
   String get name => 'leaderboard';
 
   /// Fetch daily leaderboard for a specific date (defaults to today).
+  /// Uses Serverpod in-memory local caching (5-minute TTL) with group invalidation.
   _ida.Future<List<_iqbb7t4g.DailyLeaderboard>> getDailyLeaderboard({
     String? dateString,
     required int limit,
@@ -294,6 +302,7 @@ class EndpointLeaderboard extends _isc.EndpointRef {
   );
 
   /// Fetch all-time leaderboard from player profiles.
+  /// Uses Serverpod in-memory local caching (2-minute TTL).
   _ida.Future<List<_i380unr6.PlayerProfile>> getAllTimeLeaderboard({
     required int limit,
   }) => caller.callServerEndpoint<List<_i380unr6.PlayerProfile>>(
@@ -451,7 +460,7 @@ class EndpointPlayer extends _isc.EndpointRef {
     },
   );
 
-  /// Updates player profile (displayName and avatarSeed).
+  /// Updates player profile (displayName and avatarSeed) and refreshes cache.
   _ida.Future<_i380unr6.PlayerProfile> updateProfile({
     required String playerId,
     String? displayName,
@@ -466,13 +475,30 @@ class EndpointPlayer extends _isc.EndpointRef {
     },
   );
 
-  /// Fetches a player profile.
+  /// Fetches a player profile using fast local in-memory caching.
   _ida.Future<_i380unr6.PlayerProfile?> getProfile(String playerId) =>
       caller.callServerEndpoint<_i380unr6.PlayerProfile?>(
         'player',
         'getProfile',
         {'playerId': playerId},
       );
+
+  /// Generates a Serverpod Cloud Storage direct upload description for avatar photos.
+  _ida.Future<String?> getAvatarUploadDescription({required String playerId}) =>
+      caller.callServerEndpoint<String?>(
+        'player',
+        'getAvatarUploadDescription',
+        {'playerId': playerId},
+      );
+
+  /// Verifies an uploaded avatar file in Cloud Storage, persists its public URL, and invalidates cache.
+  _ida.Future<_i380unr6.PlayerProfile?> verifyAvatarUpload({
+    required String playerId,
+  }) => caller.callServerEndpoint<_i380unr6.PlayerProfile?>(
+    'player',
+    'verifyAvatarUpload',
+    {'playerId': playerId},
+  );
 }
 
 /// This is an example endpoint that returns a greeting message through

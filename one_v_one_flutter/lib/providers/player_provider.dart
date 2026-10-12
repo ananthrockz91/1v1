@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:one_v_one_client/one_v_one_client.dart';
 import '../client.dart';
@@ -146,6 +148,45 @@ class PlayerProfileNotifier extends StateNotifier<PlayerProfileState> {
     if (clean.isEmpty) return false;
     PlayerSession.setAvatarSeed(clean);
     state = state.copyWith(avatarSeed: clean);
+
+    // If this is a local device image (data URI), attempt Serverpod Cloud Storage direct upload
+    if (clean.startsWith('data:')) {
+      try {
+        final commaIndex = clean.indexOf(',');
+        final base64String = commaIndex != -1
+            ? clean.substring(commaIndex + 1)
+            : clean;
+        final bytes = base64Decode(base64String);
+        final uploadDesc = await client.player.getAvatarUploadDescription(
+          playerId: PlayerSession.currentId,
+        );
+
+        if (uploadDesc != null) {
+          final uploader = FileUploader(uploadDesc);
+          final byteData = ByteData.sublistView(Uint8List.fromList(bytes));
+          final uploaded = await uploader.uploadByteData(byteData);
+
+          if (uploaded) {
+            final verifiedProfile = await client.player.verifyAvatarUpload(
+              playerId: PlayerSession.currentId,
+            );
+            if (verifiedProfile != null &&
+                verifiedProfile.avatarSeed.isNotEmpty) {
+              PlayerSession.setAvatarSeed(verifiedProfile.avatarSeed);
+              state = state.copyWith(
+                profile: verifiedProfile,
+                avatarSeed: verifiedProfile.avatarSeed,
+                successMessage: 'Profile photo uploaded to cloud storage',
+              );
+              return true;
+            }
+          }
+        }
+      } catch (_) {
+        // Fall back gracefully to direct database string storage below
+      }
+    }
+
     try {
       final updated = await client.player.updateProfile(
         playerId: PlayerSession.currentId,

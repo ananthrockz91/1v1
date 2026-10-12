@@ -4,6 +4,7 @@ import '../providers/match_provider.dart';
 import '../theme/app_colors.dart';
 import 'game_screen.dart';
 import 'lobby_screen.dart';
+import '../widgets/game_rules_dialog.dart';
 
 class GameCatalogueScreen extends ConsumerWidget {
   const GameCatalogueScreen({super.key});
@@ -47,6 +48,7 @@ class GameCatalogueScreen extends ConsumerWidget {
                 accentColor: AppColors.player1,
                 badge: 'PLAYABLE NOW',
                 icon: Icons.change_history,
+                onRules: () => GameRulesDialog.show(context),
                 onPlay: () async {
                   await ref
                       .read(matchProvider.notifier)
@@ -131,6 +133,7 @@ class GameCatalogueScreen extends ConsumerWidget {
     required String badge,
     required IconData icon,
     VoidCallback? onPlay,
+    VoidCallback? onRules,
   }) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -206,20 +209,44 @@ class GameCatalogueScreen extends ConsumerWidget {
           ),
           if (isPlayable) ...[
             const SizedBox(height: 16),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: accentColor,
-                foregroundColor: Colors.black,
-                minimumSize: const Size.fromHeight(42),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: accentColor,
+                      foregroundColor: Colors.black,
+                      minimumSize: const Size.fromHeight(42),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onPressed: onPlay,
+                    child: const Text(
+                      'Play Triangle Tactics',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
                 ),
-              ),
-              onPressed: onPlay,
-              child: const Text(
-                'Play Triangle Tactics',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+                if (onRules != null) ...[
+                  const SizedBox(width: 10),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: accentColor,
+                      side: BorderSide(
+                        color: accentColor.withValues(alpha: 0.5),
+                      ),
+                      minimumSize: const Size(0, 42),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onPressed: onRules,
+                    icon: const Icon(Icons.help_outline_rounded, size: 16),
+                    label: const Text('Rules'),
+                  ),
+                ],
+              ],
             ),
           ],
         ],

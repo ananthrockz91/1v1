@@ -165,6 +165,16 @@ class DailyMaintenanceProcessor {
         }
       });
 
+      // Invalidate in-memory leaderboard caches so clients immediately receive fresh aggregations
+      try {
+        await session.caches.local.invalidateGroup('leaderboards');
+      } catch (e) {
+        session.log(
+          'Failed to invalidate leaderboards cache: $e',
+          level: LogLevel.warning,
+        );
+      }
+
       // 5. Record audit log
       final log = ScheduledJobLog(
         jobName: 'daily_maintenance',

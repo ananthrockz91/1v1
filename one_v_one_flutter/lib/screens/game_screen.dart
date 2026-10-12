@@ -7,6 +7,7 @@ import '../providers/match_provider.dart';
 import '../theme/app_colors.dart';
 import '../widgets/player_avatar.dart';
 import '../widgets/triangle_tactics_board.dart';
+import '../widgets/game_rules_dialog.dart';
 
 class GameScreen extends ConsumerStatefulWidget {
   const GameScreen({super.key});
@@ -438,6 +439,14 @@ class _GameScreenState extends ConsumerState<GameScreen> {
             ],
           ),
           actions: [
+            IconButton(
+              icon: const Icon(
+                Icons.help_outline_rounded,
+                color: AppColors.player1,
+              ),
+              tooltip: 'Game Rules & Guide',
+              onPressed: () => GameRulesDialog.show(context),
+            ),
             IconButton(
               icon: const Icon(Icons.flag_outlined, color: AppColors.error),
               tooltip: 'Resign Match',

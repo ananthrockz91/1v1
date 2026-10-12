@@ -4,10 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:game_core/game_core.dart';
 import '../models/player_session.dart';
 import '../providers/match_provider.dart';
+import '../services/sound_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/player_avatar.dart';
 import '../widgets/triangle_tactics_board.dart';
 import '../widgets/game_rules_dialog.dart';
+import 'match_replay_screen.dart';
 
 class GameScreen extends ConsumerStatefulWidget {
   const GameScreen({super.key});
@@ -54,6 +56,9 @@ class _GameScreenState extends ConsumerState<GameScreen> {
         setState(() {
           if (_secondsRemaining > 0) {
             _secondsRemaining--;
+            if (_secondsRemaining <= 5 && _secondsRemaining > 0) {
+              SoundService.playTick();
+            }
           } else {
             timer.cancel();
             _onTurnTimeout();
@@ -115,6 +120,12 @@ class _GameScreenState extends ConsumerState<GameScreen> {
         ? (gState.winnerId == 'Player 1')
         : (gState.winnerId == PlayerSession.currentId);
     final isDraw = gState.isDraw;
+
+    if (isWinner) {
+      SoundService.playVictory();
+    } else if (!isDraw) {
+      SoundService.playDefeat();
+    }
 
     final subtitle =
         _timeoutReason ??
@@ -234,6 +245,36 @@ class _GameScreenState extends ConsumerState<GameScreen> {
           ],
         ),
         actions: [
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.player1,
+              side: const BorderSide(color: AppColors.player1),
+              minimumSize: const Size.fromHeight(44),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            icon: const Icon(Icons.movie_creation_outlined, size: 18),
+            label: const Text(
+              '🎬 Watch Match Replay',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => MatchReplayScreen(
+                    finalState: gState,
+                    player1Name: matchState.player1Name,
+                    player2Name: matchState.player2Name,
+                    player1Avatar: matchState.player1Avatar,
+                    player2Avatar: matchState.player2Avatar,
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 10),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.player1,
@@ -380,6 +421,11 @@ class _GameScreenState extends ConsumerState<GameScreen> {
     _syncTurnTimer(gState, isMatchActive);
 
     ref.listen<MatchUiState>(matchProvider, (previous, next) {
+      if ((next.gameState?.claimedTriangles.length ?? 0) >
+          (previous?.gameState?.claimedTriangles.length ?? 0)) {
+        SoundService.playCapture();
+      }
+
       if (next.errorMessage != null &&
           next.errorMessage != previous?.errorMessage) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -439,6 +485,49 @@ class _GameScreenState extends ConsumerState<GameScreen> {
             ],
           ),
           actions: [
+            Consumer(
+              builder: (context, ref, _) {
+                final soundEnabled = ref.watch(soundEnabledProvider);
+                return IconButton(
+                  icon: Icon(
+                    soundEnabled
+                        ? Icons.volume_up_rounded
+                        : Icons.volume_off_rounded,
+                    color: soundEnabled
+                        ? AppColors.player1
+                        : AppColors.textMuted,
+                  ),
+                  tooltip: soundEnabled ? 'Mute Audio' : 'Unmute Audio',
+                  onPressed: () {
+                    final newVal = !soundEnabled;
+                    ref.read(soundEnabledProvider.notifier).state = newVal;
+                    SoundService.enabled = newVal;
+                  },
+                );
+              },
+            ),
+            if (gState.isTerminal)
+              IconButton(
+                icon: const Icon(
+                  Icons.movie_creation_outlined,
+                  color: AppColors.player1,
+                ),
+                tooltip: 'Review Match Replay',
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => MatchReplayScreen(
+                        finalState: gState,
+                        player1Name: matchState.player1Name,
+                        player2Name: matchState.player2Name,
+                        player1Avatar: matchState.player1Avatar,
+                        player2Avatar: matchState.player2Avatar,
+                      ),
+                    ),
+                  );
+                },
+              ),
             IconButton(
               icon: const Icon(
                 Icons.help_outline_rounded,
@@ -782,6 +871,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                                   isMyTurn &&
                                   !gState.isTerminal,
                               onMoveSubmitted: (n1, n2) {
+                                SoundService.playMove();
                                 ref
                                     .read(matchProvider.notifier)
                                     .submitMove(n1, n2);

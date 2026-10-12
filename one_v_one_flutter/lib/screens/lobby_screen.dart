@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../providers/match_provider.dart';
 import '../theme/app_colors.dart';
 import 'game_screen.dart';
@@ -23,6 +25,10 @@ class LobbyScreen extends ConsumerWidget {
     final match = matchState.match;
     final isPublic = match?.isPublic == true;
     final roomCode = match?.roomCode ?? '------';
+    final baseOrigin = kIsWeb
+        ? Uri.base.origin
+        : 'https://onevone.serverpod.space';
+    final inviteUrl = '$baseOrigin/?room=$roomCode';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -88,7 +94,7 @@ class LobbyScreen extends ConsumerWidget {
                   Text(
                     isPublic
                         ? 'Waiting for another player to join public matchmaking...'
-                        : 'Share this room code with your friend to connect and play',
+                        : 'Share room code or QR code with a friend to play instantly',
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: AppColors.textSecondary,
@@ -120,7 +126,7 @@ class LobbyScreen extends ConsumerWidget {
                               letterSpacing: 2,
                             ),
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 10),
                           Text(
                             roomCode,
                             style: const TextStyle(
@@ -130,30 +136,111 @@ class LobbyScreen extends ConsumerWidget {
                               letterSpacing: 8,
                             ),
                           ),
-                          const SizedBox(height: 16),
-                          OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.textPrimary,
-                              side: const BorderSide(
-                                color: AppColors.surfaceBorder,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            icon: const Icon(Icons.copy, size: 16),
-                            label: const Text('Copy Room Code'),
-                            onPressed: () {
-                              Clipboard.setData(ClipboardData(text: roomCode));
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Room code copied to clipboard!',
+                          const SizedBox(height: 20),
+
+                          // QR Code Container
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.player2.withValues(
+                                    alpha: 0.18,
                                   ),
-                                  duration: Duration(seconds: 2),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 4),
                                 ),
-                              );
-                            },
+                              ],
+                            ),
+                            child: QrImageView(
+                              data: inviteUrl,
+                              version: QrVersions.auto,
+                              size: 150.0,
+                              backgroundColor: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Scan with phone camera to join instantly',
+                            style: TextStyle(
+                              color: AppColors.textMuted,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppColors.textPrimary,
+                                    side: const BorderSide(
+                                      color: AppColors.surfaceBorder,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  icon: const Icon(Icons.copy, size: 15),
+                                  label: const Text(
+                                    'Copy Code',
+                                    style: TextStyle(fontSize: 12),
+                                  ),
+                                  onPressed: () {
+                                    Clipboard.setData(
+                                      ClipboardData(text: roomCode),
+                                    );
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Room code copied to clipboard!',
+                                        ),
+                                        duration: Duration(seconds: 2),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.player2,
+                                    foregroundColor: Colors.black,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  icon: const Icon(
+                                    Icons.link_rounded,
+                                    size: 16,
+                                  ),
+                                  label: const Text(
+                                    'Copy Link',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  onPressed: () {
+                                    Clipboard.setData(
+                                      ClipboardData(text: inviteUrl),
+                                    );
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Invite URL copied! Open in phone or another window.',
+                                        ),
+                                        duration: Duration(seconds: 3),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),

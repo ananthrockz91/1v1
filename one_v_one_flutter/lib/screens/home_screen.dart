@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../client.dart';
@@ -12,6 +13,7 @@ import 'leaderboard_screen.dart';
 import 'lobby_screen.dart';
 import 'sign_in_screen.dart';
 import '../widgets/game_rules_dialog.dart';
+import '../widgets/architecture_dialog.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -22,6 +24,25 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final _roomCodeController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkDeepLinkRoomCode();
+    });
+  }
+
+  void _checkDeepLinkRoomCode() {
+    if (!kIsWeb) return;
+    try {
+      final roomParam = Uri.base.queryParameters['room']?.trim().toUpperCase();
+      if (roomParam != null && roomParam.length == 6) {
+        _roomCodeController.text = roomParam;
+        _showJoinDialog();
+      }
+    } catch (_) {}
+  }
 
   @override
   void dispose() {
@@ -533,6 +554,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                           IconButton(
                             icon: const Icon(
+                              Icons.hub_outlined,
+                              color: Colors.cyanAccent,
+                            ),
+                            tooltip: 'Serverpod Cloud Architecture & Specs',
+                            onPressed: () => ArchitectureDialog.show(context),
+                          ),
+                          IconButton(
+                            icon: const Icon(
                               Icons.leaderboard_outlined,
                               color: AppColors.player2,
                             ),
@@ -719,6 +748,59 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 ),
                                 Text(
                                   'View Guide',
+                                  style: TextStyle(
+                                    color: AppColors.textMuted,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                SizedBox(width: 4),
+                                Icon(
+                                  Icons.chevron_right,
+                                  size: 16,
+                                  color: AppColors.textMuted,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        InkWell(
+                          onTap: () => ArchitectureDialog.show(context),
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceElevated,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: Colors.cyanAccent.withValues(
+                                  alpha: 0.35,
+                                ),
+                              ),
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(
+                                  Icons.hub_outlined,
+                                  size: 16,
+                                  color: Colors.cyanAccent,
+                                ),
+                                SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Serverpod Full-Stack Architecture & Cloud Specs',
+                                    style: TextStyle(
+                                      color: Colors.cyanAccent,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  'View Specs',
                                   style: TextStyle(
                                     color: AppColors.textMuted,
                                     fontSize: 12,

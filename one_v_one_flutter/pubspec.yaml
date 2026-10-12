@@ -38,6 +38,7 @@ dependencies:
   serverpod_flutter: 4.0.4
   pinput: ^6.0.2
   image_picker: ^1.2.4
+  qr_flutter: ^4.1.0
 
 dev_dependencies:
   # Used for agents to drive the app through the Dart MCP

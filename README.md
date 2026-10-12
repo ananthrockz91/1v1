@@ -2,6 +2,15 @@
 
 > **Play. Compete. Win.**
 
+[![Serverpod Cloud](https://img.shields.io/badge/Serverpod%20Cloud-LIVE-brightgreen)](https://onevone.serverpod.space/)
+[![Serverpod](https://img.shields.io/badge/Serverpod-4.0.4-blue)](https://serverpod.dev)
+[![Flutter](https://img.shields.io/badge/Flutter-3.20+-02569B?logo=flutter)](https://flutter.dev)
+
+- 🌐 **Live Web Application:** [https://onevone.serverpod.space/](https://onevone.serverpod.space/)
+- 🔌 **Serverpod Cloud API:** [https://onevone.api.serverpod.space/](https://onevone.api.serverpod.space/)
+- 🩺 **Cloud Health Check:** [https://onevone.serverpod.space/healthz](https://onevone.serverpod.space/healthz)
+- 🏆 **Hackathon Presentation Package & Judge Guide:** [`HACKATHON_SHOWCASE.md`](HACKATHON_SHOWCASE.md)
+
 **1v1** is a production-minded, extensible, real-time multiplayer gaming platform built with **Serverpod 4.0.4**, **PostgreSQL**, and **Flutter**.
 
 The platform features an architectural separation between deterministic game rules engines and full-stack multiplayer services, demonstrated with its first flagship title: **Triangle Tactics** — an original territory strategy game on a discrete triangular lattice.

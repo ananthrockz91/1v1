@@ -148,10 +148,16 @@ void run(List<String> args) async {
   // Start the server.
   await pod.start();
 
-  // Schedule daily maintenance recurring job at 1:00 AM IST (19:30 UTC)
-  await pod.futureCalls
-      .callRecurring(identifier: 'daily_maintenance_job')
-      .cron('30 19 * * *')
-      .dailyMaintenance
-      .run();
+  // Schedule daily maintenance recurring job at 1:00 AM IST (19:30 UTC) if future calls are supported.
+  try {
+    await pod.futureCalls
+        .callRecurring(identifier: 'daily_maintenance_job')
+        .cron('30 19 * * *')
+        .dailyMaintenance
+        .run();
+  } catch (e) {
+    stdout.writeln(
+      'Notice: Could not schedule daily maintenance job ($e). Continuing server execution.',
+    );
+  }
 }

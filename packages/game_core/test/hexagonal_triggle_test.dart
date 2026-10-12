@@ -165,5 +165,99 @@ void main() {
         );
       },
     );
+
+    test(
+      'consecutive move after extra turn correctly switches turn when no triangle is completed',
+      () {
+        final engine = TriangleTacticsEngine();
+        var state = TriangleTacticsState.hexagonal(
+          player1Id: 'Player 1',
+          player2Id: 'Player 2',
+        );
+
+        final geometry = engine.getGeometry(4, BoardShape.hexagon);
+        final targetTri = geometry.triangles.first;
+        final edgeIds = targetTri.edgeIds.toList();
+
+        final band1 = geometry.bands.firstWhere(
+          (b) => b.edgeIds.contains(edgeIds[0]),
+        );
+        final band2 = geometry.bands.firstWhere(
+          (b) => b.edgeIds.contains(edgeIds[1]) && b.id != band1.id,
+        );
+
+        // Move 1: P1
+        var res =
+            engine.applyMove(
+                  state,
+                  state.activePlayerId,
+                  TriangleTacticsMove(node1: band1.start, node2: band1.end),
+                )
+                as MoveAccepted;
+        state = res.nextState;
+        expect(state.activePlayerId, equals('Player 2'));
+
+        // Move 2: P2
+        res =
+            engine.applyMove(
+                  state,
+                  state.activePlayerId,
+                  TriangleTacticsMove(node1: band2.start, node2: band2.end),
+                )
+                as MoveAccepted;
+        state = res.nextState;
+        expect(state.activePlayerId, equals('Player 1'));
+
+        // Move 3: P1 completes triangle -> Extra turn awarded!
+        final band3 = geometry.bands.firstWhere(
+          (b) =>
+              b.edgeIds.contains(edgeIds[2]) &&
+              !state.occupiedBands.contains(b.id),
+        );
+        res =
+            engine.applyMove(
+                  state,
+                  state.activePlayerId,
+                  TriangleTacticsMove(node1: band3.start, node2: band3.end),
+                )
+                as MoveAccepted;
+        state = res.nextState;
+        expect(res.extraTurnAwarded, isTrue);
+        expect(state.activePlayerId, equals('Player 1'));
+
+        // Move 4: P1 makes their extra turn move with another available band
+        final nextAvailableBand = geometry.bands.firstWhere(
+          (b) => !state.occupiedBands.contains(b.id),
+        );
+        res =
+            engine.applyMove(
+                  state,
+                  state.activePlayerId,
+                  TriangleTacticsMove(
+                    node1: nextAvailableBand.start,
+                    node2: nextAvailableBand.end,
+                  ),
+                )
+                as MoveAccepted;
+        state = res.nextState;
+
+        // If no new triangle was completed on move 4, turn must switch to Player 2
+        if (res.newlyClaimedTriangles.isEmpty) {
+          expect(res.extraTurnAwarded, isFalse);
+          expect(res.nextPlayerId, equals('Player 2'));
+          expect(state.activePlayerId, equals('Player 2'));
+        } else {
+          expect(res.extraTurnAwarded, isTrue);
+          expect(state.activePlayerId, equals('Player 1'));
+        }
+
+        final validation = engine.validateInvariants(state);
+        expect(
+          validation.isValid,
+          isTrue,
+          reason: validation.violations.join('; '),
+        );
+      },
+    );
   });
 }

@@ -207,11 +207,42 @@ class _GameScreenState extends ConsumerState<GameScreen> {
       );
     }
 
+    ref.listen<MatchUiState>(matchProvider, (previous, next) {
+      if (next.errorMessage != null &&
+          next.errorMessage != previous?.errorMessage) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.errorMessage!),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    });
+
     final isMatchActive = isLocal || match?.status == 'in_progress';
     final isMyTurn = isLocal ? true : (gState.activePlayerId == currentUserId);
     final isP1Me = isLocal ? true : (match?.player1Id == currentUserId);
     final p1Id = isLocal ? 'Player 1' : match?.player1Id;
     final p2Id = isLocal ? 'Player 2' : match?.player2Id;
+
+    final isP1Active = isLocal
+        ? gState.activePlayerId == 'Player 1'
+        : gState.activePlayerId == match?.player1Id;
+    final isP2Active = isLocal
+        ? gState.activePlayerId == 'Player 2'
+        : gState.activePlayerId == match?.player2Id;
+    final activePlayerColor = isP2Active
+        ? AppColors.player2
+        : AppColors.player1;
+    final activePlayerSurface = isP2Active
+        ? AppColors.player2Surface
+        : AppColors.player1Surface;
+
+    final isExtraTurnActive =
+        gState.moveHistory.isNotEmpty &&
+        gState.moveHistory.last.extraTurn &&
+        gState.activePlayerId == gState.moveHistory.last.playerId;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -425,16 +456,27 @@ class _GameScreenState extends ConsumerState<GameScreen> {
 
             // Turn Indicator Subheader
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              color: !isMatchActive
-                  ? AppColors.surfaceElevated
-                  : (isMyTurn
-                        ? (isLocal && gState.activePlayerId == 'Player 2'
-                              ? AppColors.player2Surface
-                              : AppColors.player1Surface)
-                        : (matchState.isAiMatch
-                              ? AppColors.player2Surface
-                              : AppColors.surfaceElevated)),
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+              decoration: BoxDecoration(
+                color: !isMatchActive
+                    ? AppColors.surfaceElevated
+                    : (isMyTurn
+                          ? activePlayerSurface
+                          : (matchState.isAiMatch
+                                ? AppColors.player2Surface.withValues(
+                                    alpha: 0.35,
+                                  )
+                                : AppColors.surfaceElevated)),
+                border: isExtraTurnActive && isMatchActive
+                    ? Border(
+                        top: BorderSide(color: activePlayerColor, width: 1.5),
+                        bottom: BorderSide(
+                          color: activePlayerColor,
+                          width: 1.5,
+                        ),
+                      )
+                    : null,
+              ),
               child: Center(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -444,49 +486,56 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                           ? Icons.hourglass_top
                           : (matchState.isAiMatch && !isMyTurn
                                 ? Icons.smart_toy
-                                : (isMyTurn
-                                      ? Icons.touch_app
-                                      : Icons.hourglass_top)),
+                                : (isExtraTurnActive
+                                      ? Icons.auto_awesome
+                                      : (isMyTurn
+                                            ? Icons.touch_app
+                                            : Icons.hourglass_top))),
                       size: 16,
                       color: !isMatchActive
                           ? AppColors.player2
                           : (isMyTurn
-                                ? (isLocal &&
-                                          gState.activePlayerId == 'Player 2'
-                                      ? AppColors.player2
-                                      : AppColors.player1)
+                                ? activePlayerColor
                                 : (matchState.isAiMatch
                                       ? AppColors.player2
                                       : AppColors.textMuted)),
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      !isMatchActive
-                          ? 'WAITING FOR OPPONENT TO JOIN...'
-                          : (matchState.isAiMatch
-                                ? (isMyTurn
-                                      ? 'YOUR TURN — Connect 4 pegs in a straight line!'
-                                      : '🤖 TACTICAL BOT THINKING... Calculating moves...')
-                                : (isLocal
-                                      ? (gState.activePlayerId == 'Player 1'
-                                            ? 'PLAYER 1 (Teal) — Stretch rubber band across 4 pegs'
-                                            : 'PLAYER 2 (Amber) — Stretch rubber band across 4 pegs')
-                                      : (isMyTurn
-                                            ? 'YOUR TURN — Stretch rubber band across 4 pegs in a line'
-                                            : 'OPPONENT\'S TURN — Waiting for move...'))),
-                      style: TextStyle(
-                        color: !isMatchActive
-                            ? AppColors.player2
-                            : (isMyTurn
-                                  ? (isLocal &&
-                                            gState.activePlayerId == 'Player 2'
-                                        ? AppColors.player2
-                                        : AppColors.player1)
-                                  : (matchState.isAiMatch
-                                        ? AppColors.player2
-                                        : AppColors.textMuted)),
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+                    Flexible(
+                      child: Text(
+                        !isMatchActive
+                            ? 'WAITING FOR OPPONENT TO JOIN...'
+                            : (matchState.isAiMatch
+                                  ? (isMyTurn
+                                        ? (isExtraTurnActive
+                                              ? '⭐ EXTRA TURN! You captured a triangle — Play again!'
+                                              : 'YOUR TURN — Connect 4 pegs in a straight line!')
+                                        : '🤖 TACTICAL BOT THINKING... Calculating moves...')
+                                  : (isLocal
+                                        ? (isExtraTurnActive
+                                              ? '⭐ EXTRA TURN for ${isP1Active ? "Player 1 (Teal)" : "Player 2 (Amber)"}!'
+                                              : (isP1Active
+                                                    ? 'PLAYER 1 (Teal) — Stretch rubber band across 4 pegs'
+                                                    : 'PLAYER 2 (Amber) — Stretch rubber band across 4 pegs'))
+                                        : (isMyTurn
+                                              ? (isExtraTurnActive
+                                                    ? '⭐ EXTRA TURN! You captured a triangle — Play again!'
+                                                    : 'YOUR TURN (${isP1Me ? "Teal" : "Amber"}) — Stretch rubber band across 4 pegs')
+                                              : (isExtraTurnActive
+                                                    ? 'OPPONENT\'S EXTRA TURN — Captured a triangle & plays again...'
+                                                    : 'OPPONENT\'S TURN — Waiting for move...')))),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: !isMatchActive
+                              ? AppColors.player2
+                              : (isMyTurn
+                                    ? activePlayerColor
+                                    : (matchState.isAiMatch
+                                          ? AppColors.player2
+                                          : AppColors.textMuted)),
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ],

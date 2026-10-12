@@ -102,14 +102,14 @@ void main() {
           roomCode: match.roomCode!,
         );
 
-        // p1 plays (0,0) to (1,0)
+        // p1 plays 4-peg straight band (0,0) to (3,0)
         final afterMove1 = await endpoints.match.submitMove(
           sessionBuilder,
           matchId: match.matchId,
           playerId: 'p1_act',
           node1R: 0,
           node1C: 0,
-          node2R: 1,
+          node2R: 3,
           node2C: 0,
           clientStateVersion: 0,
         );
@@ -124,7 +124,7 @@ void main() {
         );
         expect(moves.length, equals(1));
         expect(moves.first.playerId, equals('p1_act'));
-        expect(moves.first.edgeId, equals('edge_0_0_1_0'));
+        expect(moves.first.edgeId, equals('band_0_0_3_0'));
         expect(moves.first.stateVersion, equals(1));
       },
     );

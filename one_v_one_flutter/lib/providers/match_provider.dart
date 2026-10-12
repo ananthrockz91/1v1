@@ -53,6 +53,7 @@ class MatchUiState {
 
 class MatchNotifier extends StateNotifier<MatchUiState> {
   StreamSubscription<MatchEvent>? _streamSub;
+  String? _currentSubscribedMatchId;
 
   MatchNotifier() : super(const MatchUiState());
 
@@ -64,6 +65,7 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
 
   void startLocalMatch({int boardSize = 4}) {
     _streamSub?.cancel();
+    _currentSubscribedMatchId = null;
     final initialState = TriangleTacticsState.hexagonal(
       boardSize: boardSize,
       player1Id: 'Player 1',
@@ -80,6 +82,7 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
 
   void startAiMatch({int boardSize = 4}) {
     _streamSub?.cancel();
+    _currentSubscribedMatchId = null;
     final initialState = TriangleTacticsState.hexagonal(
       boardSize: boardSize,
       player1Id: 'Player 1',
@@ -113,7 +116,11 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
   }
 
   void _listenToMatchStream(String matchId) {
+    if (_streamSub != null && _currentSubscribedMatchId == matchId) {
+      return;
+    }
     _streamSub?.cancel();
+    _currentSubscribedMatchId = matchId;
     try {
       final stream = client.match.streamMatchEvents(matchId);
       _streamSub = stream.listen(
@@ -159,10 +166,13 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
           }
         },
         onError: (err) {
+          _currentSubscribedMatchId = null;
           state = state.copyWith(isConnected: false);
         },
       );
-    } catch (_) {}
+    } catch (_) {
+      _currentSubscribedMatchId = null;
+    }
   }
 
   Future<void> createPrivateMatch({int boardSize = 4}) async {
@@ -300,6 +310,7 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
 
   void clearMatch() {
     _streamSub?.cancel();
+    _currentSubscribedMatchId = null;
     state = const MatchUiState();
   }
 }

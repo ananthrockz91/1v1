@@ -946,48 +946,52 @@ class _BoardPainter extends CustomPainter {
           shadowPaint,
         );
 
-        // 2. Glowing aura if last move
-        if (isLastMove) {
-          final auraPaint = Paint()
-            ..color = playerAccent.withValues(alpha: 0.55 + 0.25 * pulseValue)
-            ..strokeWidth = 10.0 + 3.0 * pulseValue
-            ..strokeCap = StrokeCap.round;
-          canvas.drawLine(p0, p3, auraPaint);
-        }
+        // 2. Ambient glow (and intense pulsating aura if last move)
+        final auraAlpha = isLastMove ? (0.55 + 0.35 * pulseValue) : 0.22;
+        final auraWidth = isLastMove ? (12.0 + 4.0 * pulseValue) : 7.0;
+        final auraPaint = Paint()
+          ..color = playerAccent.withValues(alpha: auraAlpha)
+          ..strokeWidth = auraWidth
+          ..strokeCap = StrokeCap.round;
+        canvas.drawLine(p0, p3, auraPaint);
 
-        // 3. Realistic white/ivory silicone elastic band body (dual tension cords)
-        // Upper tension strand
+        // 3. Translucent colored silicone webbing body between dual strands
+        final webbingPaint = Paint()
+          ..color = playerAccent.withValues(alpha: 0.35)
+          ..strokeWidth = bandHalfWidth * 2.2
+          ..strokeCap = StrokeCap.round;
+        canvas.drawLine(p0, p3, webbingPaint);
+
+        // 4. Vibrant player-colored elastic tension strands (upper & lower cords)
         final strandPaint = Paint()
-          ..color = const Color(0xFFF2F4F7)
-          ..strokeWidth = 2.4
+          ..color = playerAccent
+          ..strokeWidth = 2.8
           ..strokeCap = StrokeCap.round;
         canvas.drawLine(
           p0 + normal * bandHalfWidth,
           p3 + normal * bandHalfWidth,
           strandPaint,
         );
-
-        // Lower tension strand
         canvas.drawLine(
           p0 - normal * bandHalfWidth,
           p3 - normal * bandHalfWidth,
           strandPaint,
         );
 
-        // Rounded elastic cap wrapping around start and end pegs
+        // 5. Player-colored elastic collar loops wrapping around start & end pegs
         final capPaint = Paint()
-          ..color = const Color(0xFFF2F4F7)
+          ..color = playerAccent
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.4;
-        canvas.drawCircle(p0, 7.8, capPaint);
-        canvas.drawCircle(p3, 7.8, capPaint);
+          ..strokeWidth = 2.8;
+        canvas.drawCircle(p0, 8.0, capPaint);
+        canvas.drawCircle(p3, 8.0, capPaint);
 
-        // Player accent core band
-        final coreAccentPaint = Paint()
-          ..color = playerAccent.withValues(alpha: 0.45)
-          ..strokeWidth = 1.6
+        // 6. Specular gloss highlight glint down the center for realistic sheen
+        final specularPaint = Paint()
+          ..color = Colors.white.withValues(alpha: 0.75)
+          ..strokeWidth = 1.4
           ..strokeCap = StrokeCap.round;
-        canvas.drawLine(p0, p3, coreAccentPaint);
+        canvas.drawLine(p0, p3, specularPaint);
       }
       return;
     }
@@ -1164,17 +1168,17 @@ class _BoardPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
     canvas.drawLine(startPos, targetPos, glowPaint);
 
-    // 3. Stretched elastic band body
+    // 3. Stretched elastic band body in player's bold color
     final bodyPaint = Paint()
-      ..color = const Color(0xFFF2F4F7)
+      ..color = activeColor
       ..strokeWidth = tensionWidth
       ..strokeCap = StrokeCap.round;
     canvas.drawLine(startPos, targetPos, bodyPaint);
 
-    // 4. Player accent core highlight line
+    // 4. Specular gloss highlight glint down the center
     final corePaint = Paint()
-      ..color = activeColor
-      ..strokeWidth = (tensionWidth * 0.4).clamp(1.2, 2.0)
+      ..color = Colors.white.withValues(alpha: 0.8)
+      ..strokeWidth = (tensionWidth * 0.35).clamp(1.2, 2.0)
       ..strokeCap = StrokeCap.round;
     canvas.drawLine(startPos, targetPos, corePaint);
 

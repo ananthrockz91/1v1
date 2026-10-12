@@ -29,6 +29,10 @@ class _TriangleTacticsBoardState extends State<TriangleTacticsBoard>
   GridNode? _hoveredSnapNode;
   bool _isDragging = false;
 
+  GridNode? _optimisticBandStart;
+  GridNode? _optimisticBandEnd;
+  Color? _optimisticBandColor;
+
   late AnimationController _pulseController;
   late AnimationController _conquerController;
   Set<String> _previousClaimedTriangleIds = {};
@@ -53,6 +57,11 @@ class _TriangleTacticsBoardState extends State<TriangleTacticsBoard>
   @override
   void didUpdateWidget(TriangleTacticsBoard oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.state.stateVersion != oldWidget.state.stateVersion) {
+      _optimisticBandStart = null;
+      _optimisticBandEnd = null;
+      _optimisticBandColor = null;
+    }
     final oldClaimed = oldWidget.state.claimedTriangles.keys.toSet();
     final currentClaimed = widget.state.claimedTriangles.keys.toSet();
 
@@ -155,8 +164,15 @@ class _TriangleTacticsBoardState extends State<TriangleTacticsBoard>
         final validTargets = _getValidTargets(_selectedNode!, geometry);
         if (validTargets.contains(clickedNode)) {
           final first = _selectedNode!;
+          final activeColor =
+              widget.state.activePlayerId == widget.state.player1Id
+              ? AppColors.player1
+              : AppColors.player2;
           setState(() {
             _selectedNode = null;
+            _optimisticBandStart = first;
+            _optimisticBandEnd = clickedNode;
+            _optimisticBandColor = activeColor;
           });
           widget.onMoveSubmitted(first, clickedNode);
         } else {
@@ -289,12 +305,20 @@ class _TriangleTacticsBoardState extends State<TriangleTacticsBoard>
     }
 
     final wasDragging = _isDragging;
+    final activeColor = widget.state.activePlayerId == widget.state.player1Id
+        ? AppColors.player1
+        : AppColors.player2;
 
     setState(() {
       _dragStartNode = null;
       _dragPosition = null;
       _hoveredSnapNode = null;
       _isDragging = false;
+      if (snapped != null) {
+        _optimisticBandStart = start;
+        _optimisticBandEnd = snapped;
+        _optimisticBandColor = activeColor;
+      }
     });
 
     if (wasDragging && snapped != null) {
@@ -394,6 +418,9 @@ class _TriangleTacticsBoardState extends State<TriangleTacticsBoard>
                   dragStartNode: _dragStartNode,
                   dragPosition: _dragPosition,
                   hoveredSnapNode: _hoveredSnapNode,
+                  optimisticBandStart: _optimisticBandStart,
+                  optimisticBandEnd: _optimisticBandEnd,
+                  optimisticBandColor: _optimisticBandColor,
                   pulseValue: _pulseController.value,
                   newlyClaimedTriangleIds: _newlyClaimedTriangleIds,
                   conquerAnimationProgress: _conquerController.isAnimating
@@ -416,6 +443,9 @@ class _BoardPainter extends CustomPainter {
   final GridNode? dragStartNode;
   final Offset? dragPosition;
   final GridNode? hoveredSnapNode;
+  final GridNode? optimisticBandStart;
+  final GridNode? optimisticBandEnd;
+  final Color? optimisticBandColor;
   final double pulseValue;
   final Set<String> newlyClaimedTriangleIds;
   final double conquerAnimationProgress;
@@ -428,6 +458,9 @@ class _BoardPainter extends CustomPainter {
     required this.dragStartNode,
     required this.dragPosition,
     required this.hoveredSnapNode,
+    this.optimisticBandStart,
+    this.optimisticBandEnd,
+    this.optimisticBandColor,
     required this.pulseValue,
     this.newlyClaimedTriangleIds = const {},
     this.conquerAnimationProgress = 1.0,
@@ -983,6 +1016,80 @@ class _BoardPainter extends CustomPainter {
     }
   }
 
+  void _drawBandStrand(
+    Canvas canvas,
+    Offset p0,
+    Offset p3,
+    Color playerAccent,
+    bool isLastMove,
+  ) {
+    final v = p3 - p0;
+    final len = v.distance;
+    if (len < 1.0) return;
+    final u = v / len;
+    final normal = Offset(-u.dy, u.dx);
+    const bandHalfWidth = 3.6;
+
+    // 1. Drop shadow of rubber band onto black board
+    final shadowPaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.5)
+      ..strokeWidth = 6.0
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+    canvas.drawLine(
+      p0 + const Offset(1.5, 3.0),
+      p3 + const Offset(1.5, 3.0),
+      shadowPaint,
+    );
+
+    // 2. Ambient glow (and intense pulsating aura if last move)
+    final auraAlpha = isLastMove ? (0.55 + 0.35 * pulseValue) : 0.22;
+    final auraWidth = isLastMove ? (12.0 + 4.0 * pulseValue) : 7.0;
+    final auraPaint = Paint()
+      ..color = playerAccent.withValues(alpha: auraAlpha)
+      ..strokeWidth = auraWidth
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(p0, p3, auraPaint);
+
+    // 3. Translucent colored silicone webbing body between dual strands
+    final webbingPaint = Paint()
+      ..color = playerAccent.withValues(alpha: 0.35)
+      ..strokeWidth = bandHalfWidth * 2.2
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(p0, p3, webbingPaint);
+
+    // 4. Vibrant player-colored elastic tension strands (upper & lower cords)
+    final strandPaint = Paint()
+      ..color = playerAccent
+      ..strokeWidth = 2.8
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(
+      p0 + normal * bandHalfWidth,
+      p3 + normal * bandHalfWidth,
+      strandPaint,
+    );
+    canvas.drawLine(
+      p0 - normal * bandHalfWidth,
+      p3 - normal * bandHalfWidth,
+      strandPaint,
+    );
+
+    // 5. Player-colored elastic collar loops wrapping around start & end pegs
+    final capPaint = Paint()
+      ..color = playerAccent
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.8;
+    canvas.drawCircle(p0, 8.0, capPaint);
+    canvas.drawCircle(p3, 8.0, capPaint);
+
+    // 6. Specular gloss highlight glint down the center for realistic sheen
+    final specularPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.75)
+      ..strokeWidth = 1.4
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(p0, p3, specularPaint);
+  }
+
   void _drawPlacedRubberBands(
     Canvas canvas,
     BoardGeometry geometry,
@@ -1014,71 +1121,22 @@ class _BoardPainter extends CustomPainter {
           }
         }
 
-        final v = p3 - p0;
-        final len = v.distance;
-        if (len < 1.0) continue;
-        final u = v / len;
-        final normal = Offset(-u.dy, u.dx);
-        const bandHalfWidth = 3.6;
+        _drawBandStrand(canvas, p0, p3, playerAccent, isLastMove);
+      }
 
-        // 1. Drop shadow of rubber band onto black board
-        final shadowPaint = Paint()
-          ..color = Colors.black.withValues(alpha: 0.5)
-          ..strokeWidth = 6.0
-          ..strokeCap = StrokeCap.round
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
-        canvas.drawLine(
-          p0 + const Offset(1.5, 3.0),
-          p3 + const Offset(1.5, 3.0),
-          shadowPaint,
-        );
-
-        // 2. Ambient glow (and intense pulsating aura if last move)
-        final auraAlpha = isLastMove ? (0.55 + 0.35 * pulseValue) : 0.22;
-        final auraWidth = isLastMove ? (12.0 + 4.0 * pulseValue) : 7.0;
-        final auraPaint = Paint()
-          ..color = playerAccent.withValues(alpha: auraAlpha)
-          ..strokeWidth = auraWidth
-          ..strokeCap = StrokeCap.round;
-        canvas.drawLine(p0, p3, auraPaint);
-
-        // 3. Translucent colored silicone webbing body between dual strands
-        final webbingPaint = Paint()
-          ..color = playerAccent.withValues(alpha: 0.35)
-          ..strokeWidth = bandHalfWidth * 2.2
-          ..strokeCap = StrokeCap.round;
-        canvas.drawLine(p0, p3, webbingPaint);
-
-        // 4. Vibrant player-colored elastic tension strands (upper & lower cords)
-        final strandPaint = Paint()
-          ..color = playerAccent
-          ..strokeWidth = 2.8
-          ..strokeCap = StrokeCap.round;
-        canvas.drawLine(
-          p0 + normal * bandHalfWidth,
-          p3 + normal * bandHalfWidth,
-          strandPaint,
-        );
-        canvas.drawLine(
-          p0 - normal * bandHalfWidth,
-          p3 - normal * bandHalfWidth,
-          strandPaint,
-        );
-
-        // 5. Player-colored elastic collar loops wrapping around start & end pegs
-        final capPaint = Paint()
-          ..color = playerAccent
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.8;
-        canvas.drawCircle(p0, 8.0, capPaint);
-        canvas.drawCircle(p3, 8.0, capPaint);
-
-        // 6. Specular gloss highlight glint down the center for realistic sheen
-        final specularPaint = Paint()
-          ..color = Colors.white.withValues(alpha: 0.75)
-          ..strokeWidth = 1.4
-          ..strokeCap = StrokeCap.round;
-        canvas.drawLine(p0, p3, specularPaint);
+      // Draw instant optimistic rubber band if player just released drag
+      if (optimisticBandStart != null && optimisticBandEnd != null) {
+        final p0 = positions[optimisticBandStart!];
+        final p3 = positions[optimisticBandEnd!];
+        if (p0 != null && p3 != null) {
+          _drawBandStrand(
+            canvas,
+            p0,
+            p3,
+            optimisticBandColor ?? AppColors.player1,
+            true,
+          );
+        }
       }
       return;
     }
@@ -1401,6 +1459,9 @@ class _BoardPainter extends CustomPainter {
         oldDelegate.dragStartNode != dragStartNode ||
         oldDelegate.dragPosition != dragPosition ||
         oldDelegate.hoveredSnapNode != hoveredSnapNode ||
+        oldDelegate.optimisticBandStart != optimisticBandStart ||
+        oldDelegate.optimisticBandEnd != optimisticBandEnd ||
+        oldDelegate.optimisticBandColor != optimisticBandColor ||
         oldDelegate.pulseValue != pulseValue ||
         oldDelegate.conquerAnimationProgress != conquerAnimationProgress ||
         oldDelegate.newlyClaimedTriangleIds != newlyClaimedTriangleIds;

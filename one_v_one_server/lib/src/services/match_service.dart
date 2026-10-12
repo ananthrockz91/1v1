@@ -400,8 +400,19 @@ class MatchService {
         transaction: tx,
       );
 
-      if (match == null || match.status != 'in_progress') {
-        throw StateError('Active match not found for resignation.');
+      if (match == null) {
+        throw ArgumentError('Match "$matchId" not found.');
+      }
+
+      if (match.status == 'completed') {
+        updatedMatch = match;
+        return;
+      }
+
+      if (match.status != 'in_progress') {
+        throw StateError(
+          'Active match not found for resignation (current status: ${match.status}).',
+        );
       }
 
       if (match.player1Id != playerId && match.player2Id != playerId) {

@@ -13,3 +13,7 @@ export 'src/engine/rule_violation.dart';
 export 'src/engine/triangle_tactics_engine.dart';
 export 'src/engine/state_validator.dart';
 export 'src/engine/game_replayer.dart';
+export 'src/engine/connect_four_state.dart';
+export 'src/engine/connect_four_move.dart';
+export 'src/engine/connect_four_engine.dart';
+export 'src/engine/connect_four_bot.dart';

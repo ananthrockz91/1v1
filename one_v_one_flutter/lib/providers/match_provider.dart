@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:game_core/game_core.dart';
 import 'package:one_v_one_client/one_v_one_client.dart';
@@ -396,6 +397,23 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
       return;
     }
 
+    // Optimistic local update using pure rules engine
+    final previousGameState = currentGameState;
+    try {
+      final engine = TriangleTacticsEngine();
+      final localResult = engine.applyMove(
+        currentGameState,
+        PlayerSession.currentId,
+        TriangleTacticsMove(node1: node1, node2: node2),
+      );
+      if (localResult is MoveAccepted) {
+        state = state.copyWith(
+          gameState: localResult.nextState,
+          showExtraTurnNotice: false,
+        );
+      }
+    } catch (_) {}
+
     try {
       final updatedMatch = await client.match.submitMove(
         matchId: currentMatch.matchId,
@@ -408,7 +426,11 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
       );
       _onMatchUpdated(updatedMatch);
     } catch (e) {
-      state = state.copyWith(errorMessage: e.toString());
+      // Revert optimistic state on failure
+      state = state.copyWith(
+        gameState: previousGameState,
+        errorMessage: e.toString(),
+      );
     }
   }
 
@@ -430,7 +452,7 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
     }
 
     final currentMatch = state.match;
-    if (currentMatch == null) return;
+    if (currentMatch == null || currentMatch.status != 'in_progress') return;
 
     try {
       final updatedMatch = await client.match.resign(
@@ -439,7 +461,9 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
       );
       _onMatchUpdated(updatedMatch);
     } catch (e) {
-      state = state.copyWith(errorMessage: e.toString());
+      // Log resignation error without showing alarming toast to user
+      // (usually caused by opponent resigning simultaneously or match already completed)
+      debugPrint('Resignation notice: $e');
     }
   }
 

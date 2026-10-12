@@ -808,19 +808,21 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                           const SizedBox(width: 8),
                           Flexible(
                             child: Text(
-                              !isMatchActive
-                                  ? 'WAITING FOR OPPONENT TO JOIN...'
-                                  : (matchState.isAiMatch
-                                        ? (isMyTurn
-                                              ? 'YOUR TURN (${_secondsRemaining}s) — Connect 4 pegs in a straight line!'
-                                              : '🤖 TACTICAL BOT THINKING... (${_secondsRemaining}s)')
-                                        : (isLocal
-                                              ? (isP1Active
-                                                    ? 'PLAYER 1 (${_secondsRemaining}s) — Stretch rubber band across 4 pegs'
-                                                    : 'PLAYER 2 (${_secondsRemaining}s) — Stretch rubber band across 4 pegs')
-                                              : (isMyTurn
-                                                    ? 'YOUR TURN (${isP1Me ? "Teal" : "Amber"}, ${_secondsRemaining}s) — Stretch rubber band across 4 pegs'
-                                                    : 'OPPONENT\'S TURN (${_secondsRemaining}s) — Waiting for move...'))),
+                              gState.isTerminal || match?.status == 'completed'
+                                  ? 'MATCH COMPLETED'
+                                  : (!isMatchActive
+                                        ? 'WAITING FOR OPPONENT TO JOIN...'
+                                        : (matchState.isAiMatch
+                                              ? (isMyTurn
+                                                    ? 'YOUR TURN (${_secondsRemaining}s) — Connect 4 pegs in a straight line!'
+                                                    : '🤖 TACTICAL BOT THINKING... (${_secondsRemaining}s)')
+                                              : (isLocal
+                                                    ? (isP1Active
+                                                          ? 'PLAYER 1 (${_secondsRemaining}s) — Stretch rubber band across 4 pegs'
+                                                          : 'PLAYER 2 (${_secondsRemaining}s) — Stretch rubber band across 4 pegs')
+                                                    : (isMyTurn
+                                                          ? 'YOUR TURN (${isP1Me ? "Teal" : "Amber"}, ${_secondsRemaining}s) — Stretch rubber band across 4 pegs'
+                                                          : 'OPPONENT\'S TURN (${_secondsRemaining}s) — Waiting for move...')))),
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: !isMatchActive

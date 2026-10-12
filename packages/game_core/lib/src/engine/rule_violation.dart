@@ -24,6 +24,22 @@ class RuleViolation {
     this.details = const {},
   });
 
+  factory RuleViolation.outOfTurn(String message) =>
+      RuleViolation(type: RuleViolationType.notYourTurn, message: message);
+
+  factory RuleViolation.gameAlreadyFinished(String message) => RuleViolation(
+    type: RuleViolationType.matchAlreadyTerminal,
+    message: message,
+  );
+
+  factory RuleViolation.invalidCoordinates(String message) =>
+      RuleViolation(type: RuleViolationType.nodeOutOfBounds, message: message);
+
+  factory RuleViolation.occupiedSlot(String message) => RuleViolation(
+    type: RuleViolationType.edgeAlreadyOccupied,
+    message: message,
+  );
+
   Map<String, dynamic> toJson() => {
     'type': type.name,
     'message': message,

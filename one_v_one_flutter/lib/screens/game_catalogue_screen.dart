@@ -4,7 +4,9 @@ import '../providers/match_provider.dart';
 import '../theme/app_colors.dart';
 import 'game_screen.dart';
 import 'lobby_screen.dart';
+import 'connect_four_screen.dart';
 import '../widgets/game_rules_dialog.dart';
+import '../widgets/connect_four_rules_dialog.dart';
 
 class GameCatalogueScreen extends ConsumerWidget {
   const GameCatalogueScreen({super.key});
@@ -69,6 +71,42 @@ class GameCatalogueScreen extends ConsumerWidget {
                   }
                 },
               ),
+              const SizedBox(height: 16),
+
+              // Gravity Drop Duel (Playable)
+              _buildGameCard(
+                title: 'Gravity Drop Duel',
+                tagline: 'Connect Four: 7x6 Column Alignment Tactics',
+                description:
+                    'Deterministic vertical drop strategy. Align four discs vertically, horizontally, or diagonally. Challenge our tactical minimax bot or battle locally in pass & play!',
+                isPlayable: true,
+                accentColor: Colors.blueAccent,
+                badge: 'NEW TITLE',
+                icon: Icons.blur_linear,
+                playButtonText: 'Play vs AI Bot',
+                onRules: () => ConnectFourRulesDialog.show(context),
+                onPlay: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ConnectFourScreen(
+                        initialMode: ConnectFourMode.vsAi,
+                      ),
+                    ),
+                  );
+                },
+                secondaryButtonText: 'Pass & Play',
+                onSecondaryPlay: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ConnectFourScreen(
+                        initialMode: ConnectFourMode.passAndPlay,
+                      ),
+                    ),
+                  );
+                },
+              ),
               const SizedBox(height: 24),
 
               const Text(
@@ -92,18 +130,6 @@ class GameCatalogueScreen extends ConsumerWidget {
                 accentColor: Colors.purpleAccent,
                 badge: 'COMING SOON',
                 icon: Icons.grid_3x3,
-              ),
-              const SizedBox(height: 12),
-
-              _buildGameCard(
-                title: 'Connect Four',
-                tagline: 'Vertical Gravity Drop Tactics',
-                description:
-                    'Drop discs into columns to form vertical, horizontal, or diagonal quadruples.',
-                isPlayable: false,
-                accentColor: Colors.blueAccent,
-                badge: 'COMING SOON',
-                icon: Icons.blur_linear,
               ),
               const SizedBox(height: 12),
 
@@ -132,7 +158,10 @@ class GameCatalogueScreen extends ConsumerWidget {
     required Color accentColor,
     required String badge,
     required IconData icon,
+    String? playButtonText,
+    String? secondaryButtonText,
     VoidCallback? onPlay,
+    VoidCallback? onSecondaryPlay,
     VoidCallback? onRules,
   }) {
     return Container(
@@ -222,12 +251,34 @@ class GameCatalogueScreen extends ConsumerWidget {
                       ),
                     ),
                     onPressed: onPlay,
-                    child: const Text(
-                      'Play Triangle Tactics',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    child: Text(
+                      playButtonText ?? 'Play $title',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
+                if (onSecondaryPlay != null) ...[
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: accentColor,
+                        side: BorderSide(
+                          color: accentColor.withValues(alpha: 0.6),
+                        ),
+                        minimumSize: const Size.fromHeight(42),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      onPressed: onSecondaryPlay,
+                      child: Text(
+                        secondaryButtonText ?? 'Pass & Play',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
                 if (onRules != null) ...[
                   const SizedBox(width: 10),
                   OutlinedButton.icon(

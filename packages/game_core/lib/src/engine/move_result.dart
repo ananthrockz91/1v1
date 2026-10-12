@@ -1,6 +1,5 @@
 import 'package:meta/meta.dart';
 import 'rule_violation.dart';
-import 'triangle_tactics_state.dart';
 
 /// Sealed result of applying an action to the game state.
 @immutable
@@ -9,10 +8,12 @@ sealed class MoveResult {
 
   bool get isAccepted => this is MoveAccepted;
   bool get isRejected => this is MoveRejected;
+  bool get isTerminal =>
+      this is MoveAccepted ? (this as MoveAccepted).isTerminal : false;
 }
 
 class MoveAccepted extends MoveResult {
-  final TriangleTacticsState nextState;
+  final dynamic nextState;
   final String edgeId;
   final List<String> newlyClaimedTriangles;
   final bool extraTurnAwarded;
@@ -41,7 +42,7 @@ class MoveAccepted extends MoveResult {
     'isTerminal': isTerminal,
     if (winnerId != null) 'winnerId': winnerId,
     'isDraw': isDraw,
-    'nextState': nextState.toJson(),
+    'nextState': (nextState as dynamic).toJson(),
   };
 }
 
@@ -49,6 +50,9 @@ class MoveRejected extends MoveResult {
   final RuleViolation violation;
 
   const MoveRejected(this.violation);
+
+  factory MoveRejected.withViolation({required RuleViolation violation}) =>
+      MoveRejected(violation);
 
   Map<String, dynamic> toJson() => {
     'status': 'rejected',

@@ -22,7 +22,7 @@ class TriangleTacticsBoard extends StatefulWidget {
 }
 
 class _TriangleTacticsBoardState extends State<TriangleTacticsBoard>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   GridNode? _selectedNode;
   GridNode? _dragStartNode;
   Offset? _dragPosition;
@@ -30,6 +30,9 @@ class _TriangleTacticsBoardState extends State<TriangleTacticsBoard>
   bool _isDragging = false;
 
   late AnimationController _pulseController;
+  late AnimationController _conquerController;
+  Set<String> _previousClaimedTriangleIds = {};
+  Set<String> _newlyClaimedTriangleIds = {};
 
   @override
   void initState() {
@@ -38,11 +41,40 @@ class _TriangleTacticsBoardState extends State<TriangleTacticsBoard>
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     )..repeat(reverse: true);
+
+    _conquerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+
+    _previousClaimedTriangleIds = widget.state.claimedTriangles.keys.toSet();
+  }
+
+  @override
+  void didUpdateWidget(TriangleTacticsBoard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final oldClaimed = oldWidget.state.claimedTriangles.keys.toSet();
+    final currentClaimed = widget.state.claimedTriangles.keys.toSet();
+
+    if (currentClaimed.length < oldClaimed.length) {
+      _previousClaimedTriangleIds = currentClaimed;
+      _newlyClaimedTriangleIds.clear();
+    } else {
+      final newlyClaimed = currentClaimed.difference(
+        _previousClaimedTriangleIds,
+      );
+      if (newlyClaimed.isNotEmpty) {
+        _newlyClaimedTriangleIds = newlyClaimed;
+        _previousClaimedTriangleIds = currentClaimed;
+        _conquerController.forward(from: 0.0);
+      }
+    }
   }
 
   @override
   void dispose() {
     _pulseController.dispose();
+    _conquerController.dispose();
     super.dispose();
   }
 
@@ -341,7 +373,7 @@ class _TriangleTacticsBoardState extends State<TriangleTacticsBoard>
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _pulseController,
+      animation: Listenable.merge([_pulseController, _conquerController]),
       builder: (context, child) {
         return LayoutBuilder(
           builder: (context, constraints) {
@@ -363,6 +395,10 @@ class _TriangleTacticsBoardState extends State<TriangleTacticsBoard>
                   dragPosition: _dragPosition,
                   hoveredSnapNode: _hoveredSnapNode,
                   pulseValue: _pulseController.value,
+                  newlyClaimedTriangleIds: _newlyClaimedTriangleIds,
+                  conquerAnimationProgress: _conquerController.isAnimating
+                      ? _conquerController.value
+                      : 1.0,
                   computePositions: _computeNodePositions,
                 ),
               ),
@@ -381,6 +417,8 @@ class _BoardPainter extends CustomPainter {
   final Offset? dragPosition;
   final GridNode? hoveredSnapNode;
   final double pulseValue;
+  final Set<String> newlyClaimedTriangleIds;
+  final double conquerAnimationProgress;
   final Map<GridNode, Offset> Function(Size size, BoardGeometry geometry)
   computePositions;
 
@@ -391,6 +429,8 @@ class _BoardPainter extends CustomPainter {
     required this.dragPosition,
     required this.hoveredSnapNode,
     required this.pulseValue,
+    this.newlyClaimedTriangleIds = const {},
+    this.conquerAnimationProgress = 1.0,
     required this.computePositions,
   });
 
@@ -731,6 +771,7 @@ class _BoardPainter extends CustomPainter {
     Map<GridNode, Offset> positions,
   ) {
     const tokenScale = 12.0;
+    final isConquering = conquerAnimationProgress < 1.0;
 
     for (final entry in state.claimedTriangles.entries) {
       final triId = entry.key;
@@ -745,6 +786,25 @@ class _BoardPainter extends CustomPainter {
       final isP1 = ownerId == state.player1Id;
       final baseColor = isP1 ? AppColors.player1 : AppColors.player2;
 
+      final isNewlyClaimed =
+          newlyClaimedTriangleIds.contains(triId) && isConquering;
+
+      // Dynamic animation variables
+      double currentScale = 1.0;
+      double currentDropY = 0.0;
+      double currentFillAlpha = 0.22;
+      double currentBorderWidth = 1.6;
+
+      if (isNewlyClaimed) {
+        final t = conquerAnimationProgress;
+        // Ease out back gives an elastic bounce landing
+        currentScale = Curves.easeOutBack.transform(t).clamp(0.0, 1.4);
+        currentDropY = (1.0 - Curves.easeOutCubic.transform(t)) * -26.0;
+        // Flash territory fill when conquered
+        currentFillAlpha = 0.22 + (1.0 - t) * 0.45;
+        currentBorderWidth = 1.6 + (1.0 - t) * 2.5;
+      }
+
       // 1. Territory fill with colored border
       final triPath = Path()
         ..moveTo(p0.dx, p0.dy)
@@ -753,29 +813,56 @@ class _BoardPainter extends CustomPainter {
         ..close();
 
       final fillPaint = Paint()
-        ..color = baseColor.withValues(alpha: 0.22)
+        ..color = baseColor.withValues(alpha: currentFillAlpha)
         ..style = PaintingStyle.fill;
       canvas.drawPath(triPath, fillPaint);
 
       final borderPaint = Paint()
-        ..color = baseColor.withValues(alpha: 0.55)
+        ..color = baseColor.withValues(alpha: isNewlyClaimed ? 0.95 : 0.55)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.6;
+        ..strokeWidth = currentBorderWidth;
       canvas.drawPath(triPath, borderPaint);
 
-      // 2. 3D Molded plastic triangular token inside the Y-groove
       final centroid = Offset(
         (p0.dx + p1.dx + p2.dx) / 3,
         (p0.dy + p1.dy + p2.dy) / 3,
       );
 
-      _draw3DToken(
-        canvas,
-        centroid,
-        tri.orientation,
-        baseColor,
-        tokenScale: tokenScale,
-      );
+      // If newly claimed, draw shockwave ripple radiating outward from centroid
+      if (isNewlyClaimed) {
+        final t = conquerAnimationProgress;
+        // Shockwave ripple starts slightly as token drops
+        final rippleT = ((t - 0.2) / 0.8).clamp(0.0, 1.0);
+        if (rippleT > 0.0) {
+          final rippleRadius = 6.0 + rippleT * 32.0;
+          final rippleAlpha = (1.0 - rippleT) * 0.75;
+          final ripplePaint = Paint()
+            ..color = baseColor.withValues(alpha: rippleAlpha)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = (2.4 * (1.0 - rippleT)).clamp(0.8, 2.4);
+          canvas.drawCircle(centroid, rippleRadius, ripplePaint);
+        }
+
+        // Soft radial impact glow
+        final glowAlpha = ((1.0 - t) * 0.55).clamp(0.0, 1.0);
+        if (glowAlpha > 0.0) {
+          final glowPaint = Paint()
+            ..color = baseColor.withValues(alpha: glowAlpha)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
+          canvas.drawCircle(centroid, 16.0 * currentScale, glowPaint);
+        }
+      }
+
+      // 2. 3D Molded plastic triangular token inside the Y-groove
+      if (currentScale > 0.01) {
+        _draw3DToken(
+          canvas,
+          centroid + Offset(0, currentDropY),
+          tri.orientation,
+          baseColor,
+          tokenScale: tokenScale * currentScale,
+        );
+      }
     }
   }
 
@@ -1205,6 +1292,19 @@ class _BoardPainter extends CustomPainter {
     Color activeColor,
   ) {
     const pegRadius = 7.8;
+    final isConquering = conquerAnimationProgress < 1.0;
+
+    // Collect corner pegs of newly conquered triangles
+    final conqueredPegs = <GridNode>{};
+    if (isConquering && newlyClaimedTriangleIds.isNotEmpty) {
+      final geometry = BoardGeometry(state.boardSize, shape: state.boardShape);
+      for (final id in newlyClaimedTriangleIds) {
+        final tri = geometry.triangleMap[id];
+        if (tri != null) {
+          conqueredPegs.addAll(tri.vertices);
+        }
+      }
+    }
 
     for (final entry in positions.entries) {
       final node = entry.key;
@@ -1212,6 +1312,7 @@ class _BoardPainter extends CustomPainter {
 
       final isFocused = focusNode == node;
       final isSnapped = snapNode == node;
+      final isConqueredPeg = conqueredPegs.contains(node);
 
       // 1. Base drop shadow
       final shadowPaint = Paint()
@@ -1223,8 +1324,21 @@ class _BoardPainter extends CustomPainter {
         shadowPaint,
       );
 
-      // 2. Focus / Active glow aura
-      if (isFocused) {
+      // 2. Focus / Active glow aura / Conquer celebratory ring
+      if (isConqueredPeg) {
+        final t = conquerAnimationProgress;
+        final ringExpand = sin(t * pi);
+        final victoryAura = Paint()
+          ..color = activeColor.withValues(alpha: (1.0 - t) * 0.85)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.5;
+        canvas.drawCircle(pos, pegRadius + 4.0 + 8.0 * ringExpand, victoryAura);
+
+        final victoryFill = Paint()
+          ..color = activeColor.withValues(alpha: (1.0 - t) * 0.45)
+          ..style = PaintingStyle.fill;
+        canvas.drawCircle(pos, pegRadius + 2.0, victoryFill);
+      } else if (isFocused) {
         final auraPaint = Paint()
           ..color = activeColor.withValues(alpha: 0.45 + 0.35 * pulseValue)
           ..style = PaintingStyle.fill;
@@ -1254,13 +1368,15 @@ class _BoardPainter extends CustomPainter {
       canvas.drawCircle(pos, pegRadius, pegPaint);
 
       // 4. Peg outer rim stroke
-      final rimColor = isFocused || isSnapped
+      final rimColor = isConqueredPeg
           ? activeColor
-          : const Color(0xFF64748B).withValues(alpha: 0.7);
+          : (isFocused || isSnapped
+                ? activeColor
+                : const Color(0xFF64748B).withValues(alpha: 0.7));
       final rimStroke = Paint()
         ..color = rimColor
         ..style = PaintingStyle.stroke
-        ..strokeWidth = isFocused || isSnapped ? 2.5 : 1.2;
+        ..strokeWidth = isConqueredPeg || isFocused || isSnapped ? 2.5 : 1.2;
       canvas.drawCircle(pos, pegRadius, rimStroke);
 
       // 5. Specular highlight crescent / glint at top-left
@@ -1285,6 +1401,8 @@ class _BoardPainter extends CustomPainter {
         oldDelegate.dragStartNode != dragStartNode ||
         oldDelegate.dragPosition != dragPosition ||
         oldDelegate.hoveredSnapNode != hoveredSnapNode ||
-        oldDelegate.pulseValue != pulseValue;
+        oldDelegate.pulseValue != pulseValue ||
+        oldDelegate.conquerAnimationProgress != conquerAnimationProgress ||
+        oldDelegate.newlyClaimedTriangleIds != newlyClaimedTriangleIds;
   }
 }

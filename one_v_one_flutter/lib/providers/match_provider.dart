@@ -43,6 +43,10 @@ class MatchUiState {
   }
 
   String get player1Avatar {
+    if (match?.player1Id == PlayerSession.currentId &&
+        PlayerSession.hasCustomAvatar) {
+      return PlayerSession.avatarSeed;
+    }
     if (player1Profile != null && player1Profile!.avatarSeed.isNotEmpty) {
       return player1Profile!.avatarSeed;
     }
@@ -55,11 +59,11 @@ class MatchUiState {
   String get player2Name {
     if (isAiMatch) return 'Tactical Bot (AI)';
     if (isLocal) return 'Player 2';
-    if (player2Profile != null && player2Profile!.displayName.isNotEmpty) {
-      return player2Profile!.displayName;
-    }
     if (match?.player2Id == PlayerSession.currentId) {
       return PlayerSession.displayName;
+    }
+    if (player2Profile != null && player2Profile!.displayName.isNotEmpty) {
+      return player2Profile!.displayName;
     }
     return match?.player2Id != null ? 'Player 2' : 'Waiting...';
   }
@@ -67,6 +71,10 @@ class MatchUiState {
   String get player2Avatar {
     if (isAiMatch) return 'avatar_5';
     if (isLocal) return 'avatar_2';
+    if (match?.player2Id == PlayerSession.currentId &&
+        PlayerSession.hasCustomAvatar) {
+      return PlayerSession.avatarSeed;
+    }
     if (player2Profile != null && player2Profile!.avatarSeed.isNotEmpty) {
       return player2Profile!.avatarSeed;
     }
@@ -164,18 +172,31 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
       isLocal: false,
     );
 
-    _fetchProfiles(match.player1Id, match.player2Id);
+    _fetchProfiles(match.player1Id, match.player2Id, force: true);
     _listenToMatchStream(match.matchId);
   }
 
-  Future<void> _fetchProfiles(String p1Id, String? p2Id) async {
+  Future<void> _fetchProfiles(
+    String p1Id,
+    String? p2Id, {
+    bool force = false,
+  }) async {
     try {
       PlayerProfile? p1 = state.player1Profile;
       PlayerProfile? p2 = state.player2Profile;
-      if (p1Id.isNotEmpty && p1?.playerId != p1Id) {
+      if (p1Id.isNotEmpty &&
+          (force ||
+              p1 == null ||
+              p1.playerId != p1Id ||
+              p1.avatarSeed == 'avatar_1')) {
         p1 = await client.player.getProfile(p1Id);
       }
-      if (p2Id != null && p2Id.isNotEmpty && p2?.playerId != p2Id) {
+      if (p2Id != null &&
+          p2Id.isNotEmpty &&
+          (force ||
+              p2 == null ||
+              p2.playerId != p2Id ||
+              p2.avatarSeed == 'avatar_1')) {
         p2 = await client.player.getProfile(p2Id);
       }
       if (mounted) {
@@ -200,8 +221,8 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
               final nextGameState = TriangleTacticsState.fromJson(json);
 
               var updatedMatch = state.match;
+              final isMatchStarted = event.eventType == 'matchStarted';
               if (updatedMatch != null) {
-                final isMatchStarted = event.eventType == 'matchStarted';
                 final isCompleted = event.isTerminal;
                 final newStatus = isCompleted
                     ? 'completed'
@@ -225,8 +246,12 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
               );
               if (updatedMatch != null &&
                   updatedMatch.player2Id != null &&
-                  state.player2Profile?.playerId != updatedMatch.player2Id) {
-                _fetchProfiles(updatedMatch.player1Id, updatedMatch.player2Id);
+                  updatedMatch.player2Id!.isNotEmpty) {
+                _fetchProfiles(
+                  updatedMatch.player1Id,
+                  updatedMatch.player2Id,
+                  force: isMatchStarted,
+                );
               }
             } catch (_) {}
           }

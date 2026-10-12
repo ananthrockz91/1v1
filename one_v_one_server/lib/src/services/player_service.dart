@@ -12,6 +12,7 @@ class PlayerService {
     required String playerId,
     String? displayName,
     String? avatarSeed,
+    bool isExplicitUpdate = false,
     Transaction? transaction,
   }) async {
     String? resolvedName = displayName;
@@ -47,24 +48,39 @@ class PlayerService {
     if (existing != null) {
       existing.lastActiveAt = DateTime.now();
 
-      final isExistingGeneric =
-          existing.displayName.startsWith('Player_') ||
-          existing.displayName.startsWith('Guest_') ||
-          existing.displayName.isEmpty;
+      if (isExplicitUpdate) {
+        if (resolvedName != null && resolvedName.trim().isNotEmpty) {
+          existing.displayName = resolvedName.trim();
+        }
+        if (avatarSeed != null && avatarSeed.trim().isNotEmpty) {
+          existing.avatarSeed = avatarSeed.trim();
+        }
+      } else {
+        final isExistingGeneric =
+            existing.displayName.startsWith('Player_') ||
+            existing.displayName.startsWith('Guest_') ||
+            existing.displayName.isEmpty;
 
-      if (resolvedName != null &&
-          resolvedName.isNotEmpty &&
-          !resolvedName.startsWith('Player_') &&
-          !resolvedName.startsWith('Guest_')) {
-        existing.displayName = resolvedName;
-      } else if (isExistingGeneric &&
-          resolvedName != null &&
-          resolvedName.isNotEmpty) {
-        existing.displayName = resolvedName;
-      }
+        if (resolvedName != null &&
+            resolvedName.isNotEmpty &&
+            !resolvedName.startsWith('Player_') &&
+            !resolvedName.startsWith('Guest_')) {
+          existing.displayName = resolvedName;
+        } else if (isExistingGeneric &&
+            resolvedName != null &&
+            resolvedName.isNotEmpty) {
+          existing.displayName = resolvedName;
+        }
 
-      if (avatarSeed != null && avatarSeed.isNotEmpty) {
-        existing.avatarSeed = avatarSeed;
+        if (avatarSeed != null &&
+            avatarSeed.isNotEmpty &&
+            avatarSeed != 'avatar_1' &&
+            (existing.avatarSeed.isEmpty ||
+                existing.avatarSeed == 'avatar_1' ||
+                existing.avatarSeed.startsWith('player_') ||
+                existing.avatarSeed.startsWith('Guest_'))) {
+          existing.avatarSeed = avatarSeed;
+        }
       }
 
       return await PlayerProfile.db.updateRow(
@@ -110,6 +126,7 @@ class PlayerService {
       playerId: playerId,
       displayName: displayName,
       avatarSeed: avatarSeed,
+      isExplicitUpdate: true,
       transaction: transaction,
     );
   }

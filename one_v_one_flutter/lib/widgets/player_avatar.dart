@@ -1,4 +1,7 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../theme/app_colors.dart';
 
 class AvatarPreset {
@@ -103,12 +106,30 @@ class PlayerAvatar extends StatelessWidget {
         ? 'avatar_1'
         : avatarSeed!;
 
+    final isDataUri = seed.startsWith('data:');
     final isUrl = seed.startsWith('http://') || seed.startsWith('https://');
     final isKnownPreset = AvatarCatalog.isPreset(seed);
 
     Widget avatarContent;
 
-    if (isUrl) {
+    if (isDataUri) {
+      final commaIndex = seed.indexOf(',');
+      final base64Part = commaIndex != -1
+          ? seed.substring(commaIndex + 1)
+          : seed;
+      try {
+        final bytes = base64Decode(base64Part);
+        avatarContent = Image.memory(
+          bytes,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => _buildFallbackInitial(),
+        );
+      } catch (_) {
+        avatarContent = _buildFallbackInitial();
+      }
+    } else if (isUrl) {
       avatarContent = Image.network(
         seed,
         width: size,
@@ -212,6 +233,12 @@ class PlayerAvatar extends StatelessWidget {
   }
 }
 
+enum AvatarPickerTab {
+  presets,
+  device,
+  customUrl,
+}
+
 class AvatarPickerSheet extends StatefulWidget {
   final String initialSeed;
   final ValueChanged<String> onSelected;
@@ -234,7 +261,7 @@ class AvatarPickerSheet extends StatefulWidget {
         builder: (ctx) => Dialog(
           backgroundColor: Colors.transparent,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 460),
+            constraints: const BoxConstraints(maxWidth: 480),
             child: AvatarPickerSheet(
               initialSeed: initialSeed,
               onSelected: onSelected,
@@ -262,16 +289,32 @@ class AvatarPickerSheet extends StatefulWidget {
 class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
   late String _selectedSeed;
   final _urlController = TextEditingController();
-  bool _isCustomUrlMode = false;
+  AvatarPickerTab _currentTab = AvatarPickerTab.presets;
+  bool _isPickingImage = false;
+
+  bool get _isMobilePlatform =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.android);
+
+  String get _deviceTabTitle =>
+      _isMobilePlatform ? 'From Mobile' : 'From Desktop';
+
+  IconData get _deviceTabIcon =>
+      _isMobilePlatform ? Icons.smartphone : Icons.computer;
 
   @override
   void initState() {
     super.initState();
     _selectedSeed = widget.initialSeed;
-    if (_selectedSeed.startsWith('http://') ||
+    if (_selectedSeed.startsWith('data:')) {
+      _currentTab = AvatarPickerTab.device;
+    } else if (_selectedSeed.startsWith('http://') ||
         _selectedSeed.startsWith('https://')) {
-      _isCustomUrlMode = true;
+      _currentTab = AvatarPickerTab.customUrl;
       _urlController.text = _selectedSeed;
+    } else {
+      _currentTab = AvatarPickerTab.presets;
     }
   }
 
@@ -279,6 +322,58 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
   void dispose() {
     _urlController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      setState(() => _isPickingImage = true);
+      final picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: source,
+        maxWidth: 400,
+        maxHeight: 400,
+        imageQuality: 85,
+      );
+
+      if (image == null) {
+        setState(() => _isPickingImage = false);
+        return;
+      }
+
+      final bytes = await image.readAsBytes();
+      final mimeType = image.mimeType ?? 'image/jpeg';
+      final base64Data = 'data:$mimeType;base64,${base64Encode(bytes)}';
+
+      setState(() {
+        _selectedSeed = base64Data;
+        _currentTab = AvatarPickerTab.device;
+        _isPickingImage = false;
+      });
+    } catch (e) {
+      setState(() => _isPickingImage = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not open image: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  String get _previewLabel {
+    if (_selectedSeed.startsWith('data:')) {
+      return _isMobilePlatform
+          ? 'Mobile Photo (Custom)'
+          : 'Desktop Photo (Custom)';
+    } else if (_selectedSeed.startsWith('http://') ||
+        _selectedSeed.startsWith('https://')) {
+      return 'Custom Web Image';
+    } else if (AvatarCatalog.isPreset(_selectedSeed)) {
+      return AvatarCatalog.getPreset(_selectedSeed).name;
+    }
+    return 'Custom Avatar';
   }
 
   @override
@@ -325,17 +420,43 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
           Center(
             child: Column(
               children: [
-                PlayerAvatar(
-                  avatarSeed: _selectedSeed,
-                  displayName: 'You',
-                  size: 74,
-                  borderColor: AppColors.player1,
+                GestureDetector(
+                  onTap: () {
+                    if (_currentTab == AvatarPickerTab.device) {
+                      _pickImage(ImageSource.gallery);
+                    }
+                  },
+                  child: Stack(
+                    children: [
+                      PlayerAvatar(
+                        avatarSeed: _selectedSeed,
+                        displayName: 'You',
+                        size: 78,
+                        borderColor: AppColors.player1,
+                      ),
+                      if (_currentTab == AvatarPickerTab.device)
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(5),
+                            decoration: const BoxDecoration(
+                              color: AppColors.player1,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.camera_alt,
+                              size: 14,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _isCustomUrlMode
-                      ? 'Custom Web Image'
-                      : AvatarCatalog.getPreset(_selectedSeed).name,
+                  _previewLabel,
                   style: const TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 13,
@@ -347,47 +468,98 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
           ),
           const SizedBox(height: 20),
 
-          // Mode Selector
+          // Responsive Mode Selector Chips
           Row(
             children: [
               Expanded(
                 child: ChoiceChip(
                   label: const Center(child: Text('Presets')),
-                  selected: !_isCustomUrlMode,
+                  selected: _currentTab == AvatarPickerTab.presets,
                   onSelected: (val) {
-                    setState(() {
-                      _isCustomUrlMode = false;
-                      if (!AvatarCatalog.isPreset(_selectedSeed)) {
-                        _selectedSeed = AvatarCatalog.presets.first.id;
-                      }
-                    });
+                    if (val) {
+                      setState(() {
+                        _currentTab = AvatarPickerTab.presets;
+                        if (!AvatarCatalog.isPreset(_selectedSeed)) {
+                          _selectedSeed = AvatarCatalog.presets.first.id;
+                        }
+                      });
+                    }
                   },
                   selectedColor: AppColors.player1,
                   backgroundColor: AppColors.surfaceElevated,
                   labelStyle: TextStyle(
-                    color: !_isCustomUrlMode ? Colors.black : Colors.white,
+                    color: _currentTab == AvatarPickerTab.presets
+                        ? Colors.black
+                        : Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               Expanded(
                 child: ChoiceChip(
-                  label: const Center(child: Text('Custom Image URL')),
-                  selected: _isCustomUrlMode,
+                  label: Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _deviceTabIcon,
+                          size: 14,
+                          color: _currentTab == AvatarPickerTab.device
+                              ? Colors.black
+                              : Colors.white,
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            _deviceTabTitle,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  selected: _currentTab == AvatarPickerTab.device,
                   onSelected: (val) {
-                    setState(() {
-                      _isCustomUrlMode = true;
-                      if (_urlController.text.trim().isNotEmpty) {
-                        _selectedSeed = _urlController.text.trim();
-                      }
-                    });
+                    if (val) {
+                      setState(() {
+                        _currentTab = AvatarPickerTab.device;
+                      });
+                    }
                   },
                   selectedColor: AppColors.player1,
                   backgroundColor: AppColors.surfaceElevated,
                   labelStyle: TextStyle(
-                    color: _isCustomUrlMode ? Colors.black : Colors.white,
+                    color: _currentTab == AvatarPickerTab.device
+                        ? Colors.black
+                        : Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ChoiceChip(
+                  label: const Center(child: Text('Web URL')),
+                  selected: _currentTab == AvatarPickerTab.customUrl,
+                  onSelected: (val) {
+                    if (val) {
+                      setState(() {
+                        _currentTab = AvatarPickerTab.customUrl;
+                        if (_urlController.text.trim().isNotEmpty) {
+                          _selectedSeed = _urlController.text.trim();
+                        }
+                      });
+                    }
+                  },
+                  selectedColor: AppColors.player1,
+                  backgroundColor: AppColors.surfaceElevated,
+                  labelStyle: TextStyle(
+                    color: _currentTab == AvatarPickerTab.customUrl
+                        ? Colors.black
+                        : Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),
@@ -397,8 +569,8 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
           ),
           const SizedBox(height: 18),
 
-          // Presets Grid or URL Input
-          if (!_isCustomUrlMode) ...[
+          // Tab Body Content
+          if (_currentTab == AvatarPickerTab.presets) ...[
             Wrap(
               spacing: 12,
               runSpacing: 12,
@@ -441,6 +613,8 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
                 );
               }).toList(),
             ),
+          ] else if (_currentTab == AvatarPickerTab.device) ...[
+            _buildDeviceTabContent(),
           ] else ...[
             TextField(
               controller: _urlController,
@@ -479,7 +653,7 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
           ],
           const SizedBox(height: 24),
 
-          // Confirm Button
+          // Save Button
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.player1,
@@ -491,7 +665,7 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
               elevation: 0,
             ),
             onPressed: () {
-              final chosen = _isCustomUrlMode
+              final chosen = _currentTab == AvatarPickerTab.customUrl
                   ? _urlController.text.trim()
                   : _selectedSeed;
               if (chosen.isNotEmpty) {
@@ -505,6 +679,188 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDeviceTabContent() {
+    final hasDeviceImage = _selectedSeed.startsWith('data:');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (hasDeviceImage) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            margin: const EdgeInsets.only(bottom: 14),
+            decoration: BoxDecoration(
+              color: AppColors.player1.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.player1.withValues(alpha: 0.4),
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.check_circle,
+                  color: AppColors.player1,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text(
+                    'Local image loaded and ready to save!',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    color: AppColors.error,
+                    size: 20,
+                  ),
+                  tooltip: 'Clear image',
+                  splashRadius: 18,
+                  onPressed: () {
+                    setState(() {
+                      _selectedSeed = AvatarCatalog.presets.first.id;
+                      _currentTab = AvatarPickerTab.presets;
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+        if (_isPickingImage) ...[
+          Container(
+            padding: const EdgeInsets.all(24),
+            child: const Center(
+              child: Column(
+                children: [
+                  SizedBox(
+                    width: 28,
+                    height: 28,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: AppColors.player1,
+                    ),
+                  ),
+                  SizedBox(height: 12),
+                  Text(
+                    'Loading photo...',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ] else if (_isMobilePlatform) ...[
+          // Mobile Options: Photo Gallery & Camera
+          Row(
+            children: [
+              Expanded(
+                child: _buildActionTile(
+                  icon: Icons.photo_library_outlined,
+                  title: 'Photo Library',
+                  subtitle: 'Pick from phone',
+                  onTap: () => _pickImage(ImageSource.gallery),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildActionTile(
+                  icon: Icons.photo_camera_outlined,
+                  title: 'Camera',
+                  subtitle: 'Take a photo',
+                  onTap: () => _pickImage(ImageSource.camera),
+                ),
+              ),
+            ],
+          ),
+        ] else ...[
+          // Desktop / Web Options: File Picker / Computer Browse
+          _buildActionTile(
+            icon: Icons.desktop_windows_outlined,
+            title: 'Browse Files on Device',
+            subtitle: 'Choose PNG, JPG, or WebP from your computer',
+            fullWidth: true,
+            onTap: () => _pickImage(ImageSource.gallery),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildActionTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    bool fullWidth = false,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceElevated,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: AppColors.surfaceBorder,
+            width: 1.2,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: fullWidth
+              ? MainAxisAlignment.center
+              : MainAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.player1.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: AppColors.player1, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 11,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

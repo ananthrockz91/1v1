@@ -90,7 +90,9 @@ class PlayerProfileNotifier extends StateNotifier<PlayerProfileState> {
         displayName: PlayerSession.hasCustomName
             ? PlayerSession.displayName
             : null,
-        avatarSeed: PlayerSession.avatarSeed,
+        avatarSeed: PlayerSession.hasCustomAvatar
+            ? PlayerSession.avatarSeed
+            : null,
       );
       if (profile.displayName.isNotEmpty) {
         PlayerSession.setDisplayName(profile.displayName);

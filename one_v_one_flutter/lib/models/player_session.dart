@@ -44,6 +44,11 @@ class PlayerSession {
     return 'Guest_${currentId.split('_').last}';
   }
 
+  static bool get hasCustomAvatar =>
+      _avatarSeed != null &&
+      _avatarSeed!.trim().isNotEmpty &&
+      _avatarSeed != 'avatar_1';
+
   static String get avatarSeed => _avatarSeed ?? 'avatar_1';
 
   static void setDisplayName(String name) {

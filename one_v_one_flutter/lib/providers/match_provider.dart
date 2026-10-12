@@ -152,16 +152,8 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
               state = state.copyWith(
                 match: updatedMatch,
                 gameState: nextGameState,
-                showExtraTurnNotice: event.extraTurn == true,
+                showExtraTurnNotice: false,
               );
-
-              if (event.extraTurn == true) {
-                Future.delayed(const Duration(milliseconds: 1800), () {
-                  if (mounted) {
-                    state = state.copyWith(showExtraTurnNotice: false);
-                  }
-                });
-              }
             } catch (_) {}
           }
         },
@@ -230,15 +222,8 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
         if (result is MoveAccepted) {
           state = state.copyWith(
             gameState: result.nextState,
-            showExtraTurnNotice: result.extraTurnAwarded,
+            showExtraTurnNotice: false,
           );
-          if (result.extraTurnAwarded) {
-            Future.delayed(const Duration(milliseconds: 1800), () {
-              if (mounted) {
-                state = state.copyWith(showExtraTurnNotice: false);
-              }
-            });
-          }
 
           if (state.isAiMatch &&
               result.nextState.activePlayerId == 'Tactical Bot (AI)' &&

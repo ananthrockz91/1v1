@@ -170,7 +170,12 @@ class TriangleTacticsEngine
       }
     }
 
-    final extraTurnAwarded = newlyClaimedTriangles.isNotEmpty;
+    // In authentic Triggle rules (hexagonal board), completing a triangle awards
+    // points and claims the face with a 3D token, but does NOT grant an extra turn.
+    // Turns strictly alternate between players (1 rubber band placed per turn).
+    final extraTurnAwarded = state.boardShape == BoardShape.hexagon
+        ? false
+        : newlyClaimedTriangles.isNotEmpty;
     final nextPlayerId = extraTurnAwarded
         ? playerId
         : state.opponentOf(playerId);

@@ -152,9 +152,9 @@ void main() {
         // Target triangle must now be claimed!
         expect(state.claimedTriangles.containsKey(targetTri.id), isTrue);
         expect(state.claimedTriangles[targetTri.id], equals(activeBefore));
-        // Extra turn awarded!
-        expect(res.extraTurnAwarded, isTrue);
-        expect(state.activePlayerId, equals(activeBefore));
+        // In official Triggle, completing a triangle does NOT award an extra turn
+        expect(res.extraTurnAwarded, isFalse);
+        expect(state.activePlayerId, equals('Player 2'));
 
         // Validate invariants
         final validation = engine.validateInvariants(state);
@@ -167,7 +167,7 @@ void main() {
     );
 
     test(
-      'consecutive move after extra turn correctly switches turn when no triangle is completed',
+      'completing a triangle immediately passes turn to opponent (strict alternating turns)',
       () {
         final engine = TriangleTacticsEngine();
         var state = TriangleTacticsState.hexagonal(
@@ -208,7 +208,7 @@ void main() {
         state = res.nextState;
         expect(state.activePlayerId, equals('Player 1'));
 
-        // Move 3: P1 completes triangle -> Extra turn awarded!
+        // Move 3: P1 completes triangle -> claims face, turn switches to P2
         final band3 = geometry.bands.firstWhere(
           (b) =>
               b.edgeIds.contains(edgeIds[2]) &&
@@ -222,10 +222,13 @@ void main() {
                 )
                 as MoveAccepted;
         state = res.nextState;
-        expect(res.extraTurnAwarded, isTrue);
-        expect(state.activePlayerId, equals('Player 1'));
+        expect(res.extraTurnAwarded, isFalse);
+        expect(res.nextPlayerId, equals('Player 2'));
+        expect(state.activePlayerId, equals('Player 2'));
+        expect(state.player1Score, equals(1));
+        expect(state.player2Score, equals(0));
 
-        // Move 4: P1 makes their extra turn move with another available band
+        // Move 4: Player 2 can immediately play
         final nextAvailableBand = geometry.bands.firstWhere(
           (b) => !state.occupiedBands.contains(b.id),
         );
@@ -240,16 +243,7 @@ void main() {
                 )
                 as MoveAccepted;
         state = res.nextState;
-
-        // If no new triangle was completed on move 4, turn must switch to Player 2
-        if (res.newlyClaimedTriangles.isEmpty) {
-          expect(res.extraTurnAwarded, isFalse);
-          expect(res.nextPlayerId, equals('Player 2'));
-          expect(state.activePlayerId, equals('Player 2'));
-        } else {
-          expect(res.extraTurnAwarded, isTrue);
-          expect(state.activePlayerId, equals('Player 1'));
-        }
+        expect(state.activePlayerId, equals('Player 1'));
 
         final validation = engine.validateInvariants(state);
         expect(

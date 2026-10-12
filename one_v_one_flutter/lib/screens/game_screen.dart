@@ -239,11 +239,6 @@ class _GameScreenState extends ConsumerState<GameScreen> {
         ? AppColors.player2Surface
         : AppColors.player1Surface;
 
-    final isExtraTurnActive =
-        gState.moveHistory.isNotEmpty &&
-        gState.moveHistory.last.extraTurn &&
-        gState.activePlayerId == gState.moveHistory.last.playerId;
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -277,25 +272,6 @@ class _GameScreenState extends ConsumerState<GameScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Extra turn notice banner
-            if (matchState.showExtraTurnNotice)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                color: Colors.amber,
-                child: const Center(
-                  child: Text(
-                    '🔥 TRIANGLE COMPLETED! EXTRA TURN AWARDED!',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 12,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                ),
-              ),
-
             // Scoreboard Header
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
@@ -467,15 +443,6 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                                     alpha: 0.35,
                                   )
                                 : AppColors.surfaceElevated)),
-                border: isExtraTurnActive && isMatchActive
-                    ? Border(
-                        top: BorderSide(color: activePlayerColor, width: 1.5),
-                        bottom: BorderSide(
-                          color: activePlayerColor,
-                          width: 1.5,
-                        ),
-                      )
-                    : null,
               ),
               child: Center(
                 child: Row(
@@ -486,11 +453,9 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                           ? Icons.hourglass_top
                           : (matchState.isAiMatch && !isMyTurn
                                 ? Icons.smart_toy
-                                : (isExtraTurnActive
-                                      ? Icons.auto_awesome
-                                      : (isMyTurn
-                                            ? Icons.touch_app
-                                            : Icons.hourglass_top))),
+                                : (isMyTurn
+                                      ? Icons.touch_app
+                                      : Icons.hourglass_top)),
                       size: 16,
                       color: !isMatchActive
                           ? AppColors.player2
@@ -507,23 +472,15 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                             ? 'WAITING FOR OPPONENT TO JOIN...'
                             : (matchState.isAiMatch
                                   ? (isMyTurn
-                                        ? (isExtraTurnActive
-                                              ? '⭐ EXTRA TURN! You captured a triangle — Play again!'
-                                              : 'YOUR TURN — Connect 4 pegs in a straight line!')
+                                        ? 'YOUR TURN — Connect 4 pegs in a straight line!'
                                         : '🤖 TACTICAL BOT THINKING... Calculating moves...')
                                   : (isLocal
-                                        ? (isExtraTurnActive
-                                              ? '⭐ EXTRA TURN for ${isP1Active ? "Player 1 (Teal)" : "Player 2 (Amber)"}!'
-                                              : (isP1Active
-                                                    ? 'PLAYER 1 (Teal) — Stretch rubber band across 4 pegs'
-                                                    : 'PLAYER 2 (Amber) — Stretch rubber band across 4 pegs'))
+                                        ? (isP1Active
+                                              ? 'PLAYER 1 (Teal) — Stretch rubber band across 4 pegs'
+                                              : 'PLAYER 2 (Amber) — Stretch rubber band across 4 pegs')
                                         : (isMyTurn
-                                              ? (isExtraTurnActive
-                                                    ? '⭐ EXTRA TURN! You captured a triangle — Play again!'
-                                                    : 'YOUR TURN (${isP1Me ? "Teal" : "Amber"}) — Stretch rubber band across 4 pegs')
-                                              : (isExtraTurnActive
-                                                    ? 'OPPONENT\'S EXTRA TURN — Captured a triangle & plays again...'
-                                                    : 'OPPONENT\'S TURN — Waiting for move...')))),
+                                              ? 'YOUR TURN (${isP1Me ? "Teal" : "Amber"}) — Stretch rubber band across 4 pegs'
+                                              : 'OPPONENT\'S TURN — Waiting for move...'))),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: !isMatchActive
@@ -583,7 +540,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
             Padding(
               padding: const EdgeInsets.only(bottom: 12, left: 16, right: 16),
               child: Text(
-                '🔷 Connect 4 pegs in a straight line with a rubber band • Form triangles to capture 3D tokens • Extra turn on capture!',
+                '🔷 Connect 4 pegs in a straight line with a rubber band • Form triangles to claim 3D tokens • 1 move per turn',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: AppColors.textMuted,

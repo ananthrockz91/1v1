@@ -18,59 +18,11 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final _roomCodeController = TextEditingController();
-  int _selectedBoardSize = 4;
 
   @override
   void dispose() {
     _roomCodeController.dispose();
     super.dispose();
-  }
-
-  Widget _buildSizeTab(int size, String title, String subtitle) {
-    final isSelected = _selectedBoardSize == size;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _selectedBoardSize = size;
-          });
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            color: isSelected ? AppColors.surfaceBorder : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isSelected ? AppColors.player1 : Colors.transparent,
-              width: 1.5,
-            ),
-          ),
-          child: Column(
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  color: isSelected ? AppColors.player1 : AppColors.textPrimary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  color: isSelected
-                      ? AppColors.textSecondary
-                      : AppColors.textMuted,
-                  fontSize: 10,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   void _showJoinDialog() {
@@ -382,7 +334,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                         ),
                         const Text(
-                          'Size 4x4',
+                          'Standard Board',
                           style: TextStyle(
                             color: AppColors.textMuted,
                             fontSize: 12,
@@ -408,50 +360,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         height: 1.4,
                       ),
                     ),
-                    const SizedBox(height: 14),
-
-                    // Board Size Selector (Strategic Depth)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(
-                              Icons.tune,
-                              size: 14,
-                              color: AppColors.textSecondary,
-                            ),
-                            SizedBox(width: 6),
-                            Text(
-                              'BOARD STRATEGY SIZE',
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.0,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceElevated,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.surfaceBorder),
-                          ),
-                          child: Row(
-                            children: [
-                              _buildSizeTab(3, '3x3 Blitz', '9 Tris'),
-                              _buildSizeTab(4, '4x4 Tactical', '16 Tris'),
-                              _buildSizeTab(5, '5x5 Master', '25 Tris'),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 18),
 
                     // Play vs AI (Tactical Bot)
                     ElevatedButton(
@@ -465,9 +374,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         elevation: 0,
                       ),
                       onPressed: () {
-                        ref
-                            .read(matchProvider.notifier)
-                            .startAiMatch(boardSize: _selectedBoardSize);
+                        ref.read(matchProvider.notifier).startAiMatch();
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -508,7 +415,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           : () async {
                               await ref
                                   .read(matchProvider.notifier)
-                                  .playOnline(boardSize: _selectedBoardSize);
+                                  .playOnline();
                               if (!context.mounted) return;
                               final match = ref.read(matchProvider).match;
                               if (match == null) return;
@@ -567,9 +474,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       ),
                       onPressed: () {
-                        ref
-                            .read(matchProvider.notifier)
-                            .startLocalMatch(boardSize: _selectedBoardSize);
+                        ref.read(matchProvider.notifier).startLocalMatch();
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -614,7 +519,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       onPressed: () async {
                         await ref
                             .read(matchProvider.notifier)
-                            .createPrivateMatch(boardSize: _selectedBoardSize);
+                            .createPrivateMatch();
                         if (!context.mounted) return;
                         Navigator.push(
                           context,

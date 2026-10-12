@@ -311,6 +311,16 @@ class Endpoints extends _is.EndpointDispatch {
               ) async => (endpoints['admin'] as _i5t1w2d2.AdminEndpoint)
                   .clearCaches(session),
         ),
+        'getDashboardData': _is.MethodConnector(
+          name: 'getDashboardData',
+          params: {},
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['admin'] as _i5t1w2d2.AdminEndpoint)
+                  .getDashboardData(session),
+        ),
       },
     );
     connectors['leaderboard'] = _is.EndpointConnector(

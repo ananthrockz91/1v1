@@ -12,6 +12,7 @@ jwtRefresh:
 admin:
   - triggerDailyMaintenance:
   - clearCaches:
+  - getDashboardData:
 leaderboard:
   - getDailyLeaderboard:
   - getAllTimeLeaderboard:

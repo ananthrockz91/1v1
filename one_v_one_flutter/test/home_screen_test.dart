@@ -31,9 +31,10 @@ void main() {
 
     // Verify list tiles and actions
     expect(find.byTooltip('Leaderboards'), findsOneWidget);
+    expect(find.byTooltip('Serverpod Live Admin Board'), findsOneWidget);
     expect(find.text('Game Catalogue'), findsOneWidget);
 
-    // Verify hackathon demo controls banner
-    expect(find.text('HACKATHON DEMO CONTROLS'), findsOneWidget);
+    // Verify Serverpod Live Board banner
+    expect(find.text('SERVERPOD LIVE BOARD'), findsOneWidget);
   });
 }

@@ -1,0 +1,20 @@
+class: AdminDashboardData
+fields:
+  serverTime: DateTime
+  runMode: String
+  serverId: String
+  uptimeSeconds: int
+  dbLatencyMs: int
+  totalMatches: int
+  waitingMatches: int
+  inProgressMatches: int
+  completedMatches: int
+  totalPlayers: int
+  totalMoves: int
+  totalScheduledLogs: int
+  totalLeaderboardRows: int
+  localCacheEntries: int
+  localPrioCacheEntries: int
+  recentMatches: List<GameMatch>
+  recentJobLogs: List<ScheduledJobLog>
+  recentPlayers: List<PlayerProfile>

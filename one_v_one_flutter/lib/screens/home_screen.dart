@@ -5,6 +5,7 @@ import '../providers/match_provider.dart';
 import '../providers/player_provider.dart';
 import '../theme/app_colors.dart';
 import '../widgets/player_avatar.dart';
+import 'admin_board_screen.dart';
 import 'game_catalogue_screen.dart';
 import 'game_screen.dart';
 import 'leaderboard_screen.dart';
@@ -143,11 +144,108 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     context,
                     MaterialPageRoute(builder: (_) => const GameScreen()),
                   );
+                } else {
+                  final err = ref.read(matchProvider).errorMessage;
+                  if (err != null && mounted) {
+                    _showJoinRoomErrorDialog(context, code, err);
+                  }
                 }
               }
             },
             child: const Text(
               'Join Room',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showJoinRoomErrorDialog(
+    BuildContext context,
+    String code,
+    String message,
+  ) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: AppColors.surfaceBorder),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.error.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.group_off_rounded,
+                color: AppColors.error,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Text(
+                'Cannot Join Room',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceElevated,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: AppColors.surfaceBorder),
+              ),
+              child: Text(
+                'ROOM CODE: $code',
+                style: const TextStyle(
+                  fontFamily: 'monospace',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: AppColors.player1,
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              message,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 14,
+                height: 1.4,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.player1,
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(
+              'Understood',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
@@ -417,6 +515,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                             tooltip: 'Player Account',
                             onPressed: () => SignInScreen.show(context),
+                          ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.memory_rounded,
+                              color: AppColors.player1,
+                            ),
+                            tooltip: 'Serverpod Live Admin Board',
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const AdminBoardScreen(),
+                                ),
+                              );
+                            },
                           ),
                           IconButton(
                             icon: const Icon(
@@ -902,62 +1015,168 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                   const SizedBox(height: 28),
 
-                  // Hackathon Demo Controls Banner
+                  // Serverpod Live Command Center Banner
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceElevated.withValues(alpha: 0.6),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: Colors.amber.withValues(alpha: 0.2),
+                      gradient: LinearGradient(
+                        colors: [
+                          AppColors.surfaceElevated,
+                          AppColors.surface,
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: AppColors.player1.withValues(alpha: 0.35),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.player1.withValues(alpha: 0.08),
+                          blurRadius: 18,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Row(
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Icon(Icons.terminal, color: Colors.amber, size: 18),
-                            SizedBox(width: 8),
-                            Text(
-                              'HACKATHON DEMO CONTROLS',
-                              style: TextStyle(
-                                color: Colors.amber,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.2,
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.player1.withValues(
+                                      alpha: 0.15,
+                                    ),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.memory_rounded,
+                                    color: AppColors.player1,
+                                    size: 18,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                const Text(
+                                  'SERVERPOD LIVE BOARD',
+                                  style: TextStyle(
+                                    color: AppColors.player1,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.success.withValues(
+                                  alpha: 0.15,
+                                ),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.circle,
+                                    color: AppColors.success,
+                                    size: 7,
+                                  ),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'BACKEND LIVE',
+                                    style: TextStyle(
+                                      color: AppColors.success,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
                         const Text(
-                          'Manually run the 1:00 AM IST scheduled processing to aggregate daily leaderboard rankings on demand.',
+                          'Inspect live PostgreSQL tables, in-memory caches, cron job logs, and real-time streaming metrics directly from the authoritative server.',
                           style: TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 12,
+                            height: 1.4,
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.amber.withValues(
-                              alpha: 0.2,
-                            ),
-                            foregroundColor: Colors.amber,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              side: BorderSide(
-                                color: Colors.amber.withValues(alpha: 0.4),
+                        const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.player1,
+                                  foregroundColor: Colors.black,
+                                  minimumSize: const Size.fromHeight(42),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                icon: const Icon(
+                                  Icons.dashboard_customize_outlined,
+                                  size: 18,
+                                ),
+                                label: const Text(
+                                  'Open Admin Board',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const AdminBoardScreen(),
+                                    ),
+                                  );
+                                },
                               ),
                             ),
-                          ),
-                          icon: const Icon(Icons.play_arrow, size: 18),
-                          label: const Text(
-                            'Trigger Daily Scheduled Processing',
-                          ),
-                          onPressed: _triggerDemoDailyJob,
+                            const SizedBox(width: 10),
+                            Expanded(
+                              flex: 2,
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.amber,
+                                  side: BorderSide(
+                                    color: Colors.amber.withValues(alpha: 0.5),
+                                  ),
+                                  minimumSize: const Size.fromHeight(42),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                                icon: const Icon(Icons.play_arrow, size: 18),
+                                label: const Text(
+                                  'Run Cron',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                onPressed: _triggerDemoDailyJob,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),

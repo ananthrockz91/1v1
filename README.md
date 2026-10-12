@@ -138,6 +138,7 @@ The test matrix covers all layers of the platform:
 
 ## Documentation
 
+- [`docs/serverpod_features.md`](docs/serverpod_features.md) — Exhaustive guide of all Serverpod features utilized across the platform.
 - [`docs/architecture.md`](docs/architecture.md) — System topology, transaction flows, and state machines.
 - [`docs/game_rules.md`](docs/game_rules.md) — Complete mathematical specification of Triangle Tactics.
 - [`docs/test_strategy.md`](docs/test_strategy.md) — Exhaustive test matrix and validation gates.

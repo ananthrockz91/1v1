@@ -64,6 +64,38 @@ void main() {
       );
     });
 
+    test('rejects 3rd player attempting to join an active room', () async {
+      final match = await endpoints.match.createMatch(
+        sessionBuilder,
+        playerId: 'p1_host',
+        boardSize: 3,
+        isPublic: false,
+      );
+
+      final joined = await endpoints.match.joinMatch(
+        sessionBuilder,
+        playerId: 'p2_guest',
+        roomCode: match.roomCode!,
+      );
+      expect(joined.status, equals('in_progress'));
+
+      // 3rd player attempts to join
+      await expectLater(
+        () => endpoints.match.joinMatch(
+          sessionBuilder,
+          playerId: 'p3_intruder',
+          roomCode: match.roomCode!,
+        ),
+        throwsA(
+          predicate(
+            (e) =>
+                e is ArgumentError &&
+                e.message.toString().contains('already full'),
+          ),
+        ),
+      );
+    });
+
     test(
       'public matchmaking pairs two players waiting for the same size',
       () async {

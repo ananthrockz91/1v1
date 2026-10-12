@@ -13,6 +13,8 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _ida;
 import 'dart:io' as _idi;
+import 'package:one_v_one_server/src/generated/admin_dashboard_data.dart'
+    as _ifzrr22f;
 import 'package:one_v_one_server/src/generated/daily_leaderboard.dart'
     as _i4ti4179;
 import 'package:one_v_one_server/src/generated/future_calls.dart' as _ich94d5a;
@@ -602,6 +604,36 @@ class _AdminEndpoint {
                   _localCallContext.arguments,
                 )
                 as _ida.Future<bool>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _ida.Future<_ifzrr22f.AdminDashboardData> getDashboardData(
+    _ist.TestSessionBuilder sessionBuilder,
+  ) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'admin',
+            method: 'getDashboardData',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'admin',
+          methodName: 'getDashboardData',
+          parameters: _ist.testObjectToJson({}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<_ifzrr22f.AdminDashboardData>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();

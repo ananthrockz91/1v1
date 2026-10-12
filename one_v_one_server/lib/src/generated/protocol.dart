@@ -24,6 +24,7 @@ import 'package:serverpod_auth_core_server/serverpod_auth_core_server.dart'
     as _iacs;
 import 'package:serverpod_auth_idp_server/serverpod_auth_idp_server.dart'
     as _iais;
+import 'admin_dashboard_data.dart' as _iede5zvu;
 import 'daily_leaderboard.dart' as _iujnqntu;
 import 'game_match.dart' as _i05c3kpq;
 import 'greetings/greeting.dart' as _izw8z7ou;
@@ -31,6 +32,7 @@ import 'match_event.dart' as _is31pezq;
 import 'match_move_record.dart' as _inszzmuc;
 import 'player_profile.dart' as _i5i3bhsm;
 import 'scheduled_job_log.dart' as _ika9uxac;
+export 'admin_dashboard_data.dart';
 export 'daily_leaderboard.dart';
 export 'game_match.dart';
 export 'greetings/greeting.dart';
@@ -592,6 +594,9 @@ class Protocol extends _is.DatabaseSerializationManager {
       }
     }
 
+    if (t == _iede5zvu.AdminDashboardData) {
+      return _iede5zvu.AdminDashboardData.fromJson(data) as T;
+    }
     if (t == _iujnqntu.DailyLeaderboard) {
       return _iujnqntu.DailyLeaderboard.fromJson(data) as T;
     }
@@ -612,6 +617,10 @@ class Protocol extends _is.DatabaseSerializationManager {
     }
     if (t == _ika9uxac.ScheduledJobLog) {
       return _ika9uxac.ScheduledJobLog.fromJson(data) as T;
+    }
+    if (t == _is.getType<_iede5zvu.AdminDashboardData?>()) {
+      return (data != null ? _iede5zvu.AdminDashboardData.fromJson(data) : null)
+          as T;
     }
     if (t == _is.getType<_iujnqntu.DailyLeaderboard?>()) {
       return (data != null ? _iujnqntu.DailyLeaderboard.fromJson(data) : null)
@@ -636,6 +645,24 @@ class Protocol extends _is.DatabaseSerializationManager {
     }
     if (t == _is.getType<_ika9uxac.ScheduledJobLog?>()) {
       return (data != null ? _ika9uxac.ScheduledJobLog.fromJson(data) : null)
+          as T;
+    }
+    if (t == List<_i05c3kpq.GameMatch>) {
+      return (data as List)
+              .map((e) => deserialize<_i05c3kpq.GameMatch>(e))
+              .toList()
+          as T;
+    }
+    if (t == List<_ika9uxac.ScheduledJobLog>) {
+      return (data as List)
+              .map((e) => deserialize<_ika9uxac.ScheduledJobLog>(e))
+              .toList()
+          as T;
+    }
+    if (t == List<_i5i3bhsm.PlayerProfile>) {
+      return (data as List)
+              .map((e) => deserialize<_i5i3bhsm.PlayerProfile>(e))
+              .toList()
           as T;
     }
     if (t == List<String>) {
@@ -685,6 +712,7 @@ class Protocol extends _is.DatabaseSerializationManager {
 
   static String? getClassNameForType(Type type) {
     return switch (type) {
+      _iede5zvu.AdminDashboardData => 'AdminDashboardData',
       _iujnqntu.DailyLeaderboard => 'DailyLeaderboard',
       _i05c3kpq.GameMatch => 'GameMatch',
       _izw8z7ou.Greeting => 'Greeting',
@@ -706,6 +734,8 @@ class Protocol extends _is.DatabaseSerializationManager {
     }
 
     switch (data) {
+      case _iede5zvu.AdminDashboardData():
+        return 'AdminDashboardData';
       case _iujnqntu.DailyLeaderboard():
         return 'DailyLeaderboard';
       case _i05c3kpq.GameMatch():
@@ -745,6 +775,9 @@ class Protocol extends _is.DatabaseSerializationManager {
     var dataClassName = data['className'];
     if (dataClassName is! String) {
       return super.deserializeByClassName(data);
+    }
+    if (dataClassName == 'AdminDashboardData') {
+      return deserialize<_iede5zvu.AdminDashboardData>(data['data']);
     }
     if (dataClassName == 'DailyLeaderboard') {
       return deserialize<_iujnqntu.DailyLeaderboard>(data['data']);

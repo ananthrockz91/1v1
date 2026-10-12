@@ -84,5 +84,22 @@ void main() {
       expect(uploadDesc, isNotNull);
       expect(uploadDesc, contains(testPlayerId));
     });
+
+    test(
+      'getDashboardData returns live system, database, and cache metrics',
+      () async {
+        final overview = await endpoints.admin.getDashboardData(sessionBuilder);
+
+        expect(overview.serverId, isNotEmpty);
+        expect(overview.runMode, equals('test'));
+        expect(overview.dbLatencyMs, greaterThanOrEqualTo(0));
+        expect(overview.totalMatches, greaterThanOrEqualTo(0));
+        expect(overview.totalPlayers, greaterThanOrEqualTo(0));
+        expect(overview.localCacheEntries, greaterThanOrEqualTo(0));
+        expect(overview.recentMatches, isA<List>());
+        expect(overview.recentJobLogs, isA<List>());
+        expect(overview.recentPlayers, isA<List>());
+      },
+    );
   });
 }

@@ -80,17 +80,35 @@ class MatchService {
     await session.db.transaction((tx) async {
       final match = await GameMatch.db.findFirstRow(
         session,
-        where: (t) => t.roomCode.equals(roomCode) & t.status.equals('waiting'),
+        where: (t) => t.roomCode.equals(roomCode),
         transaction: tx,
       );
 
       if (match == null) {
-        throw ArgumentError('No active room found with code "$roomCode".');
+        throw ArgumentError('No room found with code "$roomCode".');
       }
 
       if (match.player1Id == playerId) {
         throw ArgumentError(
           'You cannot play against yourself in the same match.',
+        );
+      }
+
+      if (match.player2Id != null || match.status == 'in_progress') {
+        throw ArgumentError(
+          'This room is already full! Two players have already joined this match.',
+        );
+      }
+
+      if (match.status == 'completed' || match.status == 'abandoned') {
+        throw ArgumentError(
+          'This match has already ended (status: ${match.status}).',
+        );
+      }
+
+      if (match.status != 'waiting') {
+        throw ArgumentError(
+          'This room is not currently accepting players (status: ${match.status}).',
         );
       }
 

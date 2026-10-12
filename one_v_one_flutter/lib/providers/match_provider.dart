@@ -301,12 +301,22 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
           .replaceAll('ServerpodClientException: ', '')
           .replaceAll('Exception: ', '')
           .replaceAll('ArgumentError: ', '')
+          .replaceAll('Invalid argument(s): ', '')
           .trim();
-      if (msg.contains('You cannot play against yourself') ||
-          msg.contains('500') ||
-          msg.contains('Internal server error')) {
+      if (msg.contains('You cannot play against yourself')) {
         msg =
             'You cannot join a room created by yourself. To test 2 players on this computer, open the room code in an Incognito / Private window or another browser.';
+      } else if (msg.contains('already full') ||
+          msg.contains('Two players have already joined')) {
+        msg =
+            'This room is already full! Two players have already joined this match.';
+      } else if (msg.contains('No room found')) {
+        msg = 'No room found with code "$roomCode". Please verify the code.';
+      } else if (msg.contains('already ended')) {
+        msg = 'This match has already concluded and is no longer joinable.';
+      } else if (msg.contains('500') || msg.contains('Internal server error')) {
+        msg =
+            'Unable to join room "$roomCode". The room may be full, concluded, or invalid.';
       }
       state = state.copyWith(isLoading: false, errorMessage: msg);
     }

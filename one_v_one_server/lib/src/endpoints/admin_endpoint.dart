@@ -32,4 +32,72 @@ class AdminEndpoint extends Endpoint {
       return false;
     }
   }
+
+  static final DateTime _startedAt = DateTime.now();
+
+  /// Comprehensive real-time backend overview aggregating Serverpod runtime metrics,
+  /// PostgreSQL table counts, in-memory cache statistics, and recent activity records.
+  Future<AdminDashboardData> getDashboardData(Session session) async {
+    final sw = Stopwatch()..start();
+    final logCount = await ScheduledJobLog.db.count(session);
+    sw.stop();
+
+    final totalMatches = await GameMatch.db.count(session);
+    final waitingMatches = await GameMatch.db.count(
+      session,
+      where: (t) => t.status.equals('waiting'),
+    );
+    final inProgressMatches = await GameMatch.db.count(
+      session,
+      where: (t) => t.status.equals('in_progress'),
+    );
+    final completedMatches = await GameMatch.db.count(
+      session,
+      where: (t) => t.status.equals('completed'),
+    );
+    final totalPlayers = await PlayerProfile.db.count(session);
+    final totalMoves = await MatchMoveRecord.db.count(session);
+    final totalLeaderboards = await DailyLeaderboard.db.count(session);
+
+    final recentMatches = await GameMatch.db.find(
+      session,
+      orderByList: (t) => [t.createdAt.desc()],
+      limit: 10,
+    );
+
+    final recentJobLogs = await ScheduledJobLog.db.find(
+      session,
+      orderByList: (t) => [t.executedAt.desc()],
+      limit: 6,
+    );
+
+    final recentPlayers = await PlayerProfile.db.find(
+      session,
+      orderByList: (t) => [t.wins.desc(), t.totalMatches.desc()],
+      limit: 6,
+    );
+
+    final uptime = DateTime.now().difference(_startedAt).inSeconds;
+
+    return AdminDashboardData(
+      serverTime: DateTime.now().toUtc(),
+      runMode: session.server.runMode,
+      serverId: session.server.serverId,
+      uptimeSeconds: uptime,
+      dbLatencyMs: sw.elapsedMilliseconds,
+      totalMatches: totalMatches,
+      waitingMatches: waitingMatches,
+      inProgressMatches: inProgressMatches,
+      completedMatches: completedMatches,
+      totalPlayers: totalPlayers,
+      totalMoves: totalMoves,
+      totalScheduledLogs: logCount,
+      totalLeaderboardRows: totalLeaderboards,
+      localCacheEntries: session.caches.local.localSize,
+      localPrioCacheEntries: session.caches.localPrio.localSize,
+      recentMatches: recentMatches,
+      recentJobLogs: recentJobLogs,
+      recentPlayers: recentPlayers,
+    );
+  }
 }

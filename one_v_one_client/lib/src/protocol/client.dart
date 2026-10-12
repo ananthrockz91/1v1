@@ -12,6 +12,8 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _ida;
 import 'package:http/http.dart' as _i85jenna;
+import 'package:one_v_one_client/src/protocol/admin_dashboard_data.dart'
+    as _iaj3aai6;
 import 'package:one_v_one_client/src/protocol/daily_leaderboard.dart'
     as _iqbb7t4g;
 import 'package:one_v_one_client/src/protocol/game_match.dart' as _i5zwpjwi;
@@ -278,6 +280,15 @@ class EndpointAdmin extends _isc.EndpointRef {
     'clearCaches',
     {},
   );
+
+  /// Comprehensive real-time backend overview aggregating Serverpod runtime metrics,
+  /// PostgreSQL table counts, in-memory cache statistics, and recent activity records.
+  _ida.Future<_iaj3aai6.AdminDashboardData> getDashboardData() =>
+      caller.callServerEndpoint<_iaj3aai6.AdminDashboardData>(
+        'admin',
+        'getDashboardData',
+        {},
+      );
 }
 
 /// {@category Endpoint}

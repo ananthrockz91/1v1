@@ -62,6 +62,27 @@ class TriangleFace {
     );
   }
 
+  /// General factory creating an elementary triangle from 3 given nodes.
+  factory TriangleFace.fromNodes({
+    required String id,
+    required TriangleOrientation orientation,
+    required GridNode v1,
+    required GridNode v2,
+    required GridNode v3,
+  }) {
+    final e1 = BoardEdge(v1, v2);
+    final e2 = BoardEdge(v2, v3);
+    final e3 = BoardEdge(v3, v1);
+    final sortedVertices = [v1, v2, v3]..sort((a, b) => a.compareTo(b));
+    return TriangleFace._(
+      id: id,
+      orientation: orientation,
+      topOrTopLeft: sortedVertices.first,
+      vertices: List.unmodifiable(sortedVertices),
+      edgeIds: {e1.id, e2.id, e3.id},
+    );
+  }
+
   /// Returns true if all 3 boundary edges are present in [occupiedEdges].
   bool isCompleted(Set<String> occupiedEdges) {
     return edgeIds.every(occupiedEdges.contains);

@@ -34,10 +34,15 @@ class StateValidator {
       );
     }
 
-    // 4. Edges validity
+    // 4. Edges & bands validity
     for (final edgeId in state.occupiedEdges) {
       if (!geometry.containsEdge(edgeId)) {
         errors.add('Occupied edge "$edgeId" is not part of the board geometry');
+      }
+    }
+    for (final bandId in state.occupiedBands) {
+      if (!geometry.containsBand(bandId)) {
+        errors.add('Occupied band "$bandId" is not part of the board geometry');
       }
     }
 
@@ -97,16 +102,20 @@ class StateValidator {
     // 8. Terminal condition invariants
     final totalEdges = geometry.edges.length;
     final totalTriangles = geometry.triangles.length;
-    final allEdgesOccupied = state.occupiedEdges.length == totalEdges;
+    final expectedTerminal = state.boardShape == BoardShape.hexagon
+        ? (state.claimedTriangles.length == totalTriangles ||
+              state.occupiedBands.length == geometry.bands.length)
+        : (state.occupiedEdges.length == totalEdges);
 
-    if (state.isTerminal != allEdgesOccupied) {
+    if (state.isTerminal != expectedTerminal) {
       errors.add(
-        'isTerminal (${state.isTerminal}) does not match full edge occupation ($allEdgesOccupied)',
+        'isTerminal (${state.isTerminal}) does not match expected terminal state ($expectedTerminal)',
       );
     }
 
     if (state.isTerminal) {
-      if (state.player1Score + state.player2Score != totalTriangles) {
+      if (state.boardShape == BoardShape.triangle &&
+          state.player1Score + state.player2Score != totalTriangles) {
         errors.add(
           'Sum of player scores (${state.player1Score + state.player2Score}) does not equal total triangles ($totalTriangles)',
         );

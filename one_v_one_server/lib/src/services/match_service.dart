@@ -36,6 +36,7 @@ class MatchService {
       player1Id: playerId,
       player2Id: '',
       boardSize: boardSize,
+      boardShape: BoardShape.hexagon,
       startingPlayerId: playerId,
     );
 

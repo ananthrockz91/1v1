@@ -64,17 +64,29 @@ class _TriangleTacticsBoardState extends State<TriangleTacticsBoard>
     return nearest;
   }
 
-  List<GridNode> _getValidAdjacentTargets(
+  List<GridNode> _getValidTargets(
     GridNode source,
     BoardGeometry geometry,
   ) {
     final targets = <GridNode>[];
-    for (final edge in geometry.edges) {
-      if (!widget.state.occupiedEdges.contains(edge.id)) {
-        if (edge.node1 == source) {
-          targets.add(edge.node2);
-        } else if (edge.node2 == source) {
-          targets.add(edge.node1);
+    if (widget.state.boardShape == BoardShape.hexagon) {
+      for (final band in geometry.bands) {
+        if (!widget.state.occupiedBands.contains(band.id)) {
+          if (band.start == source) {
+            targets.add(band.end);
+          } else if (band.end == source) {
+            targets.add(band.start);
+          }
+        }
+      }
+    } else {
+      for (final edge in geometry.edges) {
+        if (!widget.state.occupiedEdges.contains(edge.id)) {
+          if (edge.node1 == source) {
+            targets.add(edge.node2);
+          } else if (edge.node2 == source) {
+            targets.add(edge.node1);
+          }
         }
       }
     }
@@ -86,33 +98,47 @@ class _TriangleTacticsBoardState extends State<TriangleTacticsBoard>
     if (widget.state.isTerminal) return;
     if (widget.state.activePlayerId != widget.currentUserId) return;
 
-    final geometry = BoardGeometry(widget.state.boardSize);
+    final geometry = BoardGeometry(
+      widget.state.boardSize,
+      shape: widget.state.boardShape,
+    );
     final nodePositions = _computeNodePositions(size, geometry);
     final clickedNode = _findNearestNode(localPosition, nodePositions);
 
     if (clickedNode == null) return;
 
     if (_selectedNode == null) {
-      setState(() {
-        _selectedNode = clickedNode;
-      });
+      final validTargets = _getValidTargets(clickedNode, geometry);
+      if (validTargets.isNotEmpty) {
+        setState(() {
+          _selectedNode = clickedNode;
+        });
+      }
     } else {
       if (_selectedNode == clickedNode) {
         setState(() {
           _selectedNode = null;
         });
       } else {
-        final edge = BoardEdge(_selectedNode!, clickedNode);
-        if (edge.isAdjacent && !widget.state.occupiedEdges.contains(edge.id)) {
+        final validTargets = _getValidTargets(_selectedNode!, geometry);
+        if (validTargets.contains(clickedNode)) {
           final first = _selectedNode!;
           setState(() {
             _selectedNode = null;
           });
           widget.onMoveSubmitted(first, clickedNode);
         } else {
-          setState(() {
-            _selectedNode = clickedNode;
-          });
+          // Check if clickedNode has valid targets and switch selection
+          final newTargets = _getValidTargets(clickedNode, geometry);
+          if (newTargets.isNotEmpty) {
+            setState(() {
+              _selectedNode = clickedNode;
+            });
+          } else {
+            setState(() {
+              _selectedNode = null;
+            });
+          }
         }
       }
     }
@@ -123,15 +149,21 @@ class _TriangleTacticsBoardState extends State<TriangleTacticsBoard>
     if (widget.state.isTerminal) return;
     if (widget.state.activePlayerId != widget.currentUserId) return;
 
-    final geometry = BoardGeometry(widget.state.boardSize);
+    final geometry = BoardGeometry(
+      widget.state.boardSize,
+      shape: widget.state.boardShape,
+    );
     final nodePositions = _computeNodePositions(size, geometry);
     final nearest = _findNearestNode(details.localPosition, nodePositions);
 
     if (nearest != null) {
-      _dragStartNode = nearest;
-      _dragPosition = details.localPosition;
-      _hoveredSnapNode = null;
-      _isDragging = false;
+      final targets = _getValidTargets(nearest, geometry);
+      if (targets.isNotEmpty) {
+        _dragStartNode = nearest;
+        _dragPosition = details.localPosition;
+        _hoveredSnapNode = null;
+        _isDragging = false;
+      }
     }
   }
 
@@ -140,35 +172,45 @@ class _TriangleTacticsBoardState extends State<TriangleTacticsBoard>
     if (widget.state.isTerminal) return;
     if (widget.state.activePlayerId != widget.currentUserId) return;
 
-    final geometry = BoardGeometry(widget.state.boardSize);
+    final geometry = BoardGeometry(
+      widget.state.boardSize,
+      shape: widget.state.boardShape,
+    );
     final nodePositions = _computeNodePositions(size, geometry);
 
-    // If _dragStartNode wasn't set in onPanDown, try from details
     _dragStartNode ??= _findNearestNode(details.localPosition, nodePositions);
 
     if (_dragStartNode != null) {
-      setState(() {
-        _dragPosition = details.localPosition;
-        _hoveredSnapNode = null;
-        _isDragging = false;
-        _selectedNode ??= _dragStartNode;
-      });
+      final targets = _getValidTargets(_dragStartNode!, geometry);
+      if (targets.isNotEmpty) {
+        setState(() {
+          _dragPosition = details.localPosition;
+          _hoveredSnapNode = null;
+          _isDragging = false;
+          _selectedNode ??= _dragStartNode;
+        });
+      } else {
+        _dragStartNode = null;
+      }
     }
   }
 
   void _onPanUpdate(DragUpdateDetails details, Size size) {
     if (_dragStartNode == null) return;
 
-    final geometry = BoardGeometry(widget.state.boardSize);
+    final geometry = BoardGeometry(
+      widget.state.boardSize,
+      shape: widget.state.boardShape,
+    );
     final nodePositions = _computeNodePositions(size, geometry);
     final startPos = nodePositions[_dragStartNode!];
     if (startPos == null) return;
 
     final distanceDragged = (details.localPosition - startPos).distance;
 
-    final validTargets = _getValidAdjacentTargets(_dragStartNode!, geometry);
+    final validTargets = _getValidTargets(_dragStartNode!, geometry);
     GridNode? snapTarget;
-    double minTargetDist = 42.0;
+    double minTargetDist = 48.0;
 
     for (final target in validTargets) {
       final targetPos = nodePositions[target];
@@ -195,10 +237,13 @@ class _TriangleTacticsBoardState extends State<TriangleTacticsBoard>
     GridNode? snapped = _hoveredSnapNode;
 
     if (snapped == null && _dragPosition != null) {
-      final geometry = BoardGeometry(widget.state.boardSize);
+      final geometry = BoardGeometry(
+        widget.state.boardSize,
+        shape: widget.state.boardShape,
+      );
       final nodePositions = _computeNodePositions(size, geometry);
-      final validTargets = _getValidAdjacentTargets(start, geometry);
-      double minD = 44.0;
+      final validTargets = _getValidTargets(start, geometry);
+      double minD = 52.0;
       for (final t in validTargets) {
         final tp = nodePositions[t];
         if (tp != null) {
@@ -252,6 +297,26 @@ class _TriangleTacticsBoardState extends State<TriangleTacticsBoard>
     Size size,
     BoardGeometry geometry,
   ) {
+    final positions = <GridNode, Offset>{};
+    final center = Offset(size.width / 2, size.height / 2);
+
+    if (geometry.shape == BoardShape.hexagon) {
+      final minDimension = min(size.width, size.height);
+      const padding = 28.0;
+      final availableSize = minDimension - padding * 2;
+      // In normalized coordinates, width span is 6.0 and height span is ~5.196
+      final spacing = availableSize / 6.4;
+
+      for (final node in geometry.nodes) {
+        final pt = geometry.nodePositions[node.id];
+        if (pt != null) {
+          positions[node] = center + Offset(pt.x * spacing, pt.y * spacing);
+        }
+      }
+      return positions;
+    }
+
+    // Triangular layout fallback
     final n = geometry.size;
     const padding = 40.0;
     final availableWidth = size.width - padding * 2;
@@ -260,10 +325,7 @@ class _TriangleTacticsBoardState extends State<TriangleTacticsBoard>
     final spacingX = availableWidth / n;
     final rowHeight = spacingX * (sqrt(3) / 2);
     final totalGridHeight = n * rowHeight;
-
     final offsetY = (availableHeight - totalGridHeight) / 2 + padding;
-
-    final positions = <GridNode, Offset>{};
 
     for (final node in geometry.nodes) {
       final rowWidth = node.r * spacingX;
@@ -334,29 +396,29 @@ class _BoardPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final geometry = BoardGeometry(state.boardSize);
+    final geometry = BoardGeometry(state.boardSize, shape: state.boardShape);
     final positions = computePositions(size, geometry);
 
     final activeColor = state.activePlayerId == state.player1Id
         ? AppColors.player1
         : AppColors.player2;
 
-    // 1. Draw physical board tray bevel & surface
-    _drawBoardTray(canvas, size);
+    // 1. Draw physical hexagonal board tray & surface
+    _drawBoardTray(canvas, size, geometry);
 
-    // 2. Draw Y-groove sockets in every triangular cell (from reference image)
+    // 2. Draw Y-groove sockets in every triangular cell
     _drawYGrooves(canvas, geometry, positions);
 
-    // 3. Draw claimed triangles with 3D Arrow / Shield tokens
+    // 3. Draw claimed triangles with 3D colored tokens
     _drawClaimedTrianglesAndTokens(canvas, geometry, positions);
 
-    // 4. Draw subtle grid guideline channels
+    // 4. Draw subtle lattice guideline channels
     _drawGuideChannels(canvas, geometry, positions);
 
-    // 5. Draw placed silicone rubber bands (occupied edges)
+    // 5. Draw placed silicone rubber bands (spanning 4 pegs in a straight line)
     _drawPlacedRubberBands(canvas, geometry, positions);
 
-    // 6. Draw candidate targets / guide beacons
+    // 6. Draw candidate 4-peg straight line beacons when a peg is selected
     final currentFocusNode = dragStartNode ?? selectedNode;
     if (currentFocusNode != null) {
       _drawCandidateBeacons(
@@ -392,7 +454,7 @@ class _BoardPainter extends CustomPainter {
       );
     }
 
-    // 9. Draw 3D tactile pegs
+    // 9. Draw 3D tactile cylindrical pegs
     _drawPegs(
       canvas,
       positions,
@@ -402,22 +464,103 @@ class _BoardPainter extends CustomPainter {
     );
   }
 
-  bool _isCrownTriangle(String triId, int boardSize) {
-    if (boardSize == 3) {
-      return triId == 'tri_down_1_0';
-    } else if (boardSize == 4) {
-      return triId == 'tri_down_1_0' ||
-          triId == 'tri_down_2_0' ||
-          triId == 'tri_down_2_1';
-    } else if (boardSize == 5) {
-      return triId == 'tri_down_2_1' ||
-          triId == 'tri_up_2_1' ||
-          triId == 'tri_down_2_0';
+  Path _getHexagonPath(Offset center, double radius, double cornerRadius) {
+    // 6 vertices of regular flat-top/flat-bottom hexagon:
+    // Angles: -150, -30, 30, 90, 150, 210 (or -90 flat? In Image 2, top is horizontal flat edge!)
+    // Top-left: (-R/2, -R*sqrt(3)/2)
+    // Top-right: (R/2, -R*sqrt(3)/2)
+    // Far-right: (R, 0)
+    // Bottom-right: (R/2, R*sqrt(3)/2)
+    // Bottom-left: (-R/2, R*sqrt(3)/2)
+    // Far-left: (-R, 0)
+    final h = sqrt(3) / 2 * radius;
+    final halfR = radius / 2;
+
+    final vertices = [
+      center + Offset(-halfR, -h), // 0: Top-left
+      center + Offset(halfR, -h), // 1: Top-right
+      center + Offset(radius, 0), // 2: Right
+      center + Offset(halfR, h), // 3: Bottom-right
+      center + Offset(-halfR, h), // 4: Bottom-left
+      center + Offset(-radius, 0), // 5: Left
+    ];
+
+    final path = Path();
+    for (int i = 0; i < vertices.length; i++) {
+      final prev = vertices[(i - 1 + vertices.length) % vertices.length];
+      final curr = vertices[i];
+      final next = vertices[(i + 1) % vertices.length];
+
+      final vPrev = (prev - curr);
+      final vPrevNorm = vPrev / vPrev.distance;
+      final start = curr + vPrevNorm * cornerRadius;
+
+      final vNext = (next - curr);
+      final vNextNorm = vNext / vNext.distance;
+      final end = curr + vNextNorm * cornerRadius;
+
+      if (i == 0) {
+        path.moveTo(start.dx, start.dy);
+      } else {
+        path.lineTo(start.dx, start.dy);
+      }
+      path.quadraticBezierTo(curr.dx, curr.dy, end.dx, end.dy);
     }
-    return false;
+    path.close();
+    return path;
   }
 
-  void _drawBoardTray(Canvas canvas, Size size) {
+  void _drawBoardTray(Canvas canvas, Size size, BoardGeometry geometry) {
+    final center = Offset(size.width / 2, size.height / 2);
+
+    if (geometry.shape == BoardShape.hexagon) {
+      final minDimension = min(size.width, size.height);
+      final radius = (minDimension / 2) - 8.0;
+
+      final hexPath = _getHexagonPath(center, radius, 22.0);
+
+      // 1. Outer tray drop shadow
+      final shadowPaint = Paint()
+        ..color = Colors.black.withValues(alpha: 0.65)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 16);
+      canvas.drawPath(hexPath.shift(const Offset(0, 6)), shadowPaint);
+
+      // 2. Dark matte molded hexagonal board plate
+      final trayGradient = RadialGradient(
+        center: const Alignment(-0.2, -0.3),
+        radius: 1.1,
+        colors: const [
+          Color(0xFF1B222E),
+          Color(0xFF111620),
+          Color(0xFF0A0C10),
+        ],
+      );
+      final trayPaint = Paint()
+        ..shader = trayGradient.createShader(
+          Rect.fromCircle(center: center, radius: radius),
+        )
+        ..style = PaintingStyle.fill;
+      canvas.drawPath(hexPath, trayPaint);
+
+      // 3. Hexagonal molded outer rim
+      final outerRimPaint = Paint()
+        ..color = const Color(0xFF2E384A)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3.0;
+      canvas.drawPath(hexPath, outerRimPaint);
+
+      // 4. Inner recessed perimeter track
+      final innerPath = _getHexagonPath(center, radius - 10.0, 18.0);
+      final innerTrackPaint = Paint()
+        ..color = const Color(0xFF05070A)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.2;
+      canvas.drawPath(innerPath, innerTrackPaint);
+
+      return;
+    }
+
+    // Triangular tray fallback
     const pad = 10.0;
     final boardRect = Rect.fromLTWH(
       pad,
@@ -427,13 +570,11 @@ class _BoardPainter extends CustomPainter {
     );
     final rrect = RRect.fromRectAndRadius(boardRect, const Radius.circular(24));
 
-    // Outer tray bevel drop shadow
     final shadowPaint = Paint()
       ..color = Colors.black.withValues(alpha: 0.6)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
     canvas.drawRRect(rrect.shift(const Offset(0, 4)), shadowPaint);
 
-    // Dark molded board surface gradient
     final trayGradient = LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
@@ -444,7 +585,6 @@ class _BoardPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
     canvas.drawRRect(rrect, trayPaint);
 
-    // Perimeter tactile rim stroke
     final rimPaint = Paint()
       ..color = const Color(0xFF283142)
       ..style = PaintingStyle.stroke
@@ -488,7 +628,7 @@ class _BoardPainter extends CustomPainter {
       final arm1 = Offset.lerp(centroid, p1, armFactor)!;
       final arm2 = Offset.lerp(centroid, p2, armFactor)!;
 
-      // Draw dark recessed grooves
+      // Draw dark recessed Y-grooves
       canvas.drawLine(centroid, arm0, groovePaint);
       canvas.drawLine(centroid, arm1, groovePaint);
       canvas.drawLine(centroid, arm2, groovePaint);
@@ -510,37 +650,8 @@ class _BoardPainter extends CustomPainter {
         grooveShine,
       );
 
-      final isCrown = _isCrownTriangle(tri.id, state.boardSize);
-      if (isCrown && !state.claimedTriangles.containsKey(tri.id)) {
-        // Glowing Golden Crown Socket
-        final crownGlow = Paint()
-          ..color = const Color(
-            0xFFFFD700,
-          ).withValues(alpha: 0.35 + 0.25 * pulseValue)
-          ..style = PaintingStyle.fill;
-        canvas.drawCircle(centroid, 8.5 + 2.0 * pulseValue, crownGlow);
-
-        final crownRing = Paint()
-          ..color = const Color(0xFFFFD700)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.5;
-        canvas.drawCircle(centroid, 6.0, crownRing);
-
-        // Center golden gem
-        canvas.drawCircle(
-          centroid,
-          3.2,
-          Paint()..color = const Color(0xFFFFD700),
-        );
-        canvas.drawCircle(
-          centroid + const Offset(-1, -1),
-          1.0,
-          Paint()..color = Colors.white,
-        );
-      } else {
-        // Standard center socket pin hole
-        canvas.drawCircle(centroid, 3.2, centerPinPaint);
-      }
+      // Central socket pin hole
+      canvas.drawCircle(centroid, 3.2, centerPinPaint);
     }
   }
 
@@ -552,51 +663,64 @@ class _BoardPainter extends CustomPainter {
     GridNode targetNode,
     Color activeColor,
   ) {
-    final edge = BoardEdge(startNode, targetNode);
-    if (!edge.isAdjacent || state.occupiedEdges.contains(edge.id)) return;
+    final List<BoardEdge> potentialEdges = [];
+    if (geometry.shape == BoardShape.hexagon) {
+      final band = geometry.findBandByEndpoints(startNode, targetNode);
+      if (band == null || state.occupiedBands.contains(band.id)) return;
+      potentialEdges.addAll(band.edges);
+    } else {
+      final edge = BoardEdge(startNode, targetNode);
+      if (!edge.isAdjacent || state.occupiedEdges.contains(edge.id)) return;
+      potentialEdges.add(edge);
+    }
 
-    final adjTriangles = geometry.edgeToTriangles[edge.id] ?? [];
+    final simulatedEdges = Set<String>.from(state.occupiedEdges)
+      ..addAll(potentialEdges.map((e) => e.id));
 
-    for (final tri in adjTriangles) {
-      if (state.claimedTriangles.containsKey(tri.id)) continue;
+    for (final edge in potentialEdges) {
+      final adjTriangles = geometry.edgeToTriangles[edge.id] ?? [];
 
-      int occupiedCount = 0;
-      for (final eId in tri.edgeIds) {
-        if (state.occupiedEdges.contains(eId)) {
-          occupiedCount++;
+      for (final tri in adjTriangles) {
+        if (state.claimedTriangles.containsKey(tri.id)) continue;
+
+        int occupiedCount = 0;
+        for (final eId in tri.edgeIds) {
+          if (state.occupiedEdges.contains(eId)) {
+            occupiedCount++;
+          }
         }
-      }
 
-      final p0 = positions[tri.vertices[0]]!;
-      final p1 = positions[tri.vertices[1]]!;
-      final p2 = positions[tri.vertices[2]]!;
-      final path = Path()
-        ..moveTo(p0.dx, p0.dy)
-        ..lineTo(p1.dx, p1.dy)
-        ..lineTo(p2.dx, p2.dy)
-        ..close();
+        final p0 = positions[tri.vertices[0]]!;
+        final p1 = positions[tri.vertices[1]]!;
+        final p2 = positions[tri.vertices[2]]!;
+        final path = Path()
+          ..moveTo(p0.dx, p0.dy)
+          ..lineTo(p1.dx, p1.dy)
+          ..lineTo(p2.dx, p2.dy)
+          ..close();
 
-      if (occupiedCount == 2) {
-        // ⚡ VICTORY CAPTURE MOVE: Completes this triangle!
-        final captureFill = Paint()
-          ..color = activeColor.withValues(alpha: 0.35 + 0.25 * pulseValue)
-          ..style = PaintingStyle.fill;
-        canvas.drawPath(path, captureFill);
+        if (tri.isCompleted(simulatedEdges)) {
+          // ⚡ VICTORY CAPTURE MOVE: Completes this triangle!
+          final captureFill = Paint()
+            ..color = activeColor.withValues(alpha: 0.4 + 0.25 * pulseValue)
+            ..style = PaintingStyle.fill;
+          canvas.drawPath(path, captureFill);
 
-        final captureStroke = Paint()
-          ..color = activeColor
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.8;
-        canvas.drawPath(path, captureStroke);
-      } else if (occupiedCount == 1) {
-        // ⚠️ THREAT WARNING: Leaves triangle with 2 edges (gives free triangle to opponent!)
-        final warningStroke = Paint()
-          ..color = const Color(
-            0xFFFF9800,
-          ).withValues(alpha: 0.6 + 0.35 * pulseValue)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.2;
-        canvas.drawPath(path, warningStroke);
+          final captureStroke = Paint()
+            ..color = activeColor
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 3.0;
+          canvas.drawPath(path, captureStroke);
+        } else if (occupiedCount == 1) {
+          // ⚠️ THREAT WARNING: Leaves triangle with 2 edges (gives free triangle to opponent!)
+          final warningStroke = Paint()
+            ..color = const Color(
+              0xFFFF9800,
+            ).withValues(alpha: 0.6 + 0.35 * pulseValue)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2.2;
+          canvas.drawPath(path, warningStroke);
+        }
       }
     }
   }
@@ -606,9 +730,7 @@ class _BoardPainter extends CustomPainter {
     BoardGeometry geometry,
     Map<GridNode, Offset> positions,
   ) {
-    // Calculate token scale dynamically based on board size
-    final n = state.boardSize;
-    final tokenScale = (55.0 / n).clamp(9.5, 15.0);
+    const tokenScale = 12.0;
 
     for (final entry in state.claimedTriangles.entries) {
       final triId = entry.key;
@@ -622,9 +744,8 @@ class _BoardPainter extends CustomPainter {
 
       final isP1 = ownerId == state.player1Id;
       final baseColor = isP1 ? AppColors.player1 : AppColors.player2;
-      final isCrown = _isCrownTriangle(triId, state.boardSize);
 
-      // 1. Subtle territory fill with colored border
+      // 1. Territory fill with colored border
       final triPath = Path()
         ..moveTo(p0.dx, p0.dy)
         ..lineTo(p1.dx, p1.dy)
@@ -632,21 +753,17 @@ class _BoardPainter extends CustomPainter {
         ..close();
 
       final fillPaint = Paint()
-        ..color = isCrown
-            ? const Color(0xFFFFD700).withValues(alpha: 0.25)
-            : baseColor.withValues(alpha: 0.18)
+        ..color = baseColor.withValues(alpha: 0.22)
         ..style = PaintingStyle.fill;
       canvas.drawPath(triPath, fillPaint);
 
       final borderPaint = Paint()
-        ..color = isCrown
-            ? const Color(0xFFFFD700)
-            : baseColor.withValues(alpha: 0.45)
+        ..color = baseColor.withValues(alpha: 0.55)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = isCrown ? 2.2 : 1.5;
+        ..strokeWidth = 1.6;
       canvas.drawPath(triPath, borderPaint);
 
-      // 2. 3D Molded plastic Arrow/Shield token inserted into the socket
+      // 2. 3D Molded plastic triangular token inside the Y-groove
       final centroid = Offset(
         (p0.dx + p1.dx + p2.dx) / 3,
         (p0.dy + p1.dy + p2.dy) / 3,
@@ -657,7 +774,6 @@ class _BoardPainter extends CustomPainter {
         centroid,
         tri.orientation,
         baseColor,
-        isCrown: isCrown,
         tokenScale: tokenScale,
       );
     }
@@ -668,13 +784,11 @@ class _BoardPainter extends CustomPainter {
     Offset center,
     TriangleOrientation orientation,
     Color baseColor, {
-    bool isCrown = false,
-    double tokenScale = 14.0,
+    double tokenScale = 12.0,
   }) {
     final s = tokenScale;
     final isUp = orientation == TriangleOrientation.upright;
 
-    // Token geometry: 3D arrow head with spine and wings
     final apex = isUp
         ? center + Offset(0, -s * 1.05)
         : center + Offset(0, s * 1.05);
@@ -743,37 +857,22 @@ class _BoardPainter extends CustomPainter {
 
     // Spine highlight ridge
     final spinePaint = Paint()
-      ..color = isCrown
-          ? const Color(0xFFFFD700)
-          : Colors.white.withValues(alpha: 0.9)
+      ..color = Colors.white.withValues(alpha: 0.9)
       ..strokeWidth = 1.4
       ..strokeCap = StrokeCap.round;
     canvas.drawLine(apex, notch, spinePaint);
 
-    // Center circular jewel / rivet (Crown gem if crown)
-    if (isCrown) {
-      canvas.drawCircle(
-        center,
-        3.8,
-        Paint()..color = const Color(0xFFFFD700),
-      );
-      canvas.drawCircle(
-        center,
-        2.0,
-        Paint()..color = Colors.white,
-      );
-    } else {
-      canvas.drawCircle(
-        center,
-        3.2,
-        Paint()..color = Colors.white.withValues(alpha: 0.95),
-      );
-      canvas.drawCircle(
-        center,
-        1.6,
-        Paint()..color = baseColor,
-      );
-    }
+    // Center circular jewel / rivet
+    canvas.drawCircle(
+      center,
+      3.2,
+      Paint()..color = Colors.white.withValues(alpha: 0.95),
+    );
+    canvas.drawCircle(
+      center,
+      1.6,
+      Paint()..color = baseColor,
+    );
   }
 
   void _drawGuideChannels(
@@ -783,7 +882,7 @@ class _BoardPainter extends CustomPainter {
   ) {
     final guidePaint = Paint()
       ..color = const Color(0xFF1E2634)
-      ..strokeWidth = 1.6
+      ..strokeWidth = 1.4
       ..style = PaintingStyle.stroke;
 
     for (final edge in geometry.edges) {
@@ -802,6 +901,98 @@ class _BoardPainter extends CustomPainter {
     BoardGeometry geometry,
     Map<GridNode, Offset> positions,
   ) {
+    if (geometry.shape == BoardShape.hexagon) {
+      // Draw 4-peg straight line rubber bands (matching real Triggle game in photo)
+      final lastBandId = state.moveHistory.isNotEmpty
+          ? state.moveHistory.last.edgeId
+          : null;
+
+      for (final band in geometry.bands) {
+        if (!state.occupiedBands.contains(band.id)) continue;
+
+        final p0 = positions[band.start];
+        final p3 = positions[band.end];
+        if (p0 == null || p3 == null) continue;
+
+        final isLastMove = band.id == lastBandId;
+
+        // Determine player color for subtle accent
+        Color playerAccent = AppColors.player1;
+        for (final m in state.moveHistory) {
+          if (m.edgeId == band.id) {
+            playerAccent = m.playerId == state.player1Id
+                ? AppColors.player1
+                : AppColors.player2;
+            break;
+          }
+        }
+
+        final v = p3 - p0;
+        final len = v.distance;
+        if (len < 1.0) continue;
+        final u = v / len;
+        final normal = Offset(-u.dy, u.dx);
+        const bandHalfWidth = 3.6;
+
+        // 1. Drop shadow of rubber band onto black board
+        final shadowPaint = Paint()
+          ..color = Colors.black.withValues(alpha: 0.5)
+          ..strokeWidth = 6.0
+          ..strokeCap = StrokeCap.round
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+        canvas.drawLine(
+          p0 + const Offset(1.5, 3.0),
+          p3 + const Offset(1.5, 3.0),
+          shadowPaint,
+        );
+
+        // 2. Glowing aura if last move
+        if (isLastMove) {
+          final auraPaint = Paint()
+            ..color = playerAccent.withValues(alpha: 0.55 + 0.25 * pulseValue)
+            ..strokeWidth = 10.0 + 3.0 * pulseValue
+            ..strokeCap = StrokeCap.round;
+          canvas.drawLine(p0, p3, auraPaint);
+        }
+
+        // 3. Realistic white/ivory silicone elastic band body (dual tension cords)
+        // Upper tension strand
+        final strandPaint = Paint()
+          ..color = const Color(0xFFF2F4F7)
+          ..strokeWidth = 2.4
+          ..strokeCap = StrokeCap.round;
+        canvas.drawLine(
+          p0 + normal * bandHalfWidth,
+          p3 + normal * bandHalfWidth,
+          strandPaint,
+        );
+
+        // Lower tension strand
+        canvas.drawLine(
+          p0 - normal * bandHalfWidth,
+          p3 - normal * bandHalfWidth,
+          strandPaint,
+        );
+
+        // Rounded elastic cap wrapping around start and end pegs
+        final capPaint = Paint()
+          ..color = const Color(0xFFF2F4F7)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.4;
+        canvas.drawCircle(p0, 7.8, capPaint);
+        canvas.drawCircle(p3, 7.8, capPaint);
+
+        // Player accent core band
+        final coreAccentPaint = Paint()
+          ..color = playerAccent.withValues(alpha: 0.45)
+          ..strokeWidth = 1.6
+          ..strokeCap = StrokeCap.round;
+        canvas.drawLine(p0, p3, coreAccentPaint);
+      }
+      return;
+    }
+
+    // Triangular single-edge rubber band fallback
     final lastMoveEdgeId = state.moveHistory.isNotEmpty
         ? state.moveHistory.last.edgeId
         : null;
@@ -825,7 +1016,6 @@ class _BoardPainter extends CustomPainter {
         }
       }
 
-      // 1. Drop shadow onto board plate
       final shadowPaint = Paint()
         ..color = Colors.black.withValues(alpha: 0.45)
         ..strokeWidth = 5.0
@@ -837,52 +1027,25 @@ class _BoardPainter extends CustomPainter {
         shadowPaint,
       );
 
-      // 2. Active / Last move glowing aura
       if (isLastMove) {
         final glowPaint = Paint()
           ..color = bandColor.withValues(alpha: 0.6 + 0.3 * pulseValue)
           ..strokeWidth = 10.0 + 3.0 * pulseValue
           ..strokeCap = StrokeCap.round;
         canvas.drawLine(p1, p2, glowPaint);
-      } else {
-        final ambientGlow = Paint()
-          ..color = bandColor.withValues(alpha: 0.22)
-          ..strokeWidth = 7.0
-          ..strokeCap = StrokeCap.round;
-        canvas.drawLine(p1, p2, ambientGlow);
       }
 
-      // 3. Main silicone rubber band body
       final bodyPaint = Paint()
         ..color = bandColor
         ..strokeWidth = 5.2
         ..strokeCap = StrokeCap.round;
       canvas.drawLine(p1, p2, bodyPaint);
 
-      // 4. Specular core highlight line (tubular rubber elasticity)
       final coreHighlight = Paint()
         ..color = Colors.white.withValues(alpha: 0.85)
         ..strokeWidth = 1.6
         ..strokeCap = StrokeCap.round;
       canvas.drawLine(p1, p2, coreHighlight);
-
-      // 5. Peg collars (band wrapping around pegs)
-      canvas.drawCircle(
-        p1,
-        8.0,
-        Paint()
-          ..color = bandColor.withValues(alpha: 0.5)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.0,
-      );
-      canvas.drawCircle(
-        p2,
-        8.0,
-        Paint()
-          ..color = bandColor.withValues(alpha: 0.5)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.0,
-      );
     }
   }
 
@@ -897,9 +1060,53 @@ class _BoardPainter extends CustomPainter {
     if (focusPos == null) return;
 
     final candidatePaint = Paint()
-      ..color = activeColor.withValues(alpha: 0.4 + 0.3 * pulseValue)
-      ..strokeWidth = 2.2
+      ..color = activeColor.withValues(alpha: 0.45 + 0.3 * pulseValue)
+      ..strokeWidth = 2.0
       ..style = PaintingStyle.stroke;
+
+    if (geometry.shape == BoardShape.hexagon) {
+      for (final band in geometry.bands) {
+        if (!state.occupiedBands.contains(band.id)) {
+          if (band.start == focusNode || band.end == focusNode) {
+            final targetNode = band.start == focusNode ? band.end : band.start;
+            final targetPos = positions[targetNode];
+            if (targetPos != null) {
+              // 4-peg straight trajectory guide line
+              canvas.drawLine(focusPos, targetPos, candidatePaint);
+
+              // Pulsing beacon on the 4th target peg
+              final targetBeacon = Paint()
+                ..color = activeColor.withValues(alpha: 0.55 * pulseValue)
+                ..style = PaintingStyle.stroke
+                ..strokeWidth = 2.4;
+              canvas.drawCircle(
+                targetPos,
+                15.0 + 4.0 * pulseValue,
+                targetBeacon,
+              );
+
+              // Draw subtle intermediate peg rings (pegs 2 & 3 in the line)
+              for (final midNode in band.nodes) {
+                if (midNode != focusNode && midNode != targetNode) {
+                  final midPos = positions[midNode];
+                  if (midPos != null) {
+                    canvas.drawCircle(
+                      midPos,
+                      10.0,
+                      Paint()
+                        ..color = activeColor.withValues(alpha: 0.25)
+                        ..style = PaintingStyle.stroke
+                        ..strokeWidth = 1.2,
+                    );
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      return;
+    }
 
     for (final edge in geometry.edges) {
       if (!state.occupiedEdges.contains(edge.id)) {
@@ -907,10 +1114,7 @@ class _BoardPainter extends CustomPainter {
           final otherNode = edge.node1 == focusNode ? edge.node2 : edge.node1;
           final otherPos = positions[otherNode];
           if (otherPos != null) {
-            // Subtle trajectory ray
             canvas.drawLine(focusPos, otherPos, candidatePaint);
-
-            // Pulsing target beacon halo on the neighbor peg
             final targetBeacon = Paint()
               ..color = activeColor.withValues(alpha: 0.45 * pulseValue)
               ..style = PaintingStyle.stroke
@@ -936,7 +1140,6 @@ class _BoardPainter extends CustomPainter {
     final targetPos = snapNode != null ? positions[snapNode]! : currentDragPos;
     final dist = (targetPos - startPos).distance;
 
-    // Dynamic elastic tension thickness: narrows slightly when stretched long
     final tensionWidth = (5.5 - (dist / 320.0).clamp(0.0, 1.0) * 1.6).clamp(
       3.6,
       5.5,
@@ -944,7 +1147,7 @@ class _BoardPainter extends CustomPainter {
 
     // 1. Drop shadow under stretched band
     final shadowPaint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.4)
+      ..color = Colors.black.withValues(alpha: 0.45)
       ..strokeWidth = tensionWidth
       ..strokeCap = StrokeCap.round
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
@@ -954,31 +1157,31 @@ class _BoardPainter extends CustomPainter {
       shadowPaint,
     );
 
-    // 2. Electric neon glow
+    // 2. Glow
     final glowPaint = Paint()
-      ..color = activeColor.withValues(alpha: snapNode != null ? 0.75 : 0.45)
+      ..color = activeColor.withValues(alpha: snapNode != null ? 0.8 : 0.45)
       ..strokeWidth = tensionWidth + 6.0 + 2.0 * pulseValue
       ..strokeCap = StrokeCap.round;
     canvas.drawLine(startPos, targetPos, glowPaint);
 
     // 3. Stretched elastic band body
     final bodyPaint = Paint()
-      ..color = activeColor
+      ..color = const Color(0xFFF2F4F7)
       ..strokeWidth = tensionWidth
       ..strokeCap = StrokeCap.round;
     canvas.drawLine(startPos, targetPos, bodyPaint);
 
-    // 4. White core highlight line
+    // 4. Player accent core highlight line
     final corePaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.9)
-      ..strokeWidth = (tensionWidth * 0.35).clamp(1.2, 1.8)
+      ..color = activeColor
+      ..strokeWidth = (tensionWidth * 0.4).clamp(1.2, 2.0)
       ..strokeCap = StrokeCap.round;
     canvas.drawLine(startPos, targetPos, corePaint);
 
-    // 5. If snapped, draw energetic lock beacon around snap peg
+    // 5. If snapped to valid 4-peg endpoint, draw energetic lock beacon
     if (snapNode != null) {
       final snapAura = Paint()
-        ..color = activeColor.withValues(alpha: 0.8)
+        ..color = activeColor.withValues(alpha: 0.85)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 3.0;
       canvas.drawCircle(targetPos, 16.0 + 2.0 * pulseValue, snapAura);
@@ -997,7 +1200,7 @@ class _BoardPainter extends CustomPainter {
     GridNode? snapNode,
     Color activeColor,
   ) {
-    const pegRadius = 8.5;
+    const pegRadius = 7.8;
 
     for (final entry in positions.entries) {
       final node = entry.key;
@@ -1008,7 +1211,7 @@ class _BoardPainter extends CustomPainter {
 
       // 1. Base drop shadow
       final shadowPaint = Paint()
-        ..color = Colors.black.withValues(alpha: 0.65)
+        ..color = Colors.black.withValues(alpha: 0.7)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
       canvas.drawCircle(
         pos + const Offset(1.5, 2.8),
@@ -1024,7 +1227,7 @@ class _BoardPainter extends CustomPainter {
         canvas.drawCircle(pos, 16.0 + 2.0 * pulseValue, auraPaint);
       } else if (isSnapped) {
         final snapGlow = Paint()
-          ..color = activeColor.withValues(alpha: 0.7)
+          ..color = activeColor.withValues(alpha: 0.75)
           ..style = PaintingStyle.fill;
         canvas.drawCircle(pos, 17.0 + 2.0 * pulseValue, snapGlow);
       }
@@ -1060,12 +1263,12 @@ class _BoardPainter extends CustomPainter {
       final glintPaint = Paint()
         ..color = Colors.white.withValues(alpha: 0.9)
         ..style = PaintingStyle.fill;
-      canvas.drawCircle(pos + const Offset(-2.5, -2.5), 1.8, glintPaint);
+      canvas.drawCircle(pos + const Offset(-2.2, -2.2), 1.6, glintPaint);
 
       // Inner peg core hole/recess
       canvas.drawCircle(
         pos,
-        2.2,
+        2.0,
         Paint()..color = const Color(0xFF0F131A),
       );
     }

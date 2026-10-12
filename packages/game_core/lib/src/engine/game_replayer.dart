@@ -29,6 +29,7 @@ class GameReplayer {
       player1Id: targetState.player1Id,
       player2Id: targetState.player2Id,
       boardSize: targetState.boardSize,
+      boardShape: targetState.boardShape,
       startingPlayerId: firstMove.playerId,
     );
 

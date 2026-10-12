@@ -64,7 +64,7 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
 
   void startLocalMatch({int boardSize = 4}) {
     _streamSub?.cancel();
-    final initialState = TriangleTacticsState.initial(
+    final initialState = TriangleTacticsState.hexagonal(
       boardSize: boardSize,
       player1Id: 'Player 1',
       player2Id: 'Player 2',
@@ -80,7 +80,7 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
 
   void startAiMatch({int boardSize = 4}) {
     _streamSub?.cancel();
-    final initialState = TriangleTacticsState.initial(
+    final initialState = TriangleTacticsState.hexagonal(
       boardSize: boardSize,
       player1Id: 'Player 1',
       player2Id: 'Tactical Bot (AI)',

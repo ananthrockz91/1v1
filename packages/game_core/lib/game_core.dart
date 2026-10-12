@@ -3,6 +3,7 @@ library game_core;
 export 'src/board/grid_node.dart';
 export 'src/board/board_edge.dart';
 export 'src/board/triangle_face.dart';
+export 'src/board/band_line.dart';
 export 'src/board/board_geometry.dart';
 export 'src/engine/game_engine_interface.dart';
 export 'src/engine/triangle_tactics_move.dart';

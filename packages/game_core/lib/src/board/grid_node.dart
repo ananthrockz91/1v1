@@ -8,7 +8,7 @@ class GridNode implements Comparable<GridNode> {
 
   const GridNode(this.r, this.c)
     : assert(r >= 0, 'Row must be non-negative'),
-      assert(c >= 0 && c <= r, 'Column must be between 0 and row');
+      assert(c >= 0, 'Column must be non-negative');
 
   String get id => 'node_${r}_$c';
 

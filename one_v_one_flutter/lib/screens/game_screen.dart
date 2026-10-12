@@ -465,14 +465,14 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                           ? 'WAITING FOR OPPONENT TO JOIN...'
                           : (matchState.isAiMatch
                                 ? (isMyTurn
-                                      ? 'YOUR TURN — Outsmart Tactical Bot! Drag or tap pegs'
+                                      ? 'YOUR TURN — Connect 4 pegs in a straight line!'
                                       : '🤖 TACTICAL BOT THINKING... Calculating moves...')
                                 : (isLocal
                                       ? (gState.activePlayerId == 'Player 1'
-                                            ? 'PLAYER 1 (Teal) — Drag rubber band or tap to connect'
-                                            : 'PLAYER 2 (Amber) — Drag rubber band or tap to connect')
+                                            ? 'PLAYER 1 (Teal) — Stretch rubber band across 4 pegs'
+                                            : 'PLAYER 2 (Amber) — Stretch rubber band across 4 pegs')
                                       : (isMyTurn
-                                            ? 'YOUR TURN — Drag rubber band or tap 2 pegs to connect'
+                                            ? 'YOUR TURN — Stretch rubber band across 4 pegs in a line'
                                             : 'OPPONENT\'S TURN — Waiting for move...'))),
                       style: TextStyle(
                         color: !isMatchActive
@@ -534,7 +534,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
             Padding(
               padding: const EdgeInsets.only(bottom: 12, left: 16, right: 16),
               child: Text(
-                '👑 Crown Sockets • ⚡ Green preview: Capture • ⚠️ Amber preview: Blunder threat • Extra turn on capture!',
+                '🔷 Connect 4 pegs in a straight line with a rubber band • Form triangles to capture 3D tokens • Extra turn on capture!',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: AppColors.textMuted,

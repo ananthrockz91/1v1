@@ -1,4 +1,5 @@
 import 'package:meta/meta.dart';
+import '../board/board_geometry.dart';
 import '../board/grid_node.dart';
 
 @immutable
@@ -54,12 +55,14 @@ class TriangleTacticsState {
 
   final String rulesetVersion;
   final int boardSize;
+  final BoardShape boardShape;
   final String player1Id;
   final String player2Id;
   final String activePlayerId;
   final int player1Score;
   final int player2Score;
   final Set<String> occupiedEdges;
+  final Set<String> occupiedBands;
   final Map<String, String> claimedTriangles; // triangleId -> playerId
   final List<MoveRecord> moveHistory;
   final int stateVersion;
@@ -70,12 +73,14 @@ class TriangleTacticsState {
   const TriangleTacticsState({
     required this.rulesetVersion,
     required this.boardSize,
+    this.boardShape = BoardShape.hexagon,
     required this.player1Id,
     required this.player2Id,
     required this.activePlayerId,
     required this.player1Score,
     required this.player2Score,
     required this.occupiedEdges,
+    this.occupiedBands = const {},
     required this.claimedTriangles,
     required this.moveHistory,
     required this.stateVersion,
@@ -88,23 +93,41 @@ class TriangleTacticsState {
     required String player1Id,
     required String player2Id,
     int boardSize = 4,
+    BoardShape boardShape = BoardShape.triangle,
     String? startingPlayerId,
   }) {
     return TriangleTacticsState(
       rulesetVersion: currentRulesetVersion,
       boardSize: boardSize,
+      boardShape: boardShape,
       player1Id: player1Id,
       player2Id: player2Id,
       activePlayerId: startingPlayerId ?? player1Id,
       player1Score: 0,
       player2Score: 0,
       occupiedEdges: const {},
+      occupiedBands: const {},
       claimedTriangles: const {},
       moveHistory: const [],
       stateVersion: 0,
       isTerminal: false,
       winnerId: null,
       isDraw: false,
+    );
+  }
+
+  factory TriangleTacticsState.hexagonal({
+    required String player1Id,
+    required String player2Id,
+    int boardSize = 4,
+    String? startingPlayerId,
+  }) {
+    return TriangleTacticsState.initial(
+      player1Id: player1Id,
+      player2Id: player2Id,
+      boardSize: boardSize,
+      boardShape: BoardShape.hexagon,
+      startingPlayerId: startingPlayerId,
     );
   }
 
@@ -120,12 +143,14 @@ class TriangleTacticsState {
   TriangleTacticsState copyWith({
     String? rulesetVersion,
     int? boardSize,
+    BoardShape? boardShape,
     String? player1Id,
     String? player2Id,
     String? activePlayerId,
     int? player1Score,
     int? player2Score,
     Set<String>? occupiedEdges,
+    Set<String>? occupiedBands,
     Map<String, String>? claimedTriangles,
     List<MoveRecord>? moveHistory,
     int? stateVersion,
@@ -136,12 +161,14 @@ class TriangleTacticsState {
     return TriangleTacticsState(
       rulesetVersion: rulesetVersion ?? this.rulesetVersion,
       boardSize: boardSize ?? this.boardSize,
+      boardShape: boardShape ?? this.boardShape,
       player1Id: player1Id ?? this.player1Id,
       player2Id: player2Id ?? this.player2Id,
       activePlayerId: activePlayerId ?? this.activePlayerId,
       player1Score: player1Score ?? this.player1Score,
       player2Score: player2Score ?? this.player2Score,
       occupiedEdges: occupiedEdges ?? this.occupiedEdges,
+      occupiedBands: occupiedBands ?? this.occupiedBands,
       claimedTriangles: claimedTriangles ?? this.claimedTriangles,
       moveHistory: moveHistory ?? this.moveHistory,
       stateVersion: stateVersion ?? this.stateVersion,
@@ -154,12 +181,14 @@ class TriangleTacticsState {
   Map<String, dynamic> toJson() => {
     'rulesetVersion': rulesetVersion,
     'boardSize': boardSize,
+    'boardShape': boardShape.name,
     'player1Id': player1Id,
     'player2Id': player2Id,
     'activePlayerId': activePlayerId,
     'player1Score': player1Score,
     'player2Score': player2Score,
     'occupiedEdges': occupiedEdges.toList(),
+    'occupiedBands': occupiedBands.toList(),
     'claimedTriangles': claimedTriangles,
     'moveHistory': moveHistory.map((m) => m.toJson()).toList(),
     'stateVersion': stateVersion,
@@ -172,12 +201,18 @@ class TriangleTacticsState {
       TriangleTacticsState(
         rulesetVersion: json['rulesetVersion'] as String,
         boardSize: json['boardSize'] as int,
+        boardShape: json['boardShape'] != null
+            ? BoardShape.values.byName(json['boardShape'] as String)
+            : BoardShape.hexagon,
         player1Id: json['player1Id'] as String,
         player2Id: json['player2Id'] as String,
         activePlayerId: json['activePlayerId'] as String,
         player1Score: json['player1Score'] as int,
         player2Score: json['player2Score'] as int,
         occupiedEdges: Set<String>.from(json['occupiedEdges'] as List<dynamic>),
+        occupiedBands: json['occupiedBands'] != null
+            ? Set<String>.from(json['occupiedBands'] as List<dynamic>)
+            : const {},
         claimedTriangles: Map<String, String>.from(
           json['claimedTriangles'] as Map<dynamic, dynamic>,
         ),
@@ -197,6 +232,7 @@ class TriangleTacticsState {
           runtimeType == other.runtimeType &&
           rulesetVersion == other.rulesetVersion &&
           boardSize == other.boardSize &&
+          boardShape == other.boardShape &&
           player1Id == other.player1Id &&
           player2Id == other.player2Id &&
           activePlayerId == other.activePlayerId &&
@@ -208,12 +244,15 @@ class TriangleTacticsState {
           isDraw == other.isDraw &&
           occupiedEdges.length == other.occupiedEdges.length &&
           occupiedEdges.containsAll(other.occupiedEdges) &&
+          occupiedBands.length == other.occupiedBands.length &&
+          occupiedBands.containsAll(other.occupiedBands) &&
           claimedTriangles.length == other.claimedTriangles.length;
 
   @override
   int get hashCode => Object.hash(
     rulesetVersion,
     boardSize,
+    boardShape,
     player1Id,
     player2Id,
     activePlayerId,

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../theme/theme_provider.dart';
 
-class GameRulesDialog extends StatefulWidget {
+class GameRulesDialog extends ConsumerStatefulWidget {
   const GameRulesDialog({super.key});
 
   static Future<void> show(BuildContext context) {
@@ -13,10 +14,10 @@ class GameRulesDialog extends StatefulWidget {
   }
 
   @override
-  State<GameRulesDialog> createState() => _GameRulesDialogState();
+  ConsumerState<GameRulesDialog> createState() => _GameRulesDialogState();
 }
 
-class _GameRulesDialogState extends State<GameRulesDialog>
+class _GameRulesDialogState extends ConsumerState<GameRulesDialog>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
@@ -34,12 +35,14 @@ class _GameRulesDialogState extends State<GameRulesDialog>
 
   @override
   Widget build(BuildContext context) {
+    final theme = ref.watch(currentThemeProvider);
+
     return Dialog(
-      backgroundColor: AppColors.surface,
+      backgroundColor: theme.surface,
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: AppColors.surfaceBorder, width: 1.2),
+        side: BorderSide(color: theme.surfaceBorder, width: 1.2),
       ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(
@@ -61,41 +64,41 @@ class _GameRulesDialogState extends State<GameRulesDialog>
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          AppColors.player1.withValues(alpha: 0.25),
-                          AppColors.player2.withValues(alpha: 0.25),
+                          theme.player1.withValues(alpha: 0.25),
+                          theme.player2.withValues(alpha: 0.25),
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: AppColors.player1.withValues(alpha: 0.4),
+                        color: theme.player1.withValues(alpha: 0.4),
                       ),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.change_history,
-                      color: AppColors.player1,
+                      color: theme.player1,
                       size: 24,
                     ),
                   ),
                   const SizedBox(width: 14),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'How to Play Triangle Tactics',
                           style: TextStyle(
-                            color: AppColors.textPrimary,
+                            color: theme.textPrimary,
                             fontWeight: FontWeight.bold,
                             fontSize: 17,
                           ),
                         ),
-                        SizedBox(height: 2),
+                        const SizedBox(height: 2),
                         Text(
                           'Game Rules, Controls & Strategy Guide',
                           style: TextStyle(
-                            color: AppColors.textMuted,
+                            color: theme.textMuted,
                             fontSize: 12,
                           ),
                         ),
@@ -103,9 +106,9 @@ class _GameRulesDialogState extends State<GameRulesDialog>
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.close,
-                      color: AppColors.textMuted,
+                      color: theme.textMuted,
                       size: 20,
                     ),
                     tooltip: 'Close',
@@ -114,19 +117,19 @@ class _GameRulesDialogState extends State<GameRulesDialog>
                 ],
               ),
             ),
-            const Divider(height: 1, color: AppColors.surfaceBorder),
+            Divider(height: 1, color: theme.surfaceBorder),
 
             // Tab Bar
             Container(
-              color: AppColors.surfaceElevated.withValues(alpha: 0.4),
+              color: theme.surfaceElevated.withValues(alpha: 0.4),
               child: TabBar(
                 controller: _tabController,
                 isScrollable: true,
                 tabAlignment: TabAlignment.start,
-                indicatorColor: AppColors.player1,
+                indicatorColor: theme.player1,
                 indicatorWeight: 2.5,
-                labelColor: AppColors.player1,
-                unselectedLabelColor: AppColors.textMuted,
+                labelColor: theme.player1,
+                unselectedLabelColor: theme.textMuted,
                 labelStyle: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
@@ -149,15 +152,15 @@ class _GameRulesDialogState extends State<GameRulesDialog>
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  _buildOverviewTab(),
-                  _buildBandsTab(),
-                  _buildConqueringTab(),
-                  _buildStrategyTab(),
+                  _buildOverviewTab(theme),
+                  _buildBandsTab(theme),
+                  _buildConqueringTab(theme),
+                  _buildStrategyTab(theme),
                 ],
               ),
             ),
 
-            const Divider(height: 1, color: AppColors.surfaceBorder),
+            Divider(height: 1, color: theme.surfaceBorder),
 
             // Footer
             Padding(
@@ -168,7 +171,7 @@ class _GameRulesDialogState extends State<GameRulesDialog>
                     child: Text(
                       'Triggle-inspired 1v1 Arena',
                       style: TextStyle(
-                        color: AppColors.textMuted.withValues(alpha: 0.8),
+                        color: theme.textMuted.withValues(alpha: 0.8),
                         fontSize: 11.5,
                       ),
                     ),
@@ -176,8 +179,8 @@ class _GameRulesDialogState extends State<GameRulesDialog>
                   const SizedBox(width: 12),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.player1,
-                      foregroundColor: Colors.black,
+                      backgroundColor: theme.buttonBackground,
+                      foregroundColor: theme.buttonForeground,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 10,
@@ -205,22 +208,23 @@ class _GameRulesDialogState extends State<GameRulesDialog>
     );
   }
 
-  Widget _buildOverviewTab() {
+  Widget _buildOverviewTab(AppThemeData theme) {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
         _buildHighlightCard(
+          theme: theme,
           icon: Icons.emoji_events_outlined,
-          iconColor: AppColors.player2,
+          iconColor: theme.player2,
           title: 'The Goal: Conquer More Triangles',
           description:
               'Triangle Tactics is a fast-paced 1v1 territory strategy game. Two players take turns placing elastic bands on a hexagonal lattice. Your goal is to capture the most triangular territories before all moves are exhausted.',
         ),
         const SizedBox(height: 14),
-        const Text(
+        Text(
           'QUICK RULES AT A GLANCE',
           style: TextStyle(
-            color: AppColors.textMuted,
+            color: theme.textMuted,
             fontSize: 11,
             fontWeight: FontWeight.bold,
             letterSpacing: 1.2,
@@ -228,24 +232,28 @@ class _GameRulesDialogState extends State<GameRulesDialog>
         ),
         const SizedBox(height: 10),
         _buildStepTile(
+          theme: theme,
           step: '1',
           title: 'Take Turns',
           text:
               'Players alternate turns placing 1 rubber band on the lattice board.',
         ),
         _buildStepTile(
+          theme: theme,
           step: '2',
           title: 'Span 4 Pegs in a Straight Line',
           text:
               'Every band must stretch straight across exactly 4 consecutive pegs.',
         ),
         _buildStepTile(
+          theme: theme,
           step: '3',
           title: 'Complete Triangles',
           text:
               'Whenever your band forms the 3rd and final edge of a triangle, you conquer it!',
         ),
         _buildStepTile(
+          theme: theme,
           step: '4',
           title: 'Earn Bonus Turns',
           text:
@@ -253,28 +261,31 @@ class _GameRulesDialogState extends State<GameRulesDialog>
         ),
         const SizedBox(height: 12),
         _buildTipBox(
-          '💡 Tip: Chaining multiple conquests in a row can swing the game dramatically! Plan your lines ahead.',
+          theme: theme,
+          text:
+              '💡 Tip: Chaining multiple conquests in a row can swing the game dramatically! Plan your lines ahead.',
         ),
       ],
     );
   }
 
-  Widget _buildBandsTab() {
+  Widget _buildBandsTab(AppThemeData theme) {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
         _buildHighlightCard(
+          theme: theme,
           icon: Icons.alt_route,
-          iconColor: AppColors.player1,
+          iconColor: theme.player1,
           title: 'The 4-Peg Straight Line Rule',
           description:
               'Unlike simple connect-the-dots games, every rubber band in Triangle Tactics must span exactly 4 pegs in a collinear line (a single continuous band line).',
         ),
         const SizedBox(height: 14),
-        const Text(
+        Text(
           'HOW TO PLACE BANDS',
           style: TextStyle(
-            color: AppColors.textMuted,
+            color: theme.textMuted,
             fontSize: 11,
             fontWeight: FontWeight.bold,
             letterSpacing: 1.2,
@@ -282,6 +293,7 @@ class _GameRulesDialogState extends State<GameRulesDialog>
         ),
         const SizedBox(height: 10),
         _buildFeatureCard(
+          theme: theme,
           icon: Icons.touch_app_outlined,
           title: 'Option A: Drag & Snap',
           description:
@@ -289,6 +301,7 @@ class _GameRulesDialogState extends State<GameRulesDialog>
         ),
         const SizedBox(height: 10),
         _buildFeatureCard(
+          theme: theme,
           icon: Icons.ads_click,
           title: 'Option B: Tap to Select, Tap Target',
           description:
@@ -296,6 +309,7 @@ class _GameRulesDialogState extends State<GameRulesDialog>
         ),
         const SizedBox(height: 10),
         _buildFeatureCard(
+          theme: theme,
           icon: Icons.block,
           title: 'No Duplicate Bands',
           description:
@@ -303,32 +317,37 @@ class _GameRulesDialogState extends State<GameRulesDialog>
         ),
         const SizedBox(height: 14),
         _buildTipBox(
-          '🎯 Tip: Every band you place fills 3 adjacent segment edges on the board simultaneously. Look at all triangles touched by the path!',
+          theme: theme,
+          text:
+              '🎯 Tip: Every band you place fills 3 adjacent segment edges on the board simultaneously. Look at all triangles touched by the path!',
         ),
       ],
     );
   }
 
-  Widget _buildConqueringTab() {
+  Widget _buildConqueringTab(AppThemeData theme) {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
         _buildHighlightCard(
+          theme: theme,
           icon: Icons.change_history,
-          iconColor: AppColors.player1,
+          iconColor: theme.player1,
           title: 'Conquering & 3D Pegs',
           description:
               'Every triangle on the board is bounded by 3 perimeter edges. When your rubber band placement closes the 3rd missing edge, you claim that territory!',
         ),
         const SizedBox(height: 14),
         _buildFeatureCard(
+          theme: theme,
           icon: Icons.palette_outlined,
           title: 'Territory Claim & Colored Token',
           description:
-              'The triangle lights up in your player color (Cyan for P1, Amber for P2), and your 3D molded token drops into the central socket with a celebratory bounce!',
+              'The triangle lights up in your player color, and your 3D molded token drops into the central socket with a celebratory bounce!',
         ),
         const SizedBox(height: 10),
         _buildFeatureCard(
+          theme: theme,
           icon: Icons.bolt,
           title: '⚡ Instant Bonus Turn',
           description:
@@ -336,6 +355,7 @@ class _GameRulesDialogState extends State<GameRulesDialog>
         ),
         const SizedBox(height: 10),
         _buildFeatureCard(
+          theme: theme,
           icon: Icons.filter_2,
           title: 'Multi-Capture Combos',
           description:
@@ -343,19 +363,22 @@ class _GameRulesDialogState extends State<GameRulesDialog>
         ),
         const SizedBox(height: 14),
         _buildTipBox(
-          '🔥 Pro Strategy: Avoid giving your opponent 2-edge triangles. If you leave a triangle with 2 edges, your opponent can easily snap the 3rd edge on their turn!',
+          theme: theme,
+          text:
+              '🔥 Pro Strategy: Avoid giving your opponent 2-edge triangles. If you leave a triangle with 2 edges, your opponent can easily snap the 3rd edge on their turn!',
         ),
       ],
     );
   }
 
-  Widget _buildStrategyTab() {
+  Widget _buildStrategyTab(AppThemeData theme) {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
         _buildHighlightCard(
+          theme: theme,
           icon: Icons.radar,
-          iconColor: Colors.orangeAccent,
+          iconColor: theme.statusWarning,
           title: 'In-Game Tactical Threat Radar',
           description:
               'While dragging or aiming a rubber band, the live Tactical Threat Radar automatically analyzes the future board state and highlights critical outcomes:',
@@ -364,9 +387,9 @@ class _GameRulesDialogState extends State<GameRulesDialog>
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.surfaceElevated,
+            color: theme.surfaceElevated,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.player1.withValues(alpha: 0.3)),
+            border: Border.all(color: theme.player1.withValues(alpha: 0.3)),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -374,33 +397,33 @@ class _GameRulesDialogState extends State<GameRulesDialog>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.player1.withValues(alpha: 0.15),
+                  color: theme.player1.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.check_circle_outline,
-                  color: AppColors.player1,
+                  color: theme.player1,
                   size: 20,
                 ),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Glowing Player Color (Victory Capture)',
                       style: TextStyle(
-                        color: AppColors.player1,
+                        color: theme.player1,
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
                       ),
                     ),
-                    SizedBox(height: 3),
+                    const SizedBox(height: 3),
                     Text(
                       'Indicates that this move will complete the 3rd edge of a triangle and conquer it immediately for you!',
                       style: TextStyle(
-                        color: AppColors.textSecondary,
+                        color: theme.textSecondary,
                         fontSize: 12,
                         height: 1.3,
                       ),
@@ -415,10 +438,10 @@ class _GameRulesDialogState extends State<GameRulesDialog>
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.surfaceElevated,
+            color: theme.surfaceElevated,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Colors.orangeAccent.withValues(alpha: 0.4),
+              color: theme.statusWarning.withValues(alpha: 0.4),
             ),
           ),
           child: Row(
@@ -427,33 +450,33 @@ class _GameRulesDialogState extends State<GameRulesDialog>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.orangeAccent.withValues(alpha: 0.15),
+                  color: theme.statusWarning.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.warning_amber_rounded,
-                  color: Colors.orangeAccent,
+                  color: theme.statusWarning,
                   size: 20,
                 ),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Orange Outline (Danger Warning)',
+                      'Danger Warning (Alert Indicator)',
                       style: TextStyle(
-                        color: Colors.orangeAccent,
+                        color: theme.statusWarning,
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
                       ),
                     ),
-                    SizedBox(height: 3),
+                    const SizedBox(height: 3),
                     Text(
                       'Alerts you that this move leaves a triangle with 2 edges completed — handing an easy capture to your opponent on their very next turn!',
                       style: TextStyle(
-                        color: AppColors.textSecondary,
+                        color: theme.textSecondary,
                         fontSize: 12,
                         height: 1.3,
                       ),
@@ -465,10 +488,10 @@ class _GameRulesDialogState extends State<GameRulesDialog>
           ),
         ),
         const SizedBox(height: 14),
-        const Text(
+        Text(
           'MATCH RULES & FAIR PLAY',
           style: TextStyle(
-            color: AppColors.textMuted,
+            color: theme.textMuted,
             fontSize: 11,
             fontWeight: FontWeight.bold,
             letterSpacing: 1.2,
@@ -476,6 +499,7 @@ class _GameRulesDialogState extends State<GameRulesDialog>
         ),
         const SizedBox(height: 10),
         _buildFeatureCard(
+          theme: theme,
           icon: Icons.timer_outlined,
           title: '30-Second Turn Timer',
           description:
@@ -483,6 +507,7 @@ class _GameRulesDialogState extends State<GameRulesDialog>
         ),
         const SizedBox(height: 10),
         _buildFeatureCard(
+          theme: theme,
           icon: Icons.flag_outlined,
           title: 'Resignation & Forfeits',
           description:
@@ -490,6 +515,7 @@ class _GameRulesDialogState extends State<GameRulesDialog>
         ),
         const SizedBox(height: 10),
         _buildFeatureCard(
+          theme: theme,
           icon: Icons.military_tech_outlined,
           title: 'End of Game & Winner',
           description:
@@ -500,6 +526,7 @@ class _GameRulesDialogState extends State<GameRulesDialog>
   }
 
   Widget _buildHighlightCard({
+    required AppThemeData theme,
     required IconData icon,
     required Color iconColor,
     required String title,
@@ -508,7 +535,7 @@ class _GameRulesDialogState extends State<GameRulesDialog>
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
+        color: theme.surfaceElevated,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: iconColor.withValues(alpha: 0.3)),
       ),
@@ -530,8 +557,8 @@ class _GameRulesDialogState extends State<GameRulesDialog>
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: TextStyle(
+                    color: theme.textPrimary,
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
@@ -539,8 +566,8 @@ class _GameRulesDialogState extends State<GameRulesDialog>
                 const SizedBox(height: 4),
                 Text(
                   description,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
+                  style: TextStyle(
+                    color: theme.textSecondary,
                     fontSize: 12.5,
                     height: 1.35,
                   ),
@@ -554,6 +581,7 @@ class _GameRulesDialogState extends State<GameRulesDialog>
   }
 
   Widget _buildStepTile({
+    required AppThemeData theme,
     required String step,
     required String title,
     required String text,
@@ -568,16 +596,16 @@ class _GameRulesDialogState extends State<GameRulesDialog>
             height: 26,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: AppColors.player1.withValues(alpha: 0.15),
+              color: theme.badgeBackground,
               shape: BoxShape.circle,
               border: Border.all(
-                color: AppColors.player1.withValues(alpha: 0.4),
+                color: theme.badgeBorder,
               ),
             ),
             child: Text(
               step,
-              style: const TextStyle(
-                color: AppColors.player1,
+              style: TextStyle(
+                color: theme.badgeText,
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
               ),
@@ -590,8 +618,8 @@ class _GameRulesDialogState extends State<GameRulesDialog>
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: TextStyle(
+                    color: theme.textPrimary,
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
                   ),
@@ -599,8 +627,8 @@ class _GameRulesDialogState extends State<GameRulesDialog>
                 const SizedBox(height: 2),
                 Text(
                   text,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
+                  style: TextStyle(
+                    color: theme.textSecondary,
                     fontSize: 12,
                     height: 1.3,
                   ),
@@ -614,6 +642,7 @@ class _GameRulesDialogState extends State<GameRulesDialog>
   }
 
   Widget _buildFeatureCard({
+    required AppThemeData theme,
     required IconData icon,
     required String title,
     required String description,
@@ -621,14 +650,14 @@ class _GameRulesDialogState extends State<GameRulesDialog>
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surfaceElevated.withValues(alpha: 0.7),
+        color: theme.surfaceElevated.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.surfaceBorder),
+        border: Border.all(color: theme.surfaceBorder),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: AppColors.textSecondary, size: 20),
+          Icon(icon, color: theme.textSecondary, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -636,8 +665,8 @@ class _GameRulesDialogState extends State<GameRulesDialog>
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: TextStyle(
+                    color: theme.textPrimary,
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
                   ),
@@ -645,8 +674,8 @@ class _GameRulesDialogState extends State<GameRulesDialog>
                 const SizedBox(height: 2),
                 Text(
                   description,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
+                  style: TextStyle(
+                    color: theme.textSecondary,
                     fontSize: 12,
                     height: 1.3,
                   ),
@@ -659,18 +688,21 @@ class _GameRulesDialogState extends State<GameRulesDialog>
     );
   }
 
-  Widget _buildTipBox(String text) {
+  Widget _buildTipBox({
+    required AppThemeData theme,
+    required String text,
+  }) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.player1.withValues(alpha: 0.08),
+        color: theme.badgeBackground,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.player1.withValues(alpha: 0.25)),
+        border: Border.all(color: theme.badgeBorder),
       ),
       child: Text(
         text,
         style: TextStyle(
-          color: AppColors.player1.withValues(alpha: 0.95),
+          color: theme.badgeText,
           fontSize: 12,
           fontWeight: FontWeight.w500,
           height: 1.35,

@@ -40,6 +40,9 @@ class RuleViolation {
     message: message,
   );
 
+  factory RuleViolation.malformedAction(String message) =>
+      RuleViolation(type: RuleViolationType.malformedAction, message: message);
+
   Map<String, dynamic> toJson() => {
     'type': type.name,
     'message': message,

@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:game_core/game_core.dart';
@@ -19,17 +20,19 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Center(
-              child: SizedBox(
-                width: 300,
-                height: 300,
-                child: TriangleTacticsBoard(
-                  state: initialState,
-                  currentUserId: 'p1',
-                  isInteractive: true,
-                  onMoveSubmitted: (n1, n2) {},
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 300,
+                  height: 300,
+                  child: TriangleTacticsBoard(
+                    state: initialState,
+                    currentUserId: 'p1',
+                    isInteractive: true,
+                    onMoveSubmitted: (n1, n2) {},
+                  ),
                 ),
               ),
             ),
@@ -49,20 +52,22 @@ void main() {
       GridNode? submittedN2;
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Center(
-              child: SizedBox(
-                width: 300,
-                height: 300,
-                child: TriangleTacticsBoard(
-                  state: initialState,
-                  currentUserId: 'p1',
-                  isInteractive: true,
-                  onMoveSubmitted: (n1, n2) {
-                    submittedN1 = n1;
-                    submittedN2 = n2;
-                  },
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 300,
+                  height: 300,
+                  child: TriangleTacticsBoard(
+                    state: initialState,
+                    currentUserId: 'p1',
+                    isInteractive: true,
+                    onMoveSubmitted: (n1, n2) {
+                      submittedN1 = n1;
+                      submittedN2 = n2;
+                    },
+                  ),
                 ),
               ),
             ),
@@ -106,19 +111,21 @@ void main() {
       GridNode? submittedN1;
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Center(
-              child: SizedBox(
-                width: 300,
-                height: 300,
-                child: TriangleTacticsBoard(
-                  state: initialState,
-                  currentUserId: 'p1',
-                  isInteractive: false,
-                  onMoveSubmitted: (n1, n2) {
-                    submittedN1 = n1;
-                  },
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 300,
+                  height: 300,
+                  child: TriangleTacticsBoard(
+                    state: initialState,
+                    currentUserId: 'p1',
+                    isInteractive: false,
+                    onMoveSubmitted: (n1, n2) {
+                      submittedN1 = n1;
+                    },
+                  ),
                 ),
               ),
             ),
@@ -149,20 +156,22 @@ void main() {
         GridNode? submittedN2;
 
         await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: Center(
-                child: SizedBox(
-                  width: 300,
-                  height: 300,
-                  child: TriangleTacticsBoard(
-                    state: initialState,
-                    currentUserId: 'p1',
-                    isInteractive: true,
-                    onMoveSubmitted: (n1, n2) {
-                      submittedN1 = n1;
-                      submittedN2 = n2;
-                    },
+          ProviderScope(
+            child: MaterialApp(
+              home: Scaffold(
+                body: Center(
+                  child: SizedBox(
+                    width: 300,
+                    height: 300,
+                    child: TriangleTacticsBoard(
+                      state: initialState,
+                      currentUserId: 'p1',
+                      isInteractive: true,
+                      onMoveSubmitted: (n1, n2) {
+                        submittedN1 = n1;
+                        submittedN2 = n2;
+                      },
+                    ),
                   ),
                 ),
               ),
@@ -192,19 +201,21 @@ void main() {
       GridNode? submittedN1;
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Center(
-              child: SizedBox(
-                width: 300,
-                height: 300,
-                child: TriangleTacticsBoard(
-                  state: initialState,
-                  currentUserId: 'p1',
-                  isInteractive: true,
-                  onMoveSubmitted: (n1, n2) {
-                    submittedN1 = n1;
-                  },
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 300,
+                  height: 300,
+                  child: TriangleTacticsBoard(
+                    state: initialState,
+                    currentUserId: 'p1',
+                    isInteractive: true,
+                    onMoveSubmitted: (n1, n2) {
+                      submittedN1 = n1;
+                    },
+                  ),
                 ),
               ),
             ),
@@ -233,17 +244,19 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: Center(
-                child: SizedBox(
-                  width: 300,
-                  height: 300,
-                  child: TriangleTacticsBoard(
-                    state: initialState,
-                    currentUserId: 'p1',
-                    isInteractive: true,
-                    onMoveSubmitted: (n1, n2) {},
+          ProviderScope(
+            child: MaterialApp(
+              home: Scaffold(
+                body: Center(
+                  child: SizedBox(
+                    width: 300,
+                    height: 300,
+                    child: TriangleTacticsBoard(
+                      state: initialState,
+                      currentUserId: 'p1',
+                      isInteractive: true,
+                      onMoveSubmitted: (n1, n2) {},
+                    ),
                   ),
                 ),
               ),

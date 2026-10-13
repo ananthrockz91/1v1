@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../providers/match_provider.dart';
-import '../theme/app_colors.dart';
+import '../theme/theme_provider.dart';
 import 'game_screen.dart';
 
 class LobbyScreen extends ConsumerWidget {
@@ -21,6 +21,7 @@ class LobbyScreen extends ConsumerWidget {
       }
     });
 
+    final theme = ref.watch(currentThemeProvider);
     final matchState = ref.watch(matchProvider);
     final match = matchState.match;
     final isPublic = match?.isPublic == true;
@@ -31,12 +32,12 @@ class LobbyScreen extends ConsumerWidget {
     final inviteUrl = '$baseOrigin/?room=$roomCode';
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: AppColors.textPrimary),
+          icon: Icon(Icons.close, color: theme.textPrimary),
           onPressed: () {
             ref.read(matchProvider.notifier).clearMatch();
             Navigator.pop(context);
@@ -58,20 +59,20 @@ class LobbyScreen extends ConsumerWidget {
                       width: 90,
                       height: 90,
                       decoration: BoxDecoration(
-                        color: AppColors.player2.withValues(alpha: 0.12),
+                        color: theme.player2.withValues(alpha: 0.12),
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: AppColors.player2.withValues(alpha: 0.4),
+                          color: theme.player2.withValues(alpha: 0.4),
                           width: 2,
                         ),
                       ),
-                      child: const Center(
+                      child: Center(
                         child: SizedBox(
                           width: 44,
                           height: 44,
                           child: CircularProgressIndicator(
                             strokeWidth: 3,
-                            color: AppColors.player2,
+                            color: theme.player2,
                           ),
                         ),
                       ),
@@ -84,8 +85,8 @@ class LobbyScreen extends ConsumerWidget {
                         ? 'Searching for Opponent'
                         : 'Waiting for Opponent',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
+                    style: TextStyle(
+                      color: theme.textPrimary,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
@@ -96,8 +97,8 @@ class LobbyScreen extends ConsumerWidget {
                         ? 'Waiting for another player to join public matchmaking...'
                         : 'Share room code or QR code with a friend to play instantly',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
+                    style: TextStyle(
+                      color: theme.textSecondary,
                       fontSize: 14,
                     ),
                   ),
@@ -111,16 +112,16 @@ class LobbyScreen extends ConsumerWidget {
                         horizontal: 20,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.surface,
+                        color: theme.surface,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.surfaceBorder),
+                        border: Border.all(color: theme.surfaceBorder),
                       ),
                       child: Column(
                         children: [
-                          const Text(
+                          Text(
                             'ROOM CODE',
                             style: TextStyle(
-                              color: AppColors.textMuted,
+                              color: theme.textSecondary,
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 2,
@@ -129,8 +130,8 @@ class LobbyScreen extends ConsumerWidget {
                           const SizedBox(height: 10),
                           Text(
                             roomCode,
-                            style: const TextStyle(
-                              color: AppColors.player2,
+                            style: TextStyle(
+                              color: theme.player2,
                               fontSize: 38,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 8,
@@ -146,7 +147,7 @@ class LobbyScreen extends ConsumerWidget {
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.player2.withValues(
+                                  color: theme.player2.withValues(
                                     alpha: 0.18,
                                   ),
                                   blurRadius: 16,
@@ -162,10 +163,10 @@ class LobbyScreen extends ConsumerWidget {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          const Text(
+                          Text(
                             'Scan with phone camera to join instantly',
                             style: TextStyle(
-                              color: AppColors.textMuted,
+                              color: theme.textSecondary,
                               fontSize: 12,
                             ),
                           ),
@@ -176,9 +177,9 @@ class LobbyScreen extends ConsumerWidget {
                               Expanded(
                                 child: OutlinedButton.icon(
                                   style: OutlinedButton.styleFrom(
-                                    foregroundColor: AppColors.textPrimary,
-                                    side: const BorderSide(
-                                      color: AppColors.surfaceBorder,
+                                    foregroundColor: theme.textPrimary,
+                                    side: BorderSide(
+                                      color: theme.surfaceBorder,
                                     ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(10),
@@ -208,8 +209,8 @@ class LobbyScreen extends ConsumerWidget {
                               Expanded(
                                 child: ElevatedButton.icon(
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.player2,
-                                    foregroundColor: Colors.black,
+                                    backgroundColor: theme.buttonBackground,
+                                    foregroundColor: theme.buttonForeground,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(10),
                                     ),
@@ -252,36 +253,36 @@ class LobbyScreen extends ConsumerWidget {
                         horizontal: 20,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.surface,
+                        color: theme.surface,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.surfaceBorder),
+                        border: Border.all(color: theme.surfaceBorder),
                       ),
-                      child: const Column(
+                      child: Column(
                         children: [
                           Text(
                             'PUBLIC 1V1 QUEUE',
                             style: TextStyle(
-                              color: AppColors.player1,
+                              color: theme.player1,
                               fontSize: 12,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 1.5,
                             ),
                           ),
-                          SizedBox(height: 8),
+                          const SizedBox(height: 8),
                           Text(
                             'Triangle Tactics (4x4)',
                             style: TextStyle(
-                              color: AppColors.textPrimary,
+                              color: theme.textPrimary,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          SizedBox(height: 6),
+                          const SizedBox(height: 6),
                           Text(
                             'Open a second browser tab or invite a peer to start playing instantly.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: AppColors.textMuted,
+                              color: theme.textSecondary,
                               fontSize: 12,
                             ),
                           ),
@@ -293,9 +294,9 @@ class LobbyScreen extends ConsumerWidget {
 
                   OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.error,
+                      foregroundColor: theme.statusError,
                       side: BorderSide(
-                        color: AppColors.error.withValues(alpha: 0.5),
+                        color: theme.statusError.withValues(alpha: 0.5),
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(

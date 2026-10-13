@@ -1,9 +1,10 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:game_core/game_core.dart';
-import '../theme/app_colors.dart';
+import '../theme/theme_provider.dart';
 
-class ReversiBoard extends StatefulWidget {
+class ReversiBoard extends ConsumerStatefulWidget {
   final ReversiState state;
   final String currentUserId;
   final void Function(int row, int col) onSquareSelected;
@@ -20,10 +21,10 @@ class ReversiBoard extends StatefulWidget {
   });
 
   @override
-  State<ReversiBoard> createState() => _ReversiBoardState();
+  ConsumerState<ReversiBoard> createState() => _ReversiBoardState();
 }
 
-class _ReversiBoardState extends State<ReversiBoard>
+class _ReversiBoardState extends ConsumerState<ReversiBoard>
     with SingleTickerProviderStateMixin {
   int? _hoveredRow;
   int? _hoveredCol;
@@ -69,6 +70,7 @@ class _ReversiBoardState extends State<ReversiBoard>
 
   @override
   Widget build(BuildContext context) {
+    final theme = ref.watch(currentThemeProvider);
     final size = widget.state.boardSize;
     final isMyTurn =
         widget.isInteractive &&
@@ -81,14 +83,16 @@ class _ReversiBoardState extends State<ReversiBoard>
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+            gradient: LinearGradient(
+              colors: theme.isMonochrome
+                  ? const [Color(0xFF0F0F0F), Color(0xFF18181B)]
+                  : const [Color(0xFF0F172A), Color(0xFF1E293B)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: AppColors.teal.withValues(alpha: 0.3),
+              color: theme.accent.withValues(alpha: 0.3),
               width: 2,
             ),
             boxShadow: [
@@ -98,7 +102,7 @@ class _ReversiBoardState extends State<ReversiBoard>
                 offset: const Offset(0, 10),
               ),
               BoxShadow(
-                color: AppColors.teal.withValues(alpha: 0.08),
+                color: theme.accent.withValues(alpha: 0.08),
                 blurRadius: 32,
                 spreadRadius: 2,
               ),
@@ -149,15 +153,19 @@ class _ReversiBoardState extends State<ReversiBoard>
                             margin: const EdgeInsets.all(1.5),
                             decoration: BoxDecoration(
                               color: isHovered && isValid && isMyTurn
-                                  ? AppColors.teal.withValues(alpha: 0.22)
-                                  : const Color(0xFF0D1B2A),
+                                  ? theme.accent.withValues(alpha: 0.22)
+                                  : (theme.isMonochrome
+                                        ? const Color(0xFF09090B)
+                                        : const Color(0xFF0D1B2A)),
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
                                 color: isLastPlaced
-                                    ? AppColors.teal
+                                    ? theme.player1
                                     : (isHovered && isValid && isMyTurn)
-                                    ? AppColors.tealLight
-                                    : const Color(0xFF1E293B),
+                                    ? theme.accentSecondary
+                                    : (theme.isMonochrome
+                                          ? const Color(0xFF27272A)
+                                          : const Color(0xFF1E293B)),
                                 width: isLastPlaced ? 2.0 : 1.0,
                               ),
                             ),
@@ -179,11 +187,12 @@ class _ReversiBoardState extends State<ReversiBoard>
 
                                 // Valid Move Beacon
                                 if (cellVal == 0 && isValid && isMyTurn)
-                                  _buildValidMoveBeacon(isHovered),
+                                  _buildValidMoveBeacon(theme, isHovered),
 
                                 // Disk Piece
                                 if (cellVal != 0)
                                   _buildDisk(
+                                    theme: theme,
                                     playerNum: cellVal,
                                     isLastPlaced: isLastPlaced,
                                     isFlipping: isFlipping,
@@ -205,18 +214,18 @@ class _ReversiBoardState extends State<ReversiBoard>
     );
   }
 
-  Widget _buildValidMoveBeacon(bool isHovered) {
+  Widget _buildValidMoveBeacon(AppThemeData theme, bool isHovered) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 150),
       width: isHovered ? 18 : 12,
       height: isHovered ? 18 : 12,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: AppColors.teal.withValues(alpha: isHovered ? 0.9 : 0.45),
+        color: theme.accent.withValues(alpha: isHovered ? 0.9 : 0.45),
         boxShadow: isHovered
             ? [
                 BoxShadow(
-                  color: AppColors.teal.withValues(alpha: 0.8),
+                  color: theme.accent.withValues(alpha: 0.8),
                   blurRadius: 10,
                   spreadRadius: 2,
                 ),
@@ -227,6 +236,7 @@ class _ReversiBoardState extends State<ReversiBoard>
   }
 
   Widget _buildDisk({
+    required AppThemeData theme,
     required int playerNum,
     required bool isLastPlaced,
     required bool isFlipping,
@@ -238,8 +248,45 @@ class _ReversiBoardState extends State<ReversiBoard>
       rotationY = _flipAnimationController.value * pi;
     }
 
-    final isP1 = playerNum == 1; // P1 is Dark / Teal Cyber
+    final isP1 = playerNum == 1;
     final diskSize = cellSize * 0.78;
+
+    final List<Color> diskGradientColors;
+    final Color diskBorderColor;
+
+    if (theme.isMonochrome) {
+      if (isP1) {
+        diskGradientColors = const [
+          Color(0xFFFFFFFF),
+          Color(0xFFE4E4E7),
+          Color(0xFFA1A1AA),
+        ];
+        diskBorderColor = isLastPlaced ? Colors.white : const Color(0xFFD4D4D8);
+      } else {
+        diskGradientColors = const [
+          Color(0xFF3F3F46),
+          Color(0xFF27272A),
+          Color(0xFF18181B),
+        ];
+        diskBorderColor = isLastPlaced ? Colors.white : const Color(0xFF52525B);
+      }
+    } else {
+      if (isP1) {
+        diskGradientColors = const [
+          Color(0xFF14B8A6),
+          Color(0xFF0F766E),
+          Color(0xFF042F2E),
+        ];
+        diskBorderColor = isLastPlaced ? Colors.white : const Color(0xFF2DD4BF);
+      } else {
+        diskGradientColors = const [
+          Color(0xFFFFFFFF),
+          Color(0xFFE2E8F0),
+          Color(0xFF94A3B8),
+        ];
+        diskBorderColor = isLastPlaced ? theme.accent : const Color(0xFFCBD5E1);
+      }
+    }
 
     return Transform(
       alignment: Alignment.center,
@@ -252,24 +299,12 @@ class _ReversiBoardState extends State<ReversiBoard>
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           gradient: RadialGradient(
-            colors: isP1
-                ? const [
-                    Color(0xFF14B8A6),
-                    Color(0xFF0F766E),
-                    Color(0xFF042F2E),
-                  ]
-                : const [
-                    Color(0xFFFFFFFF),
-                    Color(0xFFE2E8F0),
-                    Color(0xFF94A3B8),
-                  ],
+            colors: diskGradientColors,
             center: const Alignment(-0.25, -0.3),
             radius: 0.85,
           ),
           border: Border.all(
-            color: isP1
-                ? (isLastPlaced ? Colors.white : const Color(0xFF2DD4BF))
-                : (isLastPlaced ? AppColors.teal : const Color(0xFFCBD5E1)),
+            color: diskBorderColor,
             width: isLastPlaced ? 2.5 : 1.5,
           ),
           boxShadow: [
@@ -280,7 +315,11 @@ class _ReversiBoardState extends State<ReversiBoard>
             ),
             if (isP1)
               BoxShadow(
-                color: const Color(0xFF14B8A6).withValues(alpha: 0.35),
+                color:
+                    (theme.isMonochrome
+                            ? const Color(0xFFFFFFFF)
+                            : const Color(0xFF14B8A6))
+                        .withValues(alpha: 0.35),
                 blurRadius: 8,
                 spreadRadius: 1,
               ),

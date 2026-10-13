@@ -202,5 +202,156 @@ void main() {
       expect(restored.grid[5][3], 'Player 1');
       expect(restored.grid[5][2], 'Player 2');
     });
+
+    test('Grand Arena 9x8 requires 5-in-a-row to win', () {
+      final grandState = ConnectFourState.initial(
+        player1Id: 'P1',
+        player2Id: 'P2',
+        rows: 8,
+        cols: 9,
+        targetStreak: 5,
+      );
+      expect(grandState.numRows, 8);
+      expect(grandState.numCols, 9);
+      expect(grandState.targetStreak, 5);
+
+      // Place 4 in a row - should NOT be terminal
+      var cur = grandState;
+      for (int c = 0; c < 4; c++) {
+        cur =
+            (engine.applyMove(cur, 'P1', ConnectFourMove.drop(c))
+                        as MoveAccepted)
+                    .nextState
+                as ConnectFourState;
+        if (c < 3) {
+          cur =
+              (engine.applyMove(cur, 'P2', ConnectFourMove.drop(c))
+                          as MoveAccepted)
+                      .nextState
+                  as ConnectFourState;
+        }
+      }
+      expect(cur.isTerminal, false);
+
+      // Now P2 plays somewhere else, and P1 plays 5th disc in col 4
+      cur =
+          (engine.applyMove(cur, 'P2', const ConnectFourMove.drop(8))
+                      as MoveAccepted)
+                  .nextState
+              as ConnectFourState;
+      cur =
+          (engine.applyMove(cur, 'P1', const ConnectFourMove.drop(4))
+                      as MoveAccepted)
+                  .nextState
+              as ConnectFourState;
+
+      expect(cur.isTerminal, true);
+      expect(cur.winnerId, 'P1');
+      expect(cur.winningCoords.length, 5);
+    });
+
+    test('Pop-Out mechanic drops column and checks victory', () {
+      var cur = state;
+      // Player 1 drops col 0 (bottom row 5)
+      cur =
+          (engine.applyMove(cur, 'Player 1', const ConnectFourMove.drop(0))
+                      as MoveAccepted)
+                  .nextState
+              as ConnectFourState;
+      // Player 2 drops col 0 (row 4)
+      cur =
+          (engine.applyMove(cur, 'Player 2', const ConnectFourMove.drop(0))
+                      as MoveAccepted)
+                  .nextState
+              as ConnectFourState;
+
+      expect(cur.grid[5][0], 'Player 1');
+      expect(cur.grid[4][0], 'Player 2');
+
+      // Now Player 1 pops out bottom disc in col 0
+      final popRes = engine.applyMove(
+        cur,
+        'Player 1',
+        const ConnectFourMove.popOut(0),
+      );
+      expect(popRes is MoveAccepted, true);
+      cur = (popRes as MoveAccepted).nextState as ConnectFourState;
+
+      // Player 2's piece fell into row 5, row 4 is now null
+      expect(cur.grid[5][0], 'Player 2');
+      expect(cur.grid[4][0], null);
+    });
+
+    test('Power Disc (Heavy Breaker) crushes opponent disc', () {
+      var cur = state;
+      // Player 1 drops col 3
+      cur =
+          (engine.applyMove(cur, 'Player 1', const ConnectFourMove.drop(3))
+                      as MoveAccepted)
+                  .nextState
+              as ConnectFourState;
+      // Player 2 drops col 3 (lands on row 4)
+      cur =
+          (engine.applyMove(cur, 'Player 2', const ConnectFourMove.drop(3))
+                      as MoveAccepted)
+                  .nextState
+              as ConnectFourState;
+
+      expect(cur.grid[4][3], 'Player 2');
+
+      // Player 1 uses Heavy Breaker Disc into col 3 -> crushes Player 2's piece at row 4!
+      final powerRes = engine.applyMove(
+        cur,
+        'Player 1',
+        const ConnectFourMove.powerDrop(3),
+      );
+      expect(powerRes is MoveAccepted, true);
+      cur = (powerRes as MoveAccepted).nextState as ConnectFourState;
+
+      expect(cur.grid[4][3], 'Player 1');
+      expect(cur.p1PowerUsed, true);
+
+      // Advance turn with Player 2 normal drop
+      cur =
+          (engine.applyMove(cur, 'Player 2', const ConnectFourMove.drop(1))
+                      as MoveAccepted)
+                  .nextState
+              as ConnectFourState;
+
+      // Attempting to use power disc again by Player 1 is rejected
+      final rejected = engine.applyMove(
+        cur,
+        'Player 1',
+        const ConnectFourMove.powerDrop(2),
+      );
+      expect(rejected is MoveRejected, true);
+    });
+
+    test('Obstacle pegs block falling discs', () {
+      final hazardState = ConnectFourState.initial(
+        player1Id: 'P1',
+        player2Id: 'P2',
+        obstacles: [
+          [4, 3], // obstacle at row 4, col 3
+        ],
+      );
+
+      expect(hazardState.isObstacle(4, 3), true);
+
+      // Drop into col 3 - lands at row 3 (on top of obstacle at 4)
+      final res = engine.applyMove(
+        hazardState,
+        'P1',
+        const ConnectFourMove.drop(3),
+      );
+      expect(res is MoveAccepted, true);
+      final next = (res as MoveAccepted).nextState as ConnectFourState;
+
+      expect(next.grid[3][3], 'P1');
+      expect(next.grid[4][3], null); // obstacle cell is not a player disc
+
+      final inv = engine.validateInvariants(next);
+      expect(inv.isValid, true);
+    });
   });
 }

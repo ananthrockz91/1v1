@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/match_provider.dart';
-import '../theme/app_colors.dart';
 import '../theme/theme_provider.dart';
 import 'game_screen.dart';
 import 'lobby_screen.dart';
@@ -51,6 +50,7 @@ class GameCatalogueScreen extends ConsumerWidget {
 
               // Triangle Tactics (Playable)
               _buildGameCard(
+                theme: theme,
                 title: 'Triangle Tactics',
                 tagline: 'Territory Strategy on a Triangular Lattice',
                 description:
@@ -84,6 +84,7 @@ class GameCatalogueScreen extends ConsumerWidget {
 
               // Gravity Drop Duel (Playable)
               _buildGameCard(
+                theme: theme,
                 title: 'Gravity Drop Duel',
                 tagline: 'Connect Four: 7x6 Column Alignment Tactics',
                 description:
@@ -120,6 +121,7 @@ class GameCatalogueScreen extends ConsumerWidget {
 
               // Chroma Reversi (Playable)
               _buildGameCard(
+                theme: theme,
                 title: 'Chroma Reversi',
                 tagline: 'Othello Duel: Brisk Flanking & Cascade Flips',
                 description:
@@ -167,6 +169,7 @@ class GameCatalogueScreen extends ConsumerWidget {
 
               // Future Titles
               _buildGameCard(
+                theme: theme,
                 title: 'Tic-Tac-Toe Duel',
                 tagline: 'Classic 3x3 Deterministic Grid Match',
                 description:
@@ -179,6 +182,7 @@ class GameCatalogueScreen extends ConsumerWidget {
               const SizedBox(height: 12),
 
               _buildGameCard(
+                theme: theme,
                 title: 'Memory Duel',
                 tagline: 'Simultaneous Grid Recall',
                 description:
@@ -196,6 +200,7 @@ class GameCatalogueScreen extends ConsumerWidget {
   }
 
   Widget _buildGameCard({
+    required AppThemeData theme,
     required String title,
     required String tagline,
     required String description,
@@ -212,12 +217,12 @@ class GameCatalogueScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: theme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isPlayable
               ? accentColor.withValues(alpha: 0.4)
-              : AppColors.surfaceBorder,
+              : theme.surfaceBorder,
         ),
       ),
       child: Column(
@@ -232,8 +237,8 @@ class GameCatalogueScreen extends ConsumerWidget {
                   const SizedBox(width: 10),
                   Text(
                     title,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
+                    style: TextStyle(
+                      color: theme.textPrimary,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -248,13 +253,13 @@ class GameCatalogueScreen extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: isPlayable
                       ? accentColor.withValues(alpha: 0.15)
-                      : AppColors.surfaceBorder,
+                      : theme.surfaceBorder,
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
                   badge,
                   style: TextStyle(
-                    color: isPlayable ? accentColor : AppColors.textMuted,
+                    color: isPlayable ? accentColor : theme.textMuted,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.2,
@@ -275,8 +280,8 @@ class GameCatalogueScreen extends ConsumerWidget {
           const SizedBox(height: 6),
           Text(
             description,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
+            style: TextStyle(
+              color: theme.textSecondary,
               fontSize: 13,
               height: 1.4,
             ),

@@ -1,9 +1,10 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:game_core/game_core.dart';
-import '../theme/app_colors.dart';
+import '../theme/theme_provider.dart';
 
-class TriangleTacticsBoard extends StatefulWidget {
+class TriangleTacticsBoard extends ConsumerStatefulWidget {
   final TriangleTacticsState state;
   final String currentUserId;
   final Function(GridNode node1, GridNode node2) onMoveSubmitted;
@@ -18,10 +19,11 @@ class TriangleTacticsBoard extends StatefulWidget {
   });
 
   @override
-  State<TriangleTacticsBoard> createState() => _TriangleTacticsBoardState();
+  ConsumerState<TriangleTacticsBoard> createState() =>
+      _TriangleTacticsBoardState();
 }
 
-class _TriangleTacticsBoardState extends State<TriangleTacticsBoard>
+class _TriangleTacticsBoardState extends ConsumerState<TriangleTacticsBoard>
     with TickerProviderStateMixin {
   GridNode? _selectedNode;
   GridNode? _dragStartNode;
@@ -188,9 +190,10 @@ class _TriangleTacticsBoardState extends State<TriangleTacticsBoard>
     final validTargets = _getValidTargets(_selectedNode!, geometry);
     if (validTargets.contains(clickedNode)) {
       final first = _selectedNode!;
+      final theme = ref.read(currentThemeProvider);
       final activeColor = widget.state.activePlayerId == widget.state.player1Id
-          ? AppColors.player1
-          : AppColors.player2;
+          ? theme.player1
+          : theme.player2;
       setState(() {
         _selectedNode = null;
         _hoveredSnapNode = null;
@@ -360,9 +363,10 @@ class _TriangleTacticsBoardState extends State<TriangleTacticsBoard>
         }
       }
 
+      final theme = ref.read(currentThemeProvider);
       final activeColor = widget.state.activePlayerId == widget.state.player1Id
-          ? AppColors.player1
-          : AppColors.player2;
+          ? theme.player1
+          : theme.player2;
 
       setState(() {
         _dragStartNode = null;
@@ -458,6 +462,7 @@ class _TriangleTacticsBoardState extends State<TriangleTacticsBoard>
 
   @override
   Widget build(BuildContext context) {
+    final theme = ref.watch(currentThemeProvider);
     return AnimatedBuilder(
       animation: Listenable.merge([_pulseController, _conquerController]),
       builder: (context, child) {
@@ -520,6 +525,7 @@ class _TriangleTacticsBoardState extends State<TriangleTacticsBoard>
                 child: CustomPaint(
                   size: boardSize,
                   painter: _BoardPainter(
+                    theme: theme,
                     state: widget.state,
                     selectedNode: _selectedNode,
                     dragStartNode: _dragStartNode,
@@ -546,6 +552,7 @@ class _TriangleTacticsBoardState extends State<TriangleTacticsBoard>
 }
 
 class _BoardPainter extends CustomPainter {
+  final AppThemeData theme;
   final TriangleTacticsState state;
   final GridNode? selectedNode;
   final GridNode? dragStartNode;
@@ -561,6 +568,7 @@ class _BoardPainter extends CustomPainter {
   computePositions;
 
   _BoardPainter({
+    required this.theme,
     required this.state,
     required this.selectedNode,
     required this.dragStartNode,
@@ -581,8 +589,8 @@ class _BoardPainter extends CustomPainter {
     final positions = computePositions(size, geometry);
 
     final activeColor = state.activePlayerId == state.player1Id
-        ? AppColors.player1
-        : AppColors.player2;
+        ? theme.player1
+        : theme.player2;
 
     // 1. Draw physical hexagonal board tray & surface
     _drawBoardTray(canvas, size, geometry);
@@ -925,7 +933,7 @@ class _BoardPainter extends CustomPainter {
       final p2 = positions[tri.vertices[2]]!;
 
       final isP1 = ownerId == state.player1Id;
-      final baseColor = isP1 ? AppColors.player1 : AppColors.player2;
+      final baseColor = isP1 ? theme.player1 : theme.player2;
 
       final isNewlyClaimed =
           newlyClaimedTriangleIds.contains(triId) && isConquering;
@@ -1219,12 +1227,12 @@ class _BoardPainter extends CustomPainter {
         final isLastMove = band.id == lastBandId;
 
         // Determine player color for subtle accent
-        Color playerAccent = AppColors.player1;
+        Color playerAccent = theme.player1;
         for (final m in state.moveHistory) {
           if (m.edgeId == band.id) {
             playerAccent = m.playerId == state.player1Id
-                ? AppColors.player1
-                : AppColors.player2;
+                ? theme.player1
+                : theme.player2;
             break;
           }
         }
@@ -1241,7 +1249,7 @@ class _BoardPainter extends CustomPainter {
             canvas,
             p0,
             p3,
-            optimisticBandColor ?? AppColors.player1,
+            optimisticBandColor ?? theme.player1,
             true,
           );
         }
@@ -1263,12 +1271,12 @@ class _BoardPainter extends CustomPainter {
 
       final isLastMove = edge.id == lastMoveEdgeId;
 
-      Color bandColor = AppColors.pegNode;
+      Color bandColor = theme.textMuted;
       for (final m in state.moveHistory) {
         if (m.edgeId == edge.id) {
           bandColor = m.playerId == state.player1Id
-              ? AppColors.player1
-              : AppColors.player2;
+              ? theme.player1
+              : theme.player2;
           break;
         }
       }
@@ -1562,7 +1570,8 @@ class _BoardPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _BoardPainter oldDelegate) {
-    return oldDelegate.state != state ||
+    return oldDelegate.theme != theme ||
+        oldDelegate.state != state ||
         oldDelegate.selectedNode != selectedNode ||
         oldDelegate.dragStartNode != dragStartNode ||
         oldDelegate.dragPosition != dragPosition ||

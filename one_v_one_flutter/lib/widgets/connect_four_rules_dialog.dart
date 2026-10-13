@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../theme/theme_provider.dart';
 
-class ConnectFourRulesDialog extends StatelessWidget {
+class ConnectFourRulesDialog extends ConsumerWidget {
   const ConnectFourRulesDialog({super.key});
 
   static Future<void> show(BuildContext context) {
@@ -13,18 +14,20 @@ class ConnectFourRulesDialog extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = ref.watch(currentThemeProvider);
+
     return Dialog(
-      backgroundColor: AppColors.surface,
+      backgroundColor: theme.surface,
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: AppColors.surfaceBorder, width: 1.2),
+        side: BorderSide(color: theme.surfaceBorder, width: 1.2),
       ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(
-          maxWidth: 540,
-          maxHeight: 640,
+          maxWidth: 560,
+          maxHeight: 680,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -39,53 +42,46 @@ class ConnectFourRulesDialog extends StatelessWidget {
                     width: 42,
                     height: 42,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppColors.player1.withValues(alpha: 0.3),
-                          AppColors.tealLight.withValues(alpha: 0.3),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+                      color: theme.accentSurface,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: AppColors.player1.withValues(alpha: 0.5),
+                        color: theme.surfaceBorder,
                       ),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.blur_linear,
-                      color: AppColors.player1,
+                      color: theme.accent,
                       size: 24,
                     ),
                   ),
                   const SizedBox(width: 14),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Gravity Drop Duel (Connect 4)',
+                          'Gravity Drop Duel — Strategy & Rules',
                           style: TextStyle(
-                            color: AppColors.textPrimary,
+                            color: theme.textPrimary,
                             fontWeight: FontWeight.bold,
-                            fontSize: 17,
+                            fontSize: 16,
                           ),
                         ),
-                        SizedBox(height: 2),
+                        const SizedBox(height: 2),
                         Text(
-                          'Deterministic 7x6 Column Strategy Guide',
+                          'Classic, Tactical & Grand Arena Grid Sizes',
                           style: TextStyle(
-                            color: AppColors.textMuted,
-                            fontSize: 12,
+                            color: theme.textMuted,
+                            fontSize: 11.5,
                           ),
                         ),
                       ],
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.close,
-                      color: AppColors.textMuted,
+                      color: theme.textMuted,
                       size: 20,
                     ),
                     tooltip: 'Close',
@@ -94,7 +90,7 @@ class ConnectFourRulesDialog extends StatelessWidget {
                 ],
               ),
             ),
-            const Divider(height: 1, color: AppColors.surfaceBorder),
+            Divider(height: 1, color: theme.surfaceBorder),
 
             // Rules Content
             Expanded(
@@ -102,17 +98,18 @@ class ConnectFourRulesDialog extends StatelessWidget {
                 padding: const EdgeInsets.all(20),
                 children: [
                   _buildHighlightCard(
+                    theme: theme,
                     icon: Icons.emoji_events_outlined,
-                    iconColor: AppColors.tealLight,
-                    title: 'Objective: Connect 4 Discs',
+                    iconColor: theme.accent,
+                    title: 'Objective: Connect Discs to Win',
                     description:
-                        'Be the first player to form an unbroken horizontal, vertical, or diagonal line of four consecutive discs in your color.',
+                        'Be the first player to form an unbroken horizontal, vertical, or diagonal streak of consecutive discs in your color (4 in Classic/Tactical, 5 in Grand Arena).',
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'CORE GAMEPLAY MECHANICS',
+                  Text(
+                    'ARENA GRID SIZES',
                     style: TextStyle(
-                      color: AppColors.textMuted,
+                      color: theme.textMuted,
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1.2,
@@ -120,81 +117,56 @@ class ConnectFourRulesDialog extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   _buildStepTile(
-                    step: '1',
-                    title: 'Vertical Gravity Drop',
+                    theme: theme,
+                    step: 'A',
+                    title: 'Classic (7×6) — Connect 4',
                     text:
-                        'Tap any of the 7 columns to drop your neon disc. The disc plunges downwards obeying physics until it lands in the lowest empty slot of that column.',
+                        'The traditional 7-column by 6-row tournament grid. 42 total slots requiring 4-in-a-row to win.',
                   ),
                   _buildStepTile(
-                    step: '2',
-                    title: 'Alternating Turns',
+                    theme: theme,
+                    step: 'B',
+                    title: 'Tactical (8×7) — Connect 4',
                     text:
-                        'Player 1 (Neon Cyan) and Player 2 / AI Bot (Neon Amber) take turns dropping 1 disc at a time.',
+                        'Expanded 8-column battlefield offering deeper flanking routes and dual-center columns (Cols 3 & 4).',
                   ),
                   _buildStepTile(
-                    step: '3',
-                    title: 'Four Alignment Vectors',
+                    theme: theme,
+                    step: 'C',
+                    title: 'Grand Arena (9×8) — Connect 5',
                     text:
-                        'Discs can connect in 4 orientations: Horizontal (—), Vertical (|), Diagonal Rising (/), or Diagonal Falling (\\).',
-                  ),
-                  _buildStepTile(
-                    step: '4',
-                    title: 'Column Capacity & Full Columns',
-                    text:
-                        'Each of the 7 columns holds a maximum of 6 discs. Once a column is full, no further discs can be dropped into it.',
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'TACTICAL AI & BLOCKS',
-                    style: TextStyle(
-                      color: AppColors.textMuted,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  _buildFeatureCard(
-                    icon: Icons.shield_outlined,
-                    title: 'Block Three-in-a-Row Threats',
-                    description:
-                        'Always watch the opponent\'s open lines. If your opponent achieves 3 discs with open ends, block them immediately before they drop the winning 4th disc!',
-                  ),
-                  const SizedBox(height: 10),
-                  _buildFeatureCard(
-                    icon: Icons.filter_center_focus,
-                    title: 'Control Column 3 (The Center)',
-                    description:
-                        'The center column (Column 3) is involved in the highest number of possible four-in-a-row winning combinations. Prioritize controlling center slots early in the game.',
+                        'A vast 9-column arena featuring Gomoku-style 5-in-a-row alignment rules for massive tactical depth.',
                   ),
                   const SizedBox(height: 14),
                   _buildTipBox(
-                    '⚡ Game Over Condition: The game ends immediately when a player completes 4-in-a-row (marked by a golden laser beam) or if all 42 slots are filled without a winner (Draw).',
+                    theme: theme,
+                    text:
+                        '⚡ Victory Laser: When a player achieves the required streak, a neon laser beam locks in across the winning discs with audio-visual fanfare.',
                   ),
                 ],
               ),
             ),
 
-            const Divider(height: 1, color: AppColors.surfaceBorder),
+            Divider(height: 1, color: theme.surfaceBorder),
 
             // Footer
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               child: Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Pure Deterministic Game Engine',
+                      'Deterministic Engine • AI Supported',
                       style: TextStyle(
-                        color: AppColors.textMuted,
+                        color: theme.textMuted,
                         fontSize: 11.5,
                       ),
                     ),
                   ),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.player1,
-                      foregroundColor: Colors.black,
+                      backgroundColor: theme.buttonBackground,
+                      foregroundColor: theme.buttonForeground,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 10,
@@ -206,7 +178,7 @@ class ConnectFourRulesDialog extends StatelessWidget {
                     ),
                     onPressed: () => Navigator.of(context).pop(),
                     child: const Text(
-                      'Start Playing',
+                      'Ready to Duel',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 13.5,
@@ -223,6 +195,7 @@ class ConnectFourRulesDialog extends StatelessWidget {
   }
 
   Widget _buildHighlightCard({
+    required AppThemeData theme,
     required IconData icon,
     required Color iconColor,
     required String title,
@@ -231,9 +204,9 @@ class ConnectFourRulesDialog extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: iconColor.withValues(alpha: 0.3)),
+        color: theme.surfaceElevated,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.surfaceBorder),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -242,9 +215,9 @@ class ConnectFourRulesDialog extends StatelessWidget {
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: iconColor.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(10),
+              shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: iconColor, size: 22),
+            child: Icon(icon, color: iconColor, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -253,18 +226,18 @@ class ConnectFourRulesDialog extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: TextStyle(
+                    color: theme.textPrimary,
                     fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                    fontSize: 13.5,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   description,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12.5,
+                  style: TextStyle(
+                    color: theme.textSecondary,
+                    fontSize: 12,
                     height: 1.35,
                   ),
                 ),
@@ -277,6 +250,7 @@ class ConnectFourRulesDialog extends StatelessWidget {
   }
 
   Widget _buildStepTile({
+    required AppThemeData theme,
     required String step,
     required String title,
     required String text,
@@ -287,44 +261,42 @@ class ConnectFourRulesDialog extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 26,
-            height: 26,
+            width: 22,
+            height: 22,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: AppColors.player1.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: AppColors.player1.withValues(alpha: 0.4),
-              ),
+              color: theme.accentSurface,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: theme.surfaceBorder),
             ),
             child: Text(
               step,
-              style: const TextStyle(
-                color: AppColors.player1,
-                fontSize: 12,
+              style: TextStyle(
+                color: theme.accent,
                 fontWeight: FontWeight.bold,
+                fontSize: 11,
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: TextStyle(
+                    color: theme.textPrimary,
                     fontWeight: FontWeight.w600,
-                    fontSize: 13,
+                    fontSize: 12.5,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   text,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
+                  style: TextStyle(
+                    color: theme.textSecondary,
+                    fontSize: 11.5,
                     height: 1.3,
                   ),
                 ),
@@ -336,67 +308,26 @@ class ConnectFourRulesDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildFeatureCard({
-    required IconData icon,
-    required String title,
-    required String description,
+  Widget _buildTipBox({
+    required AppThemeData theme,
+    required String text,
   }) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surfaceElevated.withValues(alpha: 0.7),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.surfaceBorder),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: AppColors.textSecondary, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  description,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                    height: 1.3,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTipBox(String text) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.player1.withValues(alpha: 0.08),
+        color: theme.surface,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.player1.withValues(alpha: 0.25)),
+        border: Border.all(
+          color: theme.accent.withValues(alpha: 0.3),
+        ),
       ),
       child: Text(
         text,
         style: TextStyle(
-          color: AppColors.player1.withValues(alpha: 0.95),
-          fontSize: 12,
+          color: theme.accent,
+          fontSize: 11.5,
           fontWeight: FontWeight.w500,
-          height: 1.35,
+          height: 1.3,
         ),
       ),
     );

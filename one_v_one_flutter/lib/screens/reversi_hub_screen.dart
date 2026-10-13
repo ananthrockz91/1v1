@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../theme/app_colors.dart';
 import '../theme/theme_provider.dart';
 import '../widgets/reversi_rules_dialog.dart';
 import 'reversi_screen.dart';
@@ -37,53 +36,55 @@ class _ReversiHubScreenState extends ConsumerState<ReversiHubScreen> {
           ),
         ),
         actions: [
-          // Theme Switcher Toggle Pill
-          Center(
-            child: InkWell(
-              borderRadius: BorderRadius.circular(20),
-              onTap: () {
-                ref.read(themeModeProvider.notifier).toggle();
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: theme.surfaceElevated,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: theme.isMonochrome
-                        ? const Color(0xFF3F3F46)
-                        : const Color(0xFF14B8A6).withValues(alpha: 0.6),
+          if (showThemeSwitcher) ...[
+            // Theme Switcher Toggle Pill
+            Center(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () {
+                  ref.read(themeModeProvider.notifier).toggle();
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
                   ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      theme.isMonochrome
-                          ? Icons.contrast_rounded
-                          : Icons.palette_outlined,
-                      size: 13,
-                      color: theme.accent,
+                  decoration: BoxDecoration(
+                    color: theme.surfaceElevated,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: theme.isMonochrome
+                          ? const Color(0xFF3F3F46)
+                          : const Color(0xFF14B8A6).withValues(alpha: 0.6),
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      theme.name,
-                      style: TextStyle(
-                        color: theme.textPrimary,
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.bold,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        theme.isMonochrome
+                            ? Icons.contrast_rounded
+                            : Icons.palette_outlined,
+                        size: 13,
+                        color: theme.accent,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 4),
+                      Text(
+                        theme.name,
+                        style: TextStyle(
+                          color: theme.textPrimary,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 4),
+            const SizedBox(width: 4),
+          ],
           IconButton(
             icon: Icon(
               Icons.help_outline_rounded,
@@ -170,10 +171,10 @@ class _ReversiHubScreenState extends ConsumerState<ReversiHubScreen> {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    const Text(
+                    Text(
                       'A minute to learn, a lifetime to master. Flank opponent disks in 8 directions, trigger cascade flips, and control key corner anchors to dominate the board.',
                       style: TextStyle(
-                        color: AppColors.textSecondary,
+                        color: theme.textSecondary,
                         fontSize: 13,
                         height: 1.45,
                       ),
@@ -215,11 +216,16 @@ class _ReversiHubScreenState extends ConsumerState<ReversiHubScreen> {
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        _buildDifficultyChip(1, 'Apprentice', 'Depth 1'),
+                        _buildDifficultyChip(theme, 1, 'Apprentice', 'Depth 1'),
                         const SizedBox(width: 8),
-                        _buildDifficultyChip(3, 'Tactician', 'Depth 3'),
+                        _buildDifficultyChip(theme, 3, 'Tactician', 'Depth 3'),
                         const SizedBox(width: 8),
-                        _buildDifficultyChip(4, 'Grandmaster', 'Depth 4'),
+                        _buildDifficultyChip(
+                          theme,
+                          4,
+                          'Grandmaster',
+                          'Depth 4',
+                        ),
                       ],
                     ),
                   ],
@@ -298,7 +304,12 @@ class _ReversiHubScreenState extends ConsumerState<ReversiHubScreen> {
     );
   }
 
-  Widget _buildDifficultyChip(int depth, String label, String sub) {
+  Widget _buildDifficultyChip(
+    AppThemeData theme,
+    int depth,
+    String label,
+    String sub,
+  ) {
     final isSelected = _selectedAiDepth == depth;
     return Expanded(
       child: InkWell(
@@ -308,11 +319,11 @@ class _ReversiHubScreenState extends ConsumerState<ReversiHubScreen> {
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
           decoration: BoxDecoration(
             color: isSelected
-                ? AppColors.teal.withValues(alpha: 0.18)
-                : AppColors.surfaceElevated,
+                ? theme.accent.withValues(alpha: 0.18)
+                : theme.surfaceElevated,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isSelected ? AppColors.teal : AppColors.surfaceBorder,
+              color: isSelected ? theme.accent : theme.surfaceBorder,
               width: isSelected ? 1.5 : 1.0,
             ),
           ),
@@ -321,9 +332,7 @@ class _ReversiHubScreenState extends ConsumerState<ReversiHubScreen> {
               Text(
                 label,
                 style: TextStyle(
-                  color: isSelected
-                      ? AppColors.tealLight
-                      : AppColors.textPrimary,
+                  color: isSelected ? theme.accentSecondary : theme.textPrimary,
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
                 ),
@@ -332,7 +341,7 @@ class _ReversiHubScreenState extends ConsumerState<ReversiHubScreen> {
               Text(
                 sub,
                 style: TextStyle(
-                  color: isSelected ? AppColors.teal : AppColors.textMuted,
+                  color: isSelected ? theme.accent : theme.textMuted,
                   fontSize: 10,
                 ),
               ),
@@ -358,7 +367,7 @@ class _ReversiHubScreenState extends ConsumerState<ReversiHubScreen> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: primary
-              ? AppColors.teal.withValues(alpha: 0.4)
+              ? theme.accent.withValues(alpha: 0.4)
               : theme.surfaceBorder,
         ),
       ),
@@ -375,13 +384,13 @@ class _ReversiHubScreenState extends ConsumerState<ReversiHubScreen> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: primary
-                        ? AppColors.teal.withValues(alpha: 0.15)
+                        ? theme.accent.withValues(alpha: 0.15)
                         : theme.surfaceElevated,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     icon,
-                    color: primary ? AppColors.teal : theme.textPrimary,
+                    color: primary ? theme.accent : theme.textPrimary,
                     size: 24,
                   ),
                 ),
@@ -407,13 +416,14 @@ class _ReversiHubScreenState extends ConsumerState<ReversiHubScreen> {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.teal.withValues(alpha: 0.15),
+                              color: theme.badgeBackground,
                               borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: theme.badgeBorder),
                             ),
                             child: Text(
                               badge,
-                              style: const TextStyle(
-                                color: AppColors.tealLight,
+                              style: TextStyle(
+                                color: theme.badgeText,
                                 fontSize: 9,
                                 fontWeight: FontWeight.bold,
                               ),

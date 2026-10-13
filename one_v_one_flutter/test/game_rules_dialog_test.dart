@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:one_v_one_flutter/widgets/game_rules_dialog.dart';
 
@@ -11,12 +12,14 @@ void main() {
     addTearDown(() => tester.view.resetPhysicalSize());
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: Builder(
-            builder: (context) => ElevatedButton(
-              onPressed: () => GameRulesDialog.show(context),
-              child: const Text('Open Rules'),
+      ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => GameRulesDialog.show(context),
+                child: const Text('Open Rules'),
+              ),
             ),
           ),
         ),

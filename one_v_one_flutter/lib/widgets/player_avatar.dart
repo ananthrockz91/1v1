@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import '../theme/app_colors.dart';
+import '../theme/theme_provider.dart';
 
 class AvatarPreset {
   final String id;
@@ -82,7 +83,7 @@ class AvatarCatalog {
   }
 }
 
-class PlayerAvatar extends StatelessWidget {
+class PlayerAvatar extends ConsumerWidget {
   final String? avatarSeed;
   final String displayName;
   final double size;
@@ -101,7 +102,8 @@ class PlayerAvatar extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = ref.watch(currentThemeProvider);
     final seed = (avatarSeed == null || avatarSeed!.isEmpty)
         ? 'avatar_1'
         : avatarSeed!;
@@ -139,7 +141,7 @@ class PlayerAvatar extends StatelessWidget {
         loadingBuilder: (_, child, progress) {
           if (progress == null) return child;
           return Container(
-            color: AppColors.surfaceElevated,
+            color: theme.surfaceElevated,
             child: const Center(
               child: SizedBox(
                 width: 14,
@@ -179,7 +181,7 @@ class PlayerAvatar extends StatelessWidget {
         shape: BoxShape.circle,
         border: showBorder
             ? Border.all(
-                color: borderColor ?? AppColors.surfaceBorder,
+                color: borderColor ?? theme.surfaceBorder,
                 width: 2.0,
               )
             : null,
@@ -239,7 +241,7 @@ enum AvatarPickerTab {
   customUrl,
 }
 
-class AvatarPickerSheet extends StatefulWidget {
+class AvatarPickerSheet extends ConsumerStatefulWidget {
   final String initialSeed;
   final ValueChanged<String> onSelected;
 
@@ -283,10 +285,10 @@ class AvatarPickerSheet extends StatefulWidget {
   }
 
   @override
-  State<AvatarPickerSheet> createState() => _AvatarPickerSheetState();
+  ConsumerState<AvatarPickerSheet> createState() => _AvatarPickerSheetState();
 }
 
-class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
+class _AvatarPickerSheetState extends ConsumerState<AvatarPickerSheet> {
   late String _selectedSeed;
   final _urlController = TextEditingController();
   AvatarPickerTab _currentTab = AvatarPickerTab.presets;
@@ -352,10 +354,11 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
     } catch (e) {
       setState(() => _isPickingImage = false);
       if (mounted) {
+        final theme = ref.read(currentThemeProvider);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Could not open image: $e'),
-            backgroundColor: AppColors.error,
+            backgroundColor: theme.statusError,
           ),
         );
       }
@@ -378,12 +381,14 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = ref.watch(currentThemeProvider);
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: theme.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.surfaceBorder, width: 1.5),
+        border: Border.all(color: theme.surfaceBorder, width: 1.5),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.6),
@@ -399,16 +404,16 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Choose Profile Picture',
                 style: TextStyle(
-                  color: AppColors.textPrimary,
+                  color: theme.textPrimary,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.close, color: AppColors.textMuted),
+                icon: Icon(Icons.close, color: theme.textSecondary),
                 onPressed: () => Navigator.of(context).pop(),
                 splashRadius: 20,
               ),
@@ -432,7 +437,7 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
                         avatarSeed: _selectedSeed,
                         displayName: 'You',
                         size: 78,
-                        borderColor: AppColors.player1,
+                        borderColor: theme.player1,
                       ),
                       if (_currentTab == AvatarPickerTab.device)
                         Positioned(
@@ -440,8 +445,8 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
                           bottom: 0,
                           child: Container(
                             padding: const EdgeInsets.all(5),
-                            decoration: const BoxDecoration(
-                              color: AppColors.player1,
+                            decoration: BoxDecoration(
+                              color: theme.player1,
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
@@ -457,8 +462,8 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
                 const SizedBox(height: 8),
                 Text(
                   _previewLabel,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
+                  style: TextStyle(
+                    color: theme.textSecondary,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -485,12 +490,12 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
                       });
                     }
                   },
-                  selectedColor: AppColors.player1,
-                  backgroundColor: AppColors.surfaceElevated,
+                  selectedColor: theme.player1,
+                  backgroundColor: theme.surfaceElevated,
                   labelStyle: TextStyle(
                     color: _currentTab == AvatarPickerTab.presets
                         ? Colors.black
-                        : Colors.white,
+                        : theme.textPrimary,
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),
@@ -508,7 +513,7 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
                           size: 14,
                           color: _currentTab == AvatarPickerTab.device
                               ? Colors.black
-                              : Colors.white,
+                              : theme.textPrimary,
                         ),
                         const SizedBox(width: 4),
                         Flexible(
@@ -528,12 +533,12 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
                       });
                     }
                   },
-                  selectedColor: AppColors.player1,
-                  backgroundColor: AppColors.surfaceElevated,
+                  selectedColor: theme.player1,
+                  backgroundColor: theme.surfaceElevated,
                   labelStyle: TextStyle(
                     color: _currentTab == AvatarPickerTab.device
                         ? Colors.black
-                        : Colors.white,
+                        : theme.textPrimary,
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),
@@ -554,12 +559,12 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
                       });
                     }
                   },
-                  selectedColor: AppColors.player1,
-                  backgroundColor: AppColors.surfaceElevated,
+                  selectedColor: theme.player1,
+                  backgroundColor: theme.surfaceElevated,
                   labelStyle: TextStyle(
                     color: _currentTab == AvatarPickerTab.customUrl
                         ? Colors.black
-                        : Colors.white,
+                        : theme.textPrimary,
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),
@@ -587,15 +592,13 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: isSelected
-                            ? AppColors.player1
-                            : Colors.transparent,
+                        color: isSelected ? theme.player1 : Colors.transparent,
                         width: 2.5,
                       ),
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: AppColors.player1.withValues(alpha: 0.5),
+                                color: theme.player1.withValues(alpha: 0.5),
                                 blurRadius: 10,
                                 spreadRadius: 1,
                               ),
@@ -614,30 +617,30 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
               }).toList(),
             ),
           ] else if (_currentTab == AvatarPickerTab.device) ...[
-            _buildDeviceTabContent(),
+            _buildDeviceTabContent(theme),
           ] else ...[
             TextField(
               controller: _urlController,
-              style: const TextStyle(color: Colors.white, fontSize: 13),
+              style: TextStyle(color: theme.textPrimary, fontSize: 13),
               decoration: InputDecoration(
                 hintText: 'Paste image link (https://...)',
-                hintStyle: const TextStyle(
-                  color: AppColors.textMuted,
+                hintStyle: TextStyle(
+                  color: theme.textSecondary,
                   fontSize: 12,
                 ),
                 filled: true,
-                fillColor: AppColors.surfaceElevated,
+                fillColor: theme.surfaceElevated,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 14,
                   vertical: 12,
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.surfaceBorder),
+                  borderSide: BorderSide(color: theme.surfaceBorder),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.player1),
+                  borderSide: BorderSide(color: theme.player1),
                 ),
               ),
               onChanged: (val) {
@@ -656,8 +659,8 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
           // Save Button
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.player1,
-              foregroundColor: Colors.black,
+              backgroundColor: theme.buttonBackground,
+              foregroundColor: theme.buttonForeground,
               minimumSize: const Size.fromHeight(46),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -683,7 +686,7 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
     );
   }
 
-  Widget _buildDeviceTabContent() {
+  Widget _buildDeviceTabContent(AppThemeData theme) {
     final hasDeviceImage = _selectedSeed.startsWith('data:');
 
     return Column(
@@ -694,34 +697,34 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             margin: const EdgeInsets.only(bottom: 14),
             decoration: BoxDecoration(
-              color: AppColors.player1.withValues(alpha: 0.12),
+              color: theme.player1.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: AppColors.player1.withValues(alpha: 0.4),
+                color: theme.player1.withValues(alpha: 0.4),
               ),
             ),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.check_circle,
-                  color: AppColors.player1,
+                  color: theme.player1,
                   size: 20,
                 ),
                 const SizedBox(width: 10),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Local image loaded and ready to save!',
                     style: TextStyle(
-                      color: AppColors.textPrimary,
+                      color: theme.textPrimary,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.delete_outline,
-                    color: AppColors.error,
+                    color: theme.statusError,
                     size: 20,
                   ),
                   tooltip: 'Clear image',
@@ -740,7 +743,7 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
         if (_isPickingImage) ...[
           Container(
             padding: const EdgeInsets.all(24),
-            child: const Center(
+            child: Center(
               child: Column(
                 children: [
                   SizedBox(
@@ -748,14 +751,14 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
                     height: 28,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.5,
-                      color: AppColors.player1,
+                      color: theme.player1,
                     ),
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   Text(
                     'Loading photo...',
                     style: TextStyle(
-                      color: AppColors.textSecondary,
+                      color: theme.textSecondary,
                       fontSize: 13,
                     ),
                   ),
@@ -769,6 +772,7 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
             children: [
               Expanded(
                 child: _buildActionTile(
+                  theme: theme,
                   icon: Icons.photo_library_outlined,
                   title: 'Photo Library',
                   subtitle: 'Pick from phone',
@@ -778,6 +782,7 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
               const SizedBox(width: 10),
               Expanded(
                 child: _buildActionTile(
+                  theme: theme,
                   icon: Icons.photo_camera_outlined,
                   title: 'Camera',
                   subtitle: 'Take a photo',
@@ -789,6 +794,7 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
         ] else ...[
           // Desktop / Web Options: File Picker / Computer Browse
           _buildActionTile(
+            theme: theme,
             icon: Icons.desktop_windows_outlined,
             title: 'Browse Files on Device',
             subtitle: 'Choose PNG, JPG, or WebP from your computer',
@@ -801,6 +807,7 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
   }
 
   Widget _buildActionTile({
+    required AppThemeData theme,
     required IconData icon,
     required String title,
     required String subtitle,
@@ -813,10 +820,10 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
         decoration: BoxDecoration(
-          color: AppColors.surfaceElevated,
+          color: theme.surfaceElevated,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: AppColors.surfaceBorder,
+            color: theme.surfaceBorder,
             width: 1.2,
           ),
         ),
@@ -828,10 +835,10 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: AppColors.player1.withValues(alpha: 0.15),
+                color: theme.player1.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: AppColors.player1, size: 22),
+              child: Icon(icon, color: theme.player1, size: 22),
             ),
             const SizedBox(width: 12),
             Flexible(
@@ -841,8 +848,8 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
+                    style: TextStyle(
+                      color: theme.textPrimary,
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
                     ),
@@ -850,8 +857,8 @@ class _AvatarPickerSheetState extends State<AvatarPickerSheet> {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: const TextStyle(
-                      color: AppColors.textMuted,
+                    style: TextStyle(
+                      color: theme.textSecondary,
                       fontSize: 11,
                     ),
                     overflow: TextOverflow.ellipsis,

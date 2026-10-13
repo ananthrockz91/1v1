@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:one_v_one_client/one_v_one_client.dart';
 import '../client.dart';
-import '../theme/app_colors.dart';
+import '../theme/theme_provider.dart';
 import '../widgets/player_avatar.dart';
 
-class AdminBoardScreen extends StatefulWidget {
+class AdminBoardScreen extends ConsumerStatefulWidget {
   const AdminBoardScreen({super.key});
 
   @override
-  State<AdminBoardScreen> createState() => _AdminBoardScreenState();
+  ConsumerState<AdminBoardScreen> createState() => _AdminBoardScreenState();
 }
 
-class _AdminBoardScreenState extends State<AdminBoardScreen>
+class _AdminBoardScreenState extends ConsumerState<AdminBoardScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   AdminDashboardData? _data;
@@ -61,13 +62,14 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
     try {
       final log = await client.admin.triggerDailyMaintenance();
       if (!mounted) return;
+      final theme = ref.read(currentThemeProvider);
       messenger.showSnackBar(
         SnackBar(
           content: Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.check_circle,
-                color: AppColors.success,
+                color: theme.statusSuccess,
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -79,17 +81,18 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
               ),
             ],
           ),
-          backgroundColor: AppColors.surfaceElevated,
+          backgroundColor: theme.surfaceElevated,
           duration: const Duration(seconds: 4),
         ),
       );
       await _fetchDashboardData();
     } catch (e) {
       if (!mounted) return;
+      final theme = ref.read(currentThemeProvider);
       messenger.showSnackBar(
         SnackBar(
           content: Text('Failed to trigger maintenance: $e'),
-          backgroundColor: AppColors.error,
+          backgroundColor: theme.statusError,
         ),
       );
     } finally {
@@ -104,6 +107,7 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
     try {
       final success = await client.admin.clearCaches();
       if (!mounted) return;
+      final theme = ref.read(currentThemeProvider);
       messenger.showSnackBar(
         SnackBar(
           content: Text(
@@ -111,16 +115,17 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
                 ? 'Serverpod local in-memory caches flushed successfully!'
                 : 'Could not flush caches.',
           ),
-          backgroundColor: success ? AppColors.success : AppColors.error,
+          backgroundColor: success ? theme.statusSuccess : theme.statusError,
         ),
       );
       await _fetchDashboardData();
     } catch (e) {
       if (!mounted) return;
+      final theme = ref.read(currentThemeProvider);
       messenger.showSnackBar(
         SnackBar(
           content: Text('Error clearing caches: $e'),
-          backgroundColor: AppColors.error,
+          backgroundColor: theme.statusError,
         ),
       );
     } finally {
@@ -139,27 +144,29 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = ref.watch(currentThemeProvider);
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.background,
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
+        backgroundColor: theme.surface,
         elevation: 0,
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: AppColors.player1.withValues(alpha: 0.15),
+                color: theme.player1.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.memory_rounded,
-                color: AppColors.player1,
+                color: theme.player1,
                 size: 20,
               ),
             ),
             const SizedBox(width: 10),
-            const Column(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -167,14 +174,14 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                    color: theme.textPrimary,
                   ),
                 ),
                 Text(
                   'Live Authoritative Backend Inspector',
                   style: TextStyle(
                     fontSize: 11,
-                    color: AppColors.textSecondary,
+                    color: theme.textSecondary,
                   ),
                 ),
               ],
@@ -182,17 +189,66 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
           ],
         ),
         actions: [
+          if (showThemeSwitcher) ...[
+            // Theme Switcher Toggle Pill
+            Center(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () {
+                  ref.read(themeModeProvider.notifier).toggle();
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: theme.surfaceElevated,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: theme.isMonochrome
+                          ? const Color(0xFF3F3F46)
+                          : const Color(0xFF14B8A6).withValues(alpha: 0.6),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        theme.isMonochrome
+                            ? Icons.contrast_rounded
+                            : Icons.palette_outlined,
+                        size: 13,
+                        color: theme.accent,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        theme.name,
+                        style: TextStyle(
+                          color: theme.textPrimary,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+          ],
           IconButton(
             icon: _isLoading
-                ? const SizedBox(
+                ? SizedBox(
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: AppColors.player1,
+                      color: theme.player1,
                     ),
                   )
-                : const Icon(Icons.refresh, color: AppColors.textSecondary),
+                : Icon(Icons.refresh, color: theme.textSecondary),
             tooltip: 'Refresh Metrics',
             onPressed: _isLoading ? null : _fetchDashboardData,
           ),
@@ -200,10 +256,10 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
         ],
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: AppColors.player1,
+          indicatorColor: theme.player1,
           indicatorWeight: 3,
-          labelColor: AppColors.player1,
-          unselectedLabelColor: AppColors.textSecondary,
+          labelColor: theme.player1,
+          unselectedLabelColor: theme.textSecondary,
           labelStyle: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 13,
@@ -217,24 +273,24 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
         ),
       ),
       body: _isLoading && _data == null
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.player1),
+          ? Center(
+              child: CircularProgressIndicator(color: theme.player1),
             )
           : TabBarView(
               controller: _tabController,
               children: [
                 _data != null
-                    ? _buildOverviewTab()
-                    : _buildRestartRequiredOverviewTab(),
-                _buildMatchesTab(),
-                _buildCronLogsTab(),
-                _buildArchitectureShowcaseTab(),
+                    ? _buildOverviewTab(theme)
+                    : _buildRestartRequiredOverviewTab(theme),
+                _buildMatchesTab(theme),
+                _buildCronLogsTab(theme),
+                _buildArchitectureShowcaseTab(theme),
               ],
             ),
     );
   }
 
-  Widget _buildRestartRequiredOverviewTab() {
+  Widget _buildRestartRequiredOverviewTab(AppThemeData theme) {
     final isMethodNotFound =
         _errorMessage?.contains('Method not found in endpoint') ?? false;
 
@@ -249,15 +305,15 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: theme.surface,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: Colors.amber.withValues(alpha: 0.4),
+                    color: theme.player2.withValues(alpha: 0.4),
                     width: 1.5,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.amber.withValues(alpha: 0.08),
+                      color: theme.player2.withValues(alpha: 0.08),
                       blurRadius: 24,
                       offset: const Offset(0, 8),
                     ),
@@ -268,20 +324,20 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.amber.withValues(alpha: 0.15),
+                        color: theme.player2.withValues(alpha: 0.15),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.sync_problem_rounded,
-                        color: Colors.amber,
+                        color: theme.player2,
                         size: 36,
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'Serverpod Restart Required',
                       style: TextStyle(
-                        color: AppColors.textPrimary,
+                        color: theme.textPrimary,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -292,8 +348,8 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
                           ? 'New methods (getDashboardData) were generated for AdminEndpoint. In Serverpod, newly added endpoint methods require a server restart to register into the route dispatcher.'
                           : (_errorMessage ?? 'Could not connect to backend.'),
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
+                      style: TextStyle(
+                        color: theme.textSecondary,
                         fontSize: 13,
                         height: 1.5,
                       ),
@@ -305,23 +361,23 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
                         vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceElevated,
+                        color: theme.surfaceElevated,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.surfaceBorder),
+                        border: Border.all(color: theme.surfaceBorder),
                       ),
-                      child: const Row(
+                      child: Row(
                         children: [
                           Icon(
                             Icons.terminal,
-                            color: AppColors.player1,
+                            color: theme.player1,
                             size: 20,
                           ),
-                          SizedBox(width: 10),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: Text(
                               'Switch to the terminal running "serverpod start" and press "R" to hot-restart the backend.',
                               style: TextStyle(
-                                color: AppColors.textPrimary,
+                                color: theme.textPrimary,
                                 fontFamily: 'monospace',
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
@@ -339,8 +395,8 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
                       children: [
                         ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.player1,
-                            foregroundColor: Colors.black,
+                            backgroundColor: theme.buttonBackground,
+                            foregroundColor: theme.buttonForeground,
                             padding: const EdgeInsets.symmetric(
                               horizontal: 20,
                               vertical: 12,
@@ -358,9 +414,9 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
                         ),
                         OutlinedButton.icon(
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.amber,
+                            foregroundColor: theme.player2,
                             side: BorderSide(
-                              color: Colors.amber.withValues(alpha: 0.5),
+                              color: theme.player2.withValues(alpha: 0.5),
                             ),
                             padding: const EdgeInsets.symmetric(
                               horizontal: 16,
@@ -380,10 +436,10 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'Tip: You can still click the "Architecture" tab above to review all Serverpod features!',
                 style: TextStyle(
-                  color: AppColors.textMuted,
+                  color: theme.textMuted,
                   fontSize: 12,
                 ),
               ),
@@ -397,7 +453,7 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
   // -------------------------------------------------------------
   // TAB 1: OVERVIEW METRICS & CONTROLS
   // -------------------------------------------------------------
-  Widget _buildOverviewTab() {
+  Widget _buildOverviewTab(AppThemeData theme) {
     final d = _data!;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -411,10 +467,10 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: theme.surface,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: AppColors.player1.withValues(alpha: 0.3),
+                    color: theme.player1.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Row(
@@ -422,12 +478,12 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
                     Container(
                       width: 10,
                       height: 10,
-                      decoration: const BoxDecoration(
-                        color: AppColors.success,
+                      decoration: BoxDecoration(
+                        color: theme.statusSuccess,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.success,
+                            color: theme.statusSuccess.withValues(alpha: 0.6),
                             blurRadius: 8,
                             spreadRadius: 2,
                           ),
@@ -441,10 +497,10 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
                         children: [
                           Row(
                             children: [
-                              const Text(
+                              Text(
                                 'Serverpod Engine: ONLINE',
                                 style: TextStyle(
-                                  color: AppColors.textPrimary,
+                                  color: theme.textPrimary,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
                                 ),
@@ -456,13 +512,14 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.surfaceElevated,
+                                  color: theme.badgeBackground,
                                   borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: theme.badgeBorder),
                                 ),
                                 child: Text(
                                   d.runMode.toUpperCase(),
-                                  style: const TextStyle(
-                                    color: AppColors.player1,
+                                  style: TextStyle(
+                                    color: theme.badgeText,
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -473,8 +530,8 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
                           const SizedBox(height: 4),
                           Text(
                             'Server ID: ${d.serverId} • Uptime: ${_formatUptime(d.uptimeSeconds)} • DB Latency: ${d.dbLatencyMs} ms',
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
+                            style: TextStyle(
+                              color: theme.textSecondary,
                               fontSize: 12,
                             ),
                           ),
@@ -499,33 +556,37 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
                     childAspectRatio: isWide ? 1.4 : 1.3,
                     children: [
                       _buildMetricCard(
+                        theme: theme,
                         title: 'Total Matches',
                         value: '${d.totalMatches}',
                         subtitle:
                             '${d.inProgressMatches} active • ${d.waitingMatches} waiting',
                         icon: Icons.sports_esports_outlined,
-                        color: AppColors.player1,
+                        color: theme.player1,
                       ),
                       _buildMetricCard(
+                        theme: theme,
                         title: 'Total Players',
                         value: '${d.totalPlayers}',
                         subtitle: 'PostgreSQL registered profiles',
                         icon: Icons.people_outline,
-                        color: AppColors.player2,
+                        color: theme.player2,
                       ),
                       _buildMetricCard(
+                        theme: theme,
                         title: 'ACID Moves',
                         value: '${d.totalMoves}',
                         subtitle: 'Recorded in match_move_record',
                         icon: Icons.sync_alt_outlined,
-                        color: AppColors.success,
+                        color: theme.statusSuccess,
                       ),
                       _buildMetricCard(
+                        theme: theme,
                         title: 'Local Caches',
                         value: '${d.localCacheEntries}',
                         subtitle: 'In-memory keys (TTL enabled)',
                         icon: Icons.bolt_outlined,
-                        color: AppColors.tealLight,
+                        color: theme.accentSecondary,
                       ),
                     ],
                   );
@@ -534,32 +595,32 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
               const SizedBox(height: 20),
 
               // Multi-Game Arena Telemetry Card
-              _buildGameBreakdownCard(d),
+              _buildGameBreakdownCard(theme, d),
               const SizedBox(height: 24),
 
               // Interactive Action Triggers
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: theme.surface,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.surfaceBorder),
+                  border: Border.all(color: theme.surfaceBorder),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Row(
+                    Row(
                       children: [
                         Icon(
                           Icons.terminal,
-                          color: AppColors.player1,
+                          color: theme.player1,
                           size: 20,
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
                           'Interactive Serverpod Control Actions',
                           style: TextStyle(
-                            color: AppColors.textPrimary,
+                            color: theme.textPrimary,
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
                           ),
@@ -567,10 +628,10 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
                       ],
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Trigger backend actions to witness Serverpod scheduled jobs, transaction processors, and cache invalidation in real time:',
                       style: TextStyle(
-                        color: AppColors.textSecondary,
+                        color: theme.textSecondary,
                         fontSize: 12,
                       ),
                     ),
@@ -581,8 +642,8 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
                       children: [
                         ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.player1,
-                            foregroundColor: Colors.black,
+                            backgroundColor: theme.buttonBackground,
+                            foregroundColor: theme.buttonForeground,
                             padding: const EdgeInsets.symmetric(
                               horizontal: 16,
                               vertical: 12,
@@ -602,9 +663,9 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
                         ),
                         OutlinedButton.icon(
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.textPrimary,
-                            side: const BorderSide(
-                              color: AppColors.surfaceBorder,
+                            foregroundColor: theme.textPrimary,
+                            side: BorderSide(
+                              color: theme.surfaceBorder,
                             ),
                             padding: const EdgeInsets.symmetric(
                               horizontal: 16,
@@ -625,9 +686,9 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
                         ),
                         OutlinedButton.icon(
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.player2,
+                            foregroundColor: theme.player2,
                             side: BorderSide(
-                              color: AppColors.player2.withValues(alpha: 0.6),
+                              color: theme.player2.withValues(alpha: 0.6),
                             ),
                             padding: const EdgeInsets.symmetric(
                               horizontal: 16,
@@ -637,7 +698,7 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
-                          onPressed: () => _showHealthzDialog(context),
+                          onPressed: () => _showHealthzDialog(context, theme),
                           icon: const Icon(
                             Icons.health_and_safety_outlined,
                             size: 18,
@@ -653,10 +714,10 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
 
               // Recent Players Strip
               if (d.recentPlayers.isNotEmpty) ...[
-                const Text(
+                Text(
                   'Top Ranked Players (PostgreSQL Table: player_profile)',
                   style: TextStyle(
-                    color: AppColors.textPrimary,
+                    color: theme.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
@@ -668,9 +729,9 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
                     vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: theme.surface,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.surfaceBorder),
+                    border: Border.all(color: theme.surfaceBorder),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -686,16 +747,16 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
                           const SizedBox(height: 6),
                           Text(
                             p.displayName,
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
+                            style: TextStyle(
+                              color: theme.textPrimary,
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           Text(
                             '${p.wins} wins • ${p.totalMatches} matches',
-                            style: const TextStyle(
-                              color: AppColors.textMuted,
+                            style: TextStyle(
+                              color: theme.textMuted,
                               fontSize: 10,
                             ),
                           ),
@@ -713,6 +774,7 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
   }
 
   Widget _buildMetricCard({
+    required AppThemeData theme,
     required String title,
     required String value,
     required String subtitle,
@@ -722,9 +784,9 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: theme.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.surfaceBorder),
+        border: Border.all(color: theme.surfaceBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -735,8 +797,8 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
+                style: TextStyle(
+                  color: theme.textSecondary,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -754,8 +816,8 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
           ),
           Text(
             subtitle,
-            style: const TextStyle(
-              color: AppColors.textMuted,
+            style: TextStyle(
+              color: theme.textMuted,
               fontSize: 10,
             ),
             maxLines: 1,
@@ -766,7 +828,7 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
     );
   }
 
-  Widget _buildGameBreakdownCard(AdminDashboardData d) {
+  Widget _buildGameBreakdownCard(AppThemeData theme, AdminDashboardData d) {
     int triangleActive = 0, triangleWaiting = 0, triangleCompleted = 0;
     int connectFourActive = 0, connectFourWaiting = 0, connectFourCompleted = 0;
     int reversiActive = 0, reversiWaiting = 0, reversiCompleted = 0;
@@ -802,25 +864,25 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: theme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.surfaceBorder),
+        border: Border.all(color: theme.surfaceBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.grid_view_rounded,
-                color: AppColors.player1,
+                color: theme.player1,
                 size: 20,
               ),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'Multi-Game Telemetry Breakdown',
                 style: TextStyle(
-                  color: AppColors.textPrimary,
+                  color: theme.textPrimary,
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
                 ),
@@ -829,13 +891,14 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceElevated,
+                  color: theme.badgeBackground,
                   borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: theme.badgeBorder),
                 ),
-                child: const Text(
+                child: Text(
                   '3 ENGINES ACTIVE',
                   style: TextStyle(
-                    color: AppColors.player1,
+                    color: theme.badgeText,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1,
@@ -849,9 +912,10 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
             children: [
               Expanded(
                 child: _buildGameTelemetryItem(
+                  theme: theme,
                   title: 'Triangle Tactics',
                   icon: Icons.change_history,
-                  color: AppColors.player1,
+                  color: theme.player1,
                   active: triangleActive,
                   waiting: triangleWaiting,
                   completed: triangleCompleted,
@@ -860,9 +924,10 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
               const SizedBox(width: 10),
               Expanded(
                 child: _buildGameTelemetryItem(
+                  theme: theme,
                   title: 'Gravity Drop',
                   icon: Icons.blur_linear,
-                  color: AppColors.tealLight,
+                  color: theme.player2,
                   active: connectFourActive,
                   waiting: connectFourWaiting,
                   completed: connectFourCompleted,
@@ -871,9 +936,10 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
               const SizedBox(width: 10),
               Expanded(
                 child: _buildGameTelemetryItem(
+                  theme: theme,
                   title: 'Chroma Reversi',
                   icon: Icons.radio_button_checked,
-                  color: AppColors.teal,
+                  color: theme.accentSecondary,
                   active: reversiActive,
                   waiting: reversiWaiting,
                   completed: reversiCompleted,
@@ -887,6 +953,7 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
   }
 
   Widget _buildGameTelemetryItem({
+    required AppThemeData theme,
     required String title,
     required IconData icon,
     required Color color,
@@ -897,7 +964,7 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
+        color: theme.surfaceElevated,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withValues(alpha: 0.25)),
       ),
@@ -927,16 +994,16 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
             children: [
               Text(
                 'Live: $active',
-                style: const TextStyle(
-                  color: AppColors.success,
+                style: TextStyle(
+                  color: theme.statusSuccess,
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               Text(
                 'Wait: $waiting',
-                style: const TextStyle(
-                  color: AppColors.player2,
+                style: TextStyle(
+                  color: theme.player2,
                   fontSize: 11,
                 ),
               ),
@@ -945,8 +1012,8 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
           const SizedBox(height: 2),
           Text(
             'Completed: $completed',
-            style: const TextStyle(
-              color: AppColors.textSecondary,
+            style: TextStyle(
+              color: theme.textSecondary,
               fontSize: 10,
             ),
           ),
@@ -958,13 +1025,13 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
   // -------------------------------------------------------------
   // TAB 2: LIVE MATCHES TABLE (game_match)
   // -------------------------------------------------------------
-  Widget _buildMatchesTab() {
+  Widget _buildMatchesTab(AppThemeData theme) {
     final matches = _data?.recentMatches ?? [];
     if (matches.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'No matches recorded in game_match yet.',
-          style: TextStyle(color: AppColors.textSecondary),
+          style: TextStyle(color: theme.textSecondary),
         ),
       );
     }
@@ -979,10 +1046,10 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
         final isInProgress = m.status == 'in_progress';
 
         final statusColor = isInProgress
-            ? AppColors.player1
+            ? theme.player1
             : isWaiting
-            ? AppColors.player2
-            : AppColors.textMuted;
+            ? theme.player2
+            : theme.textMuted;
 
         final String gameName;
         final IconData gameIcon;
@@ -990,27 +1057,27 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
         if (m.gameType == 'triangle_tactics') {
           gameName = 'TRIANGLE';
           gameIcon = Icons.change_history;
-          gameColor = AppColors.player1;
+          gameColor = theme.player1;
         } else if (m.gameType == 'connect_four') {
           gameName = 'GRAVITY DROP';
           gameIcon = Icons.blur_linear;
-          gameColor = AppColors.tealLight;
+          gameColor = theme.player2;
         } else if (m.gameType == 'reversi') {
           gameName = 'REVERSI';
           gameIcon = Icons.radio_button_checked;
-          gameColor = AppColors.teal;
+          gameColor = theme.accentSecondary;
         } else {
           gameName = m.gameType.toUpperCase();
           gameIcon = Icons.sports_esports;
-          gameColor = AppColors.player2;
+          gameColor = theme.player2;
         }
 
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: theme.surface,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.surfaceBorder),
+            border: Border.all(color: theme.surfaceBorder),
           ),
           child: Row(
             children: [
@@ -1054,14 +1121,14 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
                       vertical: 3,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceElevated,
+                      color: theme.surfaceElevated,
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: AppColors.surfaceBorder),
+                      border: Border.all(color: theme.surfaceBorder),
                     ),
                     child: Text(
                       m.roomCode ?? 'PUBLIC',
-                      style: const TextStyle(
-                        color: AppColors.player1,
+                      style: TextStyle(
+                        color: theme.player1,
                         fontFamily: 'monospace',
                         fontWeight: FontWeight.bold,
                         fontSize: 11,
@@ -1077,8 +1144,8 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
                   children: [
                     Text(
                       'P1: ${m.player1Id} vs P2: ${m.player2Id ?? '(Awaiting)'}',
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
+                      style: TextStyle(
+                        color: theme.textPrimary,
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
                       ),
@@ -1087,8 +1154,8 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
                     const SizedBox(height: 4),
                     Text(
                       'Score: ${m.player1Score} - ${m.player2Score} • Turn: ${m.activePlayerId} • Game: ${m.gameType}',
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
+                      style: TextStyle(
+                        color: theme.textSecondary,
                         fontSize: 11,
                       ),
                     ),
@@ -1121,13 +1188,13 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
   // -------------------------------------------------------------
   // TAB 3: CRON SCHEDULED JOB LOGS (scheduled_job_log)
   // -------------------------------------------------------------
-  Widget _buildCronLogsTab() {
+  Widget _buildCronLogsTab(AppThemeData theme) {
     final logs = _data?.recentJobLogs ?? [];
     if (logs.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'No scheduled maintenance executions recorded yet.',
-          style: TextStyle(color: AppColors.textSecondary),
+          style: TextStyle(color: theme.textSecondary),
         ),
       );
     }
@@ -1138,12 +1205,15 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
       separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         final log = logs[index];
+        final isSuccess = log.success;
+        final statusColor = isSuccess ? theme.statusSuccess : theme.statusError;
+
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: theme.surface,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.surfaceBorder),
+            border: Border.all(color: theme.surfaceBorder),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1153,16 +1223,16 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
                 children: [
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.alarm_on,
-                        color: AppColors.player1,
+                        color: theme.player1,
                         size: 18,
                       ),
                       const SizedBox(width: 8),
                       Text(
                         log.jobName,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
+                        style: TextStyle(
+                          color: theme.textPrimary,
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
@@ -1175,16 +1245,16 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
                       vertical: 3,
                     ),
                     decoration: BoxDecoration(
-                      color: (log.success ? AppColors.success : AppColors.error)
-                          .withValues(alpha: 0.15),
+                      color: statusColor.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: statusColor.withValues(alpha: 0.35),
+                      ),
                     ),
                     child: Text(
-                      log.success ? 'SUCCESS' : 'FAILED',
+                      isSuccess ? 'SUCCESS' : 'FAILED',
                       style: TextStyle(
-                        color: log.success
-                            ? AppColors.success
-                            : AppColors.error,
+                        color: statusColor,
                         fontWeight: FontWeight.bold,
                         fontSize: 10,
                       ),
@@ -1195,16 +1265,16 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
               const SizedBox(height: 10),
               Text(
                 'Target Date: ${log.targetDate} • Executed: ${log.executedAt.toLocal().toString().split('.').first}',
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
+                style: TextStyle(
+                  color: theme.textSecondary,
                   fontSize: 12,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 'Stale Lobbies Cleaned: ${log.staleLobbiesCleaned} • Leaderboards Aggregated: ${log.leaderboardsAggregated}',
-                style: const TextStyle(
-                  color: AppColors.textMuted,
+                style: TextStyle(
+                  color: theme.textMuted,
                   fontSize: 11,
                 ),
               ),
@@ -1218,12 +1288,12 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
   // -------------------------------------------------------------
   // TAB 4: SERVERPOD ARCHITECTURE SHOWCASE
   // -------------------------------------------------------------
-  Widget _buildArchitectureShowcaseTab() {
+  Widget _buildArchitectureShowcaseTab(AppThemeData theme) {
     final features = [
       _FeatureInfo(
         title: 'Type-Safe RPC & Endpoint Generation',
         icon: Icons.code,
-        color: AppColors.player1,
+        color: theme.player1,
         description:
             'All server endpoints (MatchEndpoint, PlayerEndpoint, LeaderboardEndpoint, AdminEndpoint) '
             'automatically generate strongly typed client methods in one_v_one_client. '
@@ -1232,7 +1302,7 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
       _FeatureInfo(
         title: 'Serverpod ORM & Database Schema',
         icon: Icons.storage,
-        color: AppColors.player2,
+        color: theme.player2,
         description:
             'Models defined in .spy.yaml (GameMatch, MatchMoveRecord, PlayerProfile, DailyLeaderboard, ScheduledJobLog) '
             'map to PostgreSQL tables. Queries are fully typed (GameMatch.db.findFirstRow, etc.).',
@@ -1240,7 +1310,7 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
       _FeatureInfo(
         title: 'In-Memory Caching (session.caches.local)',
         icon: Icons.flash_on,
-        color: AppColors.tealLight,
+        color: theme.accentSecondary,
         description:
             'High-speed in-memory cache with TTL (5m daily leaderboards, 2m all-time leaderboards, 5m player profiles). '
             'Group invalidation automatically wipes "leaderboards" cache on daily aggregation.',
@@ -1248,7 +1318,7 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
       _FeatureInfo(
         title: 'Task Scheduling & Future Calls (Cron)',
         icon: Icons.access_time_filled,
-        color: AppColors.success,
+        color: theme.statusSuccess,
         description:
             'Automated nightly cron job runs at 1:00 AM IST (19:30 UTC) using Serverpod FutureCalls. '
             'Cleans up abandoned lobbies, compiles daily stats, and logs execution into scheduled_job_log.',
@@ -1256,7 +1326,7 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
       _FeatureInfo(
         title: 'Real-Time WebSocket Streaming (session.messages)',
         icon: Icons.stream,
-        color: AppColors.tealLight,
+        color: theme.player1,
         description:
             'Live multiplayer gameplay streams over WebSockets via Serverpod\'s message hub. '
             'Subscribing to match_\$matchId allows instant broadcast of player moves, scores, and forfeits.',
@@ -1264,7 +1334,7 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
       _FeatureInfo(
         title: 'Direct Cloud Storage (session.storage & FileUploader)',
         icon: Icons.cloud_upload_outlined,
-        color: AppColors.teal,
+        color: theme.player2,
         description:
             'Player avatars stream directly to Serverpod Cloud Storage using presigned upload descriptions '
             'and native FileUploader, eliminating the need to store heavy base64 strings in database rows.',
@@ -1272,7 +1342,7 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
       _FeatureInfo(
         title: 'ACID Database Transactions',
         icon: Icons.lock_outline,
-        color: Colors.amberAccent,
+        color: theme.accentSecondary,
         description:
             'Move submissions and room join operations execute inside session.db.transaction. '
             'Includes optimistic state locking (clientStateVersion == match.stateVersion) to prevent race conditions.',
@@ -1280,7 +1350,7 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
       _FeatureInfo(
         title: 'Built-in Web Server & Health Probes',
         icon: Icons.health_and_safety_outlined,
-        color: Colors.tealAccent,
+        color: theme.statusSuccess,
         description:
             'Serverpod hosts the Flutter Web application at /, serves dynamic config at /assets/assets/config.json, '
             'and provides /healthz, /livez, and /readyz probes for container orchestration.',
@@ -1296,9 +1366,9 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: theme.surface,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.surfaceBorder),
+            border: Border.all(color: theme.surfaceBorder),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1318,8 +1388,8 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
                   children: [
                     Text(
                       feat.title,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
+                      style: TextStyle(
+                        color: theme.textPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                       ),
@@ -1327,8 +1397,8 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
                     const SizedBox(height: 6),
                     Text(
                       feat.description,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
+                      style: TextStyle(
+                        color: theme.textSecondary,
                         fontSize: 12,
                         height: 1.4,
                       ),
@@ -1343,24 +1413,24 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
     );
   }
 
-  void _showHealthzDialog(BuildContext context) {
+  void _showHealthzDialog(BuildContext context, AppThemeData theme) {
     final d = _data;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
+        backgroundColor: theme.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: AppColors.surfaceBorder),
+          side: BorderSide(color: theme.surfaceBorder),
         ),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.health_and_safety, color: AppColors.player2, size: 22),
-            SizedBox(width: 8),
+            Icon(Icons.health_and_safety, color: theme.player2, size: 22),
+            const SizedBox(width: 8),
             Text(
               'Public Probe: /healthz',
               style: TextStyle(
-                color: AppColors.textPrimary,
+                color: theme.textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
@@ -1370,7 +1440,7 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
         content: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.surfaceElevated,
+            color: theme.surfaceElevated,
             borderRadius: BorderRadius.circular(10),
           ),
           child: SingleChildScrollView(
@@ -1392,10 +1462,10 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
               '    "localPrioCacheEntries": ${d?.localPrioCacheEntries ?? 0}\n'
               '  }\n'
               '}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'monospace',
                 fontSize: 12,
-                color: AppColors.player1,
+                color: theme.player1,
               ),
             ),
           ),
@@ -1403,8 +1473,8 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
         actions: [
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.player1,
-              foregroundColor: Colors.black,
+              backgroundColor: theme.buttonBackground,
+              foregroundColor: theme.buttonForeground,
             ),
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Close'),

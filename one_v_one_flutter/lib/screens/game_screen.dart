@@ -5,7 +5,7 @@ import 'package:game_core/game_core.dart';
 import '../models/player_session.dart';
 import '../providers/match_provider.dart';
 import '../services/sound_service.dart';
-import '../theme/app_colors.dart';
+import '../theme/theme_provider.dart';
 import '../widgets/player_avatar.dart';
 import '../widgets/triangle_tactics_board.dart';
 import '../widgets/game_rules_dialog.dart';
@@ -116,6 +116,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
     final gState = matchState.gameState;
     if (gState == null) return;
 
+    final theme = ref.read(currentThemeProvider);
     final isWinner = matchState.isLocal
         ? (gState.winnerId == 'Player 1')
         : (gState.winnerId == PlayerSession.currentId);
@@ -139,10 +140,10 @@ class _GameScreenState extends ConsumerState<GameScreen> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
+        backgroundColor: theme.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: AppColors.surfaceBorder),
+          side: BorderSide(color: theme.surfaceBorder),
         ),
         title: Center(
           child: Text(
@@ -151,8 +152,8 @@ class _GameScreenState extends ConsumerState<GameScreen> {
               fontSize: 26,
               fontWeight: FontWeight.w900,
               color: isDraw
-                  ? AppColors.warning
-                  : (isWinner ? AppColors.player1 : AppColors.player2),
+                  ? theme.statusWarning
+                  : (isWinner ? theme.player1 : theme.player2),
             ),
           ),
         ),
@@ -162,8 +163,8 @@ class _GameScreenState extends ConsumerState<GameScreen> {
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
+              style: TextStyle(
+                color: theme.textSecondary,
                 fontSize: 13,
               ),
             ),
@@ -173,7 +174,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
             Container(
               padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
               decoration: BoxDecoration(
-                color: AppColors.surfaceElevated,
+                color: theme.surfaceElevated,
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Row(
@@ -185,13 +186,13 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                         avatarSeed: matchState.player1Avatar,
                         displayName: matchState.player1Name,
                         size: 38,
-                        borderColor: AppColors.player1,
+                        borderColor: theme.player1,
                       ),
                       const SizedBox(height: 6),
                       Text(
                         matchState.player1Name.toUpperCase(),
-                        style: const TextStyle(
-                          color: AppColors.player1,
+                        style: TextStyle(
+                          color: theme.player1,
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                         ),
@@ -199,17 +200,17 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                       const SizedBox(height: 4),
                       Text(
                         '${gState.player1Score}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: theme.textPrimary,
                         ),
                       ),
                     ],
                   ),
-                  const Text(
+                  Text(
                     '—',
-                    style: TextStyle(color: AppColors.textMuted, fontSize: 24),
+                    style: TextStyle(color: theme.textSecondary, fontSize: 24),
                   ),
                   Column(
                     children: [
@@ -217,13 +218,13 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                         avatarSeed: matchState.player2Avatar,
                         displayName: matchState.player2Name,
                         size: 38,
-                        borderColor: AppColors.player2,
+                        borderColor: theme.player2,
                       ),
                       const SizedBox(height: 6),
                       Text(
                         matchState.player2Name.toUpperCase(),
-                        style: const TextStyle(
-                          color: AppColors.player2,
+                        style: TextStyle(
+                          color: theme.player2,
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                         ),
@@ -231,10 +232,10 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                       const SizedBox(height: 4),
                       Text(
                         '${gState.player2Score}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: theme.textPrimary,
                         ),
                       ),
                     ],
@@ -247,8 +248,8 @@ class _GameScreenState extends ConsumerState<GameScreen> {
         actions: [
           OutlinedButton.icon(
             style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.player1,
-              side: const BorderSide(color: AppColors.player1),
+              foregroundColor: theme.player1,
+              side: BorderSide(color: theme.player1),
               minimumSize: const Size.fromHeight(44),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -277,8 +278,8 @@ class _GameScreenState extends ConsumerState<GameScreen> {
           const SizedBox(height: 10),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.player1,
-              foregroundColor: Colors.black,
+              backgroundColor: theme.buttonBackground,
+              foregroundColor: theme.buttonForeground,
               minimumSize: const Size.fromHeight(44),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -302,33 +303,38 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   void _confirmResignation() {
     final matchState = ref.read(matchProvider);
     final isLocal = matchState.isLocal;
+    final theme = ref.read(currentThemeProvider);
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
+        backgroundColor: theme.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
-          side: const BorderSide(color: AppColors.surfaceBorder),
+          side: BorderSide(color: theme.surfaceBorder),
         ),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 24),
-            SizedBox(width: 8),
+            Icon(
+              Icons.warning_amber_rounded,
+              color: theme.statusError,
+              size: 24,
+            ),
+            const SizedBox(width: 8),
             Text(
               'Resign & Leave?',
               style: TextStyle(
-                color: AppColors.textPrimary,
+                color: theme.textPrimary,
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
               ),
             ),
           ],
         ),
-        content: const Text(
+        content: Text(
           'Leaving this game will forfeit the match. Your opponent will immediately be declared the winner.\n\nAre you sure you want to resign?',
           style: TextStyle(
-            color: AppColors.textSecondary,
+            color: theme.textSecondary,
             fontSize: 13.5,
             height: 1.4,
           ),
@@ -336,17 +342,17 @@ class _GameScreenState extends ConsumerState<GameScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text(
+            child: Text(
               'Stay in Game',
               style: TextStyle(
-                color: AppColors.textMuted,
+                color: theme.textSecondary,
                 fontWeight: FontWeight.bold,
               ),
             ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
+              backgroundColor: theme.statusError,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -376,6 +382,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = ref.watch(currentThemeProvider);
     final matchState = ref.watch(matchProvider);
     final currentUserId = PlayerSession.currentId;
 
@@ -391,9 +398,9 @@ class _GameScreenState extends ConsumerState<GameScreen> {
 
     if (gState == null || (!isLocal && match == null)) {
       return Scaffold(
-        backgroundColor: AppColors.background,
-        body: const Center(
-          child: CircularProgressIndicator(color: AppColors.player1),
+        backgroundColor: theme.background,
+        body: Center(
+          child: CircularProgressIndicator(color: theme.player1),
         ),
       );
     }
@@ -410,12 +417,10 @@ class _GameScreenState extends ConsumerState<GameScreen> {
     final isP2Active = isLocal
         ? gState.activePlayerId == 'Player 2'
         : gState.activePlayerId == match?.player2Id;
-    final activePlayerColor = isP2Active
-        ? AppColors.player2
-        : AppColors.player1;
+    final activePlayerColor = isP2Active ? theme.player2 : theme.player1;
     final activePlayerSurface = isP2Active
-        ? AppColors.player2Surface
-        : AppColors.player1Surface;
+        ? theme.player2Surface
+        : theme.player1Surface;
 
     // Synchronize the turn timer
     _syncTurnTimer(gState, isMatchActive);
@@ -431,7 +436,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.errorMessage!),
-            backgroundColor: AppColors.error,
+            backgroundColor: theme.statusError,
             duration: const Duration(seconds: 4),
           ),
         );
@@ -445,9 +450,9 @@ class _GameScreenState extends ConsumerState<GameScreen> {
         _confirmResignation();
       },
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: theme.background,
         appBar: AppBar(
-          backgroundColor: AppColors.surface,
+          backgroundColor: theme.surface,
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
@@ -477,9 +482,9 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                     : (match?.roomCode != null
                           ? 'Room: ${match!.roomCode}'
                           : 'Public Online Match'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
-                  color: AppColors.textMuted,
+                  color: theme.textSecondary,
                 ),
               ),
             ],
@@ -493,9 +498,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                     soundEnabled
                         ? Icons.volume_up_rounded
                         : Icons.volume_off_rounded,
-                    color: soundEnabled
-                        ? AppColors.player1
-                        : AppColors.textMuted,
+                    color: soundEnabled ? theme.player1 : theme.textSecondary,
                   ),
                   tooltip: soundEnabled ? 'Mute Audio' : 'Unmute Audio',
                   onPressed: () {
@@ -508,9 +511,9 @@ class _GameScreenState extends ConsumerState<GameScreen> {
             ),
             if (gState.isTerminal)
               IconButton(
-                icon: const Icon(
+                icon: Icon(
                   Icons.movie_creation_outlined,
-                  color: AppColors.player1,
+                  color: theme.player1,
                 ),
                 tooltip: 'Review Match Replay',
                 onPressed: () {
@@ -529,15 +532,15 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                 },
               ),
             IconButton(
-              icon: const Icon(
+              icon: Icon(
                 Icons.help_outline_rounded,
-                color: AppColors.player1,
+                color: theme.player1,
               ),
               tooltip: 'Game Rules & Guide',
               onPressed: () => GameRulesDialog.show(context),
             ),
             IconButton(
-              icon: const Icon(Icons.flag_outlined, color: AppColors.error),
+              icon: Icon(Icons.flag_outlined, color: theme.statusError),
               tooltip: 'Resign Match',
               onPressed: gState.isTerminal ? null : _confirmResignation,
             ),
@@ -555,26 +558,26 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                       horizontal: 20,
                       vertical: 14,
                     ),
-                    decoration: const BoxDecoration(
-                      color: AppColors.surface,
+                    decoration: BoxDecoration(
+                      color: theme.surface,
                       border: Border(
-                        bottom: BorderSide(color: AppColors.surfaceBorder),
+                        bottom: BorderSide(color: theme.surfaceBorder),
                       ),
                     ),
                     child: Row(
                       children: [
-                        // Player 1 Card (Teal)
+                        // Player 1 Card
                         Expanded(
                           child: Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: gState.activePlayerId == p1Id
-                                  ? AppColors.player1Surface
-                                  : AppColors.surfaceElevated,
+                                  ? theme.player1Surface
+                                  : theme.surfaceElevated,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: gState.activePlayerId == p1Id
-                                    ? AppColors.player1
+                                    ? theme.player1
                                     : Colors.transparent,
                                 width: 2,
                               ),
@@ -585,7 +588,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                                   avatarSeed: matchState.player1Avatar,
                                   displayName: matchState.player1Name,
                                   size: 30,
-                                  borderColor: AppColors.player1,
+                                  borderColor: theme.player1,
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
@@ -597,17 +600,17 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                                         isP1Me
                                             ? '${matchState.player1Name} (You)'
                                             : matchState.player1Name,
-                                        style: const TextStyle(
-                                          color: AppColors.textPrimary,
+                                        style: TextStyle(
+                                          color: theme.textPrimary,
                                           fontSize: 12,
                                           fontWeight: FontWeight.bold,
                                         ),
                                         overflow: TextOverflow.ellipsis,
                                       ),
-                                      const Text(
+                                      Text(
                                         'Triangles',
                                         style: TextStyle(
-                                          color: AppColors.textMuted,
+                                          color: theme.textSecondary,
                                           fontSize: 10,
                                         ),
                                       ),
@@ -616,8 +619,8 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                                 ),
                                 Text(
                                   '${gState.player1Score}',
-                                  style: const TextStyle(
-                                    color: AppColors.player1,
+                                  style: TextStyle(
+                                    color: theme.player1,
                                     fontSize: 22,
                                     fontWeight: FontWeight.w900,
                                   ),
@@ -645,11 +648,11 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                                                     .clamp(0.0, 1.0),
                                             strokeWidth: 3.2,
                                             backgroundColor:
-                                                AppColors.surfaceBorder,
+                                                theme.surfaceBorder,
                                             valueColor:
                                                 AlwaysStoppedAnimation<Color>(
                                                   _secondsRemaining <= 10
-                                                      ? AppColors.error
+                                                      ? theme.statusError
                                                       : activePlayerColor,
                                                 ),
                                           ),
@@ -658,8 +661,8 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                                           '$_secondsRemaining',
                                           style: TextStyle(
                                             color: _secondsRemaining <= 10
-                                                ? AppColors.error
-                                                : Colors.white,
+                                                ? theme.statusError
+                                                : theme.textPrimary,
                                             fontSize: 13,
                                             fontWeight: FontWeight.w900,
                                           ),
@@ -671,8 +674,8 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                                       'TIMER',
                                       style: TextStyle(
                                         color: _secondsRemaining <= 10
-                                            ? AppColors.error
-                                            : AppColors.textMuted,
+                                            ? theme.statusError
+                                            : theme.textSecondary,
                                         fontSize: 8.5,
                                         fontWeight: FontWeight.bold,
                                         letterSpacing: 0.8,
@@ -680,27 +683,27 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                                     ),
                                   ],
                                 )
-                              : const Text(
+                              : Text(
                                   'VS',
                                   style: TextStyle(
-                                    color: AppColors.textMuted,
+                                    color: theme.textSecondary,
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                         ),
-                        // Player 2 Card (Amber)
+                        // Player 2 Card
                         Expanded(
                           child: Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: gState.activePlayerId == p2Id
-                                  ? AppColors.player2Surface
-                                  : AppColors.surfaceElevated,
+                                  ? theme.player2Surface
+                                  : theme.surfaceElevated,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: gState.activePlayerId == p2Id
-                                    ? AppColors.player2
+                                    ? theme.player2
                                     : Colors.transparent,
                                 width: 2,
                               ),
@@ -711,7 +714,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                                   avatarSeed: matchState.player2Avatar,
                                   displayName: matchState.player2Name,
                                   size: 30,
-                                  borderColor: AppColors.player2,
+                                  borderColor: theme.player2,
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
@@ -730,17 +733,17 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                                                               ? '${matchState.player2Name} (You)'
                                                               : matchState
                                                                     .player2Name))),
-                                        style: const TextStyle(
-                                          color: AppColors.textPrimary,
+                                        style: TextStyle(
+                                          color: theme.textPrimary,
                                           fontSize: 12,
                                           fontWeight: FontWeight.bold,
                                         ),
                                         overflow: TextOverflow.ellipsis,
                                       ),
-                                      const Text(
+                                      Text(
                                         'Triangles',
                                         style: TextStyle(
-                                          color: AppColors.textMuted,
+                                          color: theme.textSecondary,
                                           fontSize: 10,
                                         ),
                                       ),
@@ -749,8 +752,8 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                                 ),
                                 Text(
                                   '${gState.player2Score}',
-                                  style: const TextStyle(
-                                    color: AppColors.player2,
+                                  style: TextStyle(
+                                    color: theme.player2,
                                     fontSize: 22,
                                     fontWeight: FontWeight.w900,
                                   ),
@@ -771,14 +774,14 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                     ),
                     decoration: BoxDecoration(
                       color: !isMatchActive
-                          ? AppColors.surfaceElevated
+                          ? theme.surfaceElevated
                           : (isMyTurn
                                 ? activePlayerSurface
                                 : (matchState.isAiMatch
-                                      ? AppColors.player2Surface.withValues(
+                                      ? theme.player2Surface.withValues(
                                           alpha: 0.35,
                                         )
-                                      : AppColors.surfaceElevated)),
+                                      : theme.surfaceElevated)),
                     ),
                     child: Center(
                       child: Row(
@@ -796,14 +799,14 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                                                   : Icons.hourglass_top))),
                             size: 16,
                             color: !isMatchActive
-                                ? AppColors.player2
+                                ? theme.player2
                                 : (_secondsRemaining <= 10
-                                      ? AppColors.error
+                                      ? theme.statusError
                                       : (isMyTurn
                                             ? activePlayerColor
                                             : (matchState.isAiMatch
-                                                  ? AppColors.player2
-                                                  : AppColors.textMuted))),
+                                                  ? theme.player2
+                                                  : theme.textSecondary))),
                           ),
                           const SizedBox(width: 8),
                           Flexible(
@@ -821,19 +824,19 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                                                           ? 'PLAYER 1 (${_secondsRemaining}s) — Stretch rubber band across 4 pegs'
                                                           : 'PLAYER 2 (${_secondsRemaining}s) — Stretch rubber band across 4 pegs')
                                                     : (isMyTurn
-                                                          ? 'YOUR TURN (${isP1Me ? "Teal" : "Amber"}, ${_secondsRemaining}s) — Stretch rubber band across 4 pegs'
+                                                          ? 'YOUR TURN (${isP1Me ? (theme.isMonochrome ? "P1" : "Teal") : (theme.isMonochrome ? "P2" : "Amber")}, ${_secondsRemaining}s) — Stretch rubber band across 4 pegs'
                                                           : 'OPPONENT\'S TURN (${_secondsRemaining}s) — Waiting for move...')))),
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: !isMatchActive
-                                    ? AppColors.player2
+                                    ? theme.player2
                                     : (_secondsRemaining <= 10
-                                          ? AppColors.error
+                                          ? theme.statusError
                                           : (isMyTurn
                                                 ? activePlayerColor
                                                 : (matchState.isAiMatch
-                                                      ? AppColors.player2
-                                                      : AppColors.textMuted))),
+                                                      ? theme.player2
+                                                      : theme.textSecondary))),
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -895,8 +898,8 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                     child: Text(
                       '🔷 Connect 4 pegs in a straight line with a rubber band • Form triangles to claim 3D tokens • 1 move per turn',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: AppColors.textMuted,
+                      style: TextStyle(
+                        color: theme.textSecondary,
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
                       ),

@@ -29,53 +29,55 @@ class ConnectFourHubScreen extends ConsumerWidget {
           ),
         ),
         actions: [
-          // Theme Switcher Toggle Pill
-          Center(
-            child: InkWell(
-              borderRadius: BorderRadius.circular(20),
-              onTap: () {
-                ref.read(themeModeProvider.notifier).toggle();
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: theme.surfaceElevated,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: theme.isMonochrome
-                        ? const Color(0xFF3F3F46)
-                        : const Color(0xFF14B8A6).withValues(alpha: 0.6),
+          if (showThemeSwitcher) ...[
+            // Theme Switcher Toggle Pill
+            Center(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () {
+                  ref.read(themeModeProvider.notifier).toggle();
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
                   ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      theme.isMonochrome
-                          ? Icons.contrast_rounded
-                          : Icons.palette_outlined,
-                      size: 13,
-                      color: theme.accent,
+                  decoration: BoxDecoration(
+                    color: theme.surfaceElevated,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: theme.isMonochrome
+                          ? const Color(0xFF3F3F46)
+                          : const Color(0xFF14B8A6).withValues(alpha: 0.6),
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      theme.name,
-                      style: TextStyle(
-                        color: theme.textPrimary,
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.bold,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        theme.isMonochrome
+                            ? Icons.contrast_rounded
+                            : Icons.palette_outlined,
+                        size: 13,
+                        color: theme.accent,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 4),
+                      Text(
+                        theme.name,
+                        style: TextStyle(
+                          color: theme.textPrimary,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 4),
+            const SizedBox(width: 4),
+          ],
           IconButton(
             icon: Icon(
               Icons.help_outline_rounded,
@@ -135,7 +137,7 @@ class ConnectFourHubScreen extends ConsumerWidget {
                             ),
                           ),
                           child: Text(
-                            '7x6 VERTICAL GRID',
+                            'VARIABLE GRIDS & HAZARDS',
                             style: TextStyle(
                               color: theme.badgeText,
                               fontSize: 10,
@@ -178,7 +180,7 @@ class ConnectFourHubScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Drop neon discs down 7 columns obeying real gravity physics. Be the first to connect four discs horizontally, vertically, or diagonally!',
+                      'Drop neon discs down custom arenas (Classic 7×6, Tactical 8×7, Grand 9×8 Connect-5). Challenge the tactical AI or duel a friend!',
                       style: TextStyle(
                         color: theme.textSecondary,
                         fontSize: 13,

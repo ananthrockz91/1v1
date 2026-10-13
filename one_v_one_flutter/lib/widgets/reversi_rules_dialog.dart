@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../theme/theme_provider.dart';
 
-class ReversiRulesDialog extends StatelessWidget {
+class ReversiRulesDialog extends ConsumerWidget {
   const ReversiRulesDialog({super.key});
 
   static void show(BuildContext context) {
@@ -12,12 +13,14 @@ class ReversiRulesDialog extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = ref.watch(currentThemeProvider);
+
     return Dialog(
-      backgroundColor: AppColors.surface,
+      backgroundColor: theme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: AppColors.surfaceBorder),
+        side: BorderSide(color: theme.surfaceBorder),
       ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 520, maxHeight: 600),
@@ -32,24 +35,24 @@ class ReversiRulesDialog extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppColors.teal.withValues(alpha: 0.15),
+                      color: theme.accent.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.radio_button_checked,
-                      color: AppColors.teal,
+                      color: theme.accent,
                       size: 24,
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Chroma Reversi Rules',
                           style: TextStyle(
-                            color: AppColors.textPrimary,
+                            color: theme.textPrimary,
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
                           ),
@@ -57,7 +60,7 @@ class ReversiRulesDialog extends StatelessWidget {
                         Text(
                           'Brisk Flanking & Mind Strategy',
                           style: TextStyle(
-                            color: AppColors.textSecondary,
+                            color: theme.textSecondary,
                             fontSize: 12,
                           ),
                         ),
@@ -65,7 +68,7 @@ class ReversiRulesDialog extends StatelessWidget {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, color: AppColors.textMuted),
+                    icon: Icon(Icons.close, color: theme.textMuted),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
@@ -75,6 +78,7 @@ class ReversiRulesDialog extends StatelessWidget {
                 child: ListView(
                   children: [
                     _buildRuleCard(
+                      theme: theme,
                       icon: Icons.track_changes,
                       title: '1. The Flanking Rule',
                       content:
@@ -82,6 +86,7 @@ class ReversiRulesDialog extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     _buildRuleCard(
+                      theme: theme,
                       icon: Icons.flip_camera_android,
                       title: '2. Cascade Disk Flipping',
                       content:
@@ -89,6 +94,7 @@ class ReversiRulesDialog extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     _buildRuleCard(
+                      theme: theme,
                       icon: Icons.fast_forward,
                       title: '3. Automatic Pass',
                       content:
@@ -96,6 +102,7 @@ class ReversiRulesDialog extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     _buildRuleCard(
+                      theme: theme,
                       icon: Icons.star_border_purple500,
                       title: '4. Corner & Edge Dominance',
                       content:
@@ -103,6 +110,7 @@ class ReversiRulesDialog extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     _buildRuleCard(
+                      theme: theme,
                       icon: Icons.emoji_events_outlined,
                       title: '5. Victory Condition',
                       content:
@@ -116,8 +124,8 @@ class ReversiRulesDialog extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.teal,
-                    foregroundColor: Colors.black,
+                    backgroundColor: theme.buttonBackground,
+                    foregroundColor: theme.buttonForeground,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -138,6 +146,7 @@ class ReversiRulesDialog extends StatelessWidget {
   }
 
   Widget _buildRuleCard({
+    required AppThemeData theme,
     required IconData icon,
     required String title,
     required String content,
@@ -145,14 +154,14 @@ class ReversiRulesDialog extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
+        color: theme.surfaceElevated,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.surfaceBorder),
+        border: Border.all(color: theme.surfaceBorder),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: AppColors.tealLight, size: 20),
+          Icon(icon, color: theme.accentSecondary, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -160,8 +169,8 @@ class ReversiRulesDialog extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: TextStyle(
+                    color: theme.textPrimary,
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                   ),
@@ -169,8 +178,8 @@ class ReversiRulesDialog extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   content,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
+                  style: TextStyle(
+                    color: theme.textSecondary,
                     fontSize: 12,
                     height: 1.4,
                   ),

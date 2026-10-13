@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/match_provider.dart';
 import '../providers/player_provider.dart';
-import '../theme/app_colors.dart';
 import '../theme/theme_provider.dart';
 import '../widgets/game_rules_dialog.dart';
 import '../widgets/architecture_dialog.dart';
@@ -29,22 +28,23 @@ class _TriangleTacticsHubScreenState
   }
 
   void _showAuthPrompt(BuildContext context, String action) {
+    final theme = ref.read(currentThemeProvider);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
+        backgroundColor: theme.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: AppColors.surfaceBorder),
+          side: BorderSide(color: theme.surfaceBorder),
         ),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.lock_outline, color: AppColors.player1, size: 22),
-            SizedBox(width: 8),
+            Icon(Icons.lock_outline, color: theme.accent, size: 22),
+            const SizedBox(width: 8),
             Text(
               'Sign In Required',
               style: TextStyle(
-                color: AppColors.textPrimary,
+                color: theme.textPrimary,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -53,8 +53,8 @@ class _TriangleTacticsHubScreenState
         ),
         content: Text(
           'Please sign in or create an account to $action. It only takes a few seconds and keeps your matches saved!',
-          style: const TextStyle(
-            color: AppColors.textSecondary,
+          style: TextStyle(
+            color: theme.textSecondary,
             fontSize: 13.5,
             height: 1.4,
           ),
@@ -62,15 +62,15 @@ class _TriangleTacticsHubScreenState
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text(
+            child: Text(
               'Cancel',
-              style: TextStyle(color: AppColors.textMuted),
+              style: TextStyle(color: theme.textMuted),
             ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.player1,
-              foregroundColor: Colors.black,
+              backgroundColor: theme.buttonBackground,
+              foregroundColor: theme.buttonForeground,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -90,35 +90,36 @@ class _TriangleTacticsHubScreenState
   }
 
   void _showJoinDialog() {
+    final theme = ref.read(currentThemeProvider);
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppColors.surface,
+        backgroundColor: theme.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: AppColors.surfaceBorder),
+          side: BorderSide(color: theme.surfaceBorder),
         ),
-        title: const Text(
+        title: Text(
           'Join Private Match',
           style: TextStyle(
-            color: AppColors.textPrimary,
+            color: theme.textPrimary,
             fontWeight: FontWeight.bold,
           ),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
+            Text(
               'Enter the 6-character room code shared by your opponent:',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              style: TextStyle(color: theme.textSecondary, fontSize: 13),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _roomCodeController,
               textCapitalization: TextCapitalization.characters,
               maxLength: 6,
-              style: const TextStyle(
-                color: AppColors.player1,
+              style: TextStyle(
+                color: theme.accent,
                 letterSpacing: 4,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -126,19 +127,19 @@ class _TriangleTacticsHubScreenState
               textAlign: TextAlign.center,
               decoration: InputDecoration(
                 hintText: 'ROOM CODE',
-                hintStyle: const TextStyle(
-                  color: AppColors.textMuted,
+                hintStyle: TextStyle(
+                  color: theme.textMuted,
                   letterSpacing: 2,
                 ),
                 filled: true,
-                fillColor: AppColors.surfaceElevated,
+                fillColor: theme.surfaceElevated,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.surfaceBorder),
+                  borderSide: BorderSide(color: theme.surfaceBorder),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.player1),
+                  borderSide: BorderSide(color: theme.accent),
                 ),
               ),
             ),
@@ -147,15 +148,15 @@ class _TriangleTacticsHubScreenState
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text(
+            child: Text(
               'Cancel',
-              style: TextStyle(color: AppColors.textMuted),
+              style: TextStyle(color: theme.textMuted),
             ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.player1,
-              foregroundColor: Colors.black,
+              backgroundColor: theme.buttonBackground,
+              foregroundColor: theme.buttonForeground,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -208,53 +209,55 @@ class _TriangleTacticsHubScreenState
           ),
         ),
         actions: [
-          // Theme Switcher Toggle Pill
-          Center(
-            child: InkWell(
-              borderRadius: BorderRadius.circular(20),
-              onTap: () {
-                ref.read(themeModeProvider.notifier).toggle();
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: theme.surfaceElevated,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: theme.isMonochrome
-                        ? const Color(0xFF3F3F46)
-                        : const Color(0xFF14B8A6).withValues(alpha: 0.6),
+          if (showThemeSwitcher) ...[
+            // Theme Switcher Toggle Pill
+            Center(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () {
+                  ref.read(themeModeProvider.notifier).toggle();
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
                   ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      theme.isMonochrome
-                          ? Icons.contrast_rounded
-                          : Icons.palette_outlined,
-                      size: 13,
-                      color: theme.accent,
+                  decoration: BoxDecoration(
+                    color: theme.surfaceElevated,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: theme.isMonochrome
+                          ? const Color(0xFF3F3F46)
+                          : const Color(0xFF14B8A6).withValues(alpha: 0.6),
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      theme.name,
-                      style: TextStyle(
-                        color: theme.textPrimary,
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.bold,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        theme.isMonochrome
+                            ? Icons.contrast_rounded
+                            : Icons.palette_outlined,
+                        size: 13,
+                        color: theme.accent,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 4),
+                      Text(
+                        theme.name,
+                        style: TextStyle(
+                          color: theme.textPrimary,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 4),
+            const SizedBox(width: 4),
+          ],
           IconButton(
             icon: Icon(
               Icons.help_outline_rounded,
@@ -364,10 +367,10 @@ class _TriangleTacticsHubScreenState
                       ),
                     ),
                     const SizedBox(height: 6),
-                    const Text(
+                    Text(
                       'Connect pegs with rubber bands straight across 4 pegs. Completing a triangular cell captures territory and awards an instant extra turn.',
                       style: TextStyle(
-                        color: AppColors.textSecondary,
+                        color: theme.textSecondary,
                         fontSize: 13,
                         height: 1.45,
                       ),
@@ -377,10 +380,10 @@ class _TriangleTacticsHubScreenState
               ),
               const SizedBox(height: 24),
 
-              const Text(
+              Text(
                 'SELECT PLAY MODE',
                 style: TextStyle(
-                  color: AppColors.textMuted,
+                  color: theme.textMuted,
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.5,
@@ -390,8 +393,9 @@ class _TriangleTacticsHubScreenState
 
               // Mode 1: Quick Online Match
               _buildModeCard(
+                theme: theme,
                 icon: Icons.bolt,
-                iconColor: AppColors.player1,
+                iconColor: theme.player1,
                 title: 'Play Online (Quick Match)',
                 subtitle: 'Automated matchmaking via Serverpod WebSockets',
                 badge: 'MULTIPLAYER',
@@ -418,8 +422,9 @@ class _TriangleTacticsHubScreenState
 
               // Mode 2: Play vs AI
               _buildModeCard(
+                theme: theme,
                 icon: Icons.smart_toy_outlined,
-                iconColor: AppColors.player2,
+                iconColor: theme.player2,
                 title: 'Solo vs AI (Tactical Bot)',
                 subtitle: 'Offline practice against our strategic bot engine',
                 badge: 'OFFLINE',
@@ -435,8 +440,9 @@ class _TriangleTacticsHubScreenState
 
               // Mode 3: Pass & Play
               _buildModeCard(
+                theme: theme,
                 icon: Icons.people_outline,
-                iconColor: Colors.tealAccent,
+                iconColor: theme.accentSecondary,
                 title: 'Pass & Play (Local 2-Player)',
                 subtitle: 'Challenge a friend sitting with you on one device',
                 badge: 'LOCAL',
@@ -450,10 +456,10 @@ class _TriangleTacticsHubScreenState
               ),
               const SizedBox(height: 20),
 
-              const Text(
+              Text(
                 'PRIVATE MATCH ROOMS',
                 style: TextStyle(
-                  color: AppColors.textMuted,
+                  color: theme.textMuted,
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.5,
@@ -467,10 +473,10 @@ class _TriangleTacticsHubScreenState
                   Expanded(
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
-                        backgroundColor: AppColors.surface,
-                        foregroundColor: AppColors.textPrimary,
+                        backgroundColor: theme.surface,
+                        foregroundColor: theme.textPrimary,
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        side: const BorderSide(color: AppColors.surfaceBorder),
+                        side: BorderSide(color: theme.surfaceBorder),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -491,9 +497,9 @@ class _TriangleTacticsHubScreenState
                           ),
                         );
                       },
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.add_circle_outline,
-                        color: AppColors.player2,
+                        color: theme.player2,
                         size: 20,
                       ),
                       label: const Text(
@@ -506,10 +512,10 @@ class _TriangleTacticsHubScreenState
                   Expanded(
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
-                        backgroundColor: AppColors.surface,
-                        foregroundColor: AppColors.textPrimary,
+                        backgroundColor: theme.surface,
+                        foregroundColor: theme.textPrimary,
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        side: const BorderSide(color: AppColors.surfaceBorder),
+                        side: BorderSide(color: theme.surfaceBorder),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -521,9 +527,9 @@ class _TriangleTacticsHubScreenState
                         }
                         _showJoinDialog();
                       },
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.meeting_room_outlined,
-                        color: AppColors.player1,
+                        color: theme.player1,
                         size: 20,
                       ),
                       label: const Text(
@@ -542,6 +548,7 @@ class _TriangleTacticsHubScreenState
   }
 
   Widget _buildModeCard({
+    required AppThemeData theme,
     required IconData icon,
     required Color iconColor,
     required String title,
@@ -552,9 +559,9 @@ class _TriangleTacticsHubScreenState
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: theme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.surfaceBorder),
+        border: Border.all(color: theme.surfaceBorder),
       ),
       child: Material(
         color: Colors.transparent,
@@ -583,8 +590,8 @@ class _TriangleTacticsHubScreenState
                           Expanded(
                             child: Text(
                               title,
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
+                              style: TextStyle(
+                                color: theme.textPrimary,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 15,
                               ),
@@ -614,8 +621,8 @@ class _TriangleTacticsHubScreenState
                       const SizedBox(height: 4),
                       Text(
                         subtitle,
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
+                        style: TextStyle(
+                          color: theme.textSecondary,
                           fontSize: 12,
                         ),
                       ),
@@ -624,18 +631,18 @@ class _TriangleTacticsHubScreenState
                 ),
                 const SizedBox(width: 8),
                 if (isLoading)
-                  const SizedBox(
+                  SizedBox(
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: AppColors.player1,
+                      color: iconColor,
                     ),
                   )
                 else
-                  const Icon(
+                  Icon(
                     Icons.chevron_right,
-                    color: AppColors.textMuted,
+                    color: theme.textMuted,
                     size: 20,
                   ),
               ],

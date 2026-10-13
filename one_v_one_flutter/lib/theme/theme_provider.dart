@@ -31,6 +31,20 @@ class AppThemeData {
   final Color badgeBackground;
   final Color badgeBorder;
   final Color badgeText;
+  final Color player1;
+  final Color player2;
+  final Color player1Dark;
+  final Color player2Dark;
+  final Color player1Surface;
+  final Color player2Surface;
+  final Color player1Glow;
+  final Color player2Glow;
+  final Color pegNode;
+  final Color pegNodeSelected;
+  final Color gridLine;
+  final Color statusSuccess;
+  final Color statusWarning;
+  final Color statusError;
 
   const AppThemeData({
     required this.mode,
@@ -57,6 +71,20 @@ class AppThemeData {
     required this.badgeBackground,
     required this.badgeBorder,
     required this.badgeText,
+    required this.player1,
+    required this.player2,
+    required this.player1Dark,
+    required this.player2Dark,
+    required this.player1Surface,
+    required this.player2Surface,
+    required this.player1Glow,
+    required this.player2Glow,
+    required this.pegNode,
+    required this.pegNodeSelected,
+    required this.gridLine,
+    required this.statusSuccess,
+    required this.statusWarning,
+    required this.statusError,
   });
 
   bool get isMonochrome => mode == AppThemeMode.monochromeMinimal;
@@ -86,6 +114,20 @@ class AppThemeData {
     badgeBackground: Color(0x2214B8A6),
     badgeBorder: Color(0x5514B8A6),
     badgeText: Color(0xFF2DD4BF),
+    player1: Color(0xFF14B8A6), // Vibrant Teal
+    player2: Color(0xFFFFAB00), // Neon Amber
+    player1Dark: Color(0xFF0F766E),
+    player2Dark: Color(0xFFFF8F00),
+    player1Surface: Color(0x2214B8A6),
+    player2Surface: Color(0x22FFAB00),
+    player1Glow: Color(0x6614B8A6),
+    player2Glow: Color(0x66FFAB00),
+    pegNode: Color(0xFFE2E8F0),
+    pegNodeSelected: Color(0xFFFFFFFF),
+    gridLine: Color(0xFF252D3B),
+    statusSuccess: Color(0xFF10B981),
+    statusWarning: Color(0xFFF59E0B),
+    statusError: Color(0xFFEF4444),
   );
 
   static const monochromeMinimal = AppThemeData(
@@ -113,8 +155,25 @@ class AppThemeData {
     badgeBackground: Color(0xFF18181B),
     badgeBorder: Color(0xFF3F3F46),
     badgeText: Color(0xFFE4E4E7),
+    player1: Color(0xFFFFFFFF), // Pure White
+    player2: Color(0xFFA1A1AA), // Zinc-400 Silver
+    player1Dark: Color(0xFF71717A), // Zinc-500
+    player2Dark: Color(0xFF3F3F46), // Zinc-700
+    player1Surface: Color(0x22FFFFFF),
+    player2Surface: Color(0x22A1A1AA),
+    player1Glow: Color(0x44FFFFFF),
+    player2Glow: Color(0x44A1A1AA),
+    pegNode: Color(0xFF71717A), // Zinc-500
+    pegNodeSelected: Color(0xFFFFFFFF),
+    gridLine: Color(0xFF27272A), // Zinc-800
+    statusSuccess: Color(0xFFFFFFFF), // White
+    statusWarning: Color(0xFFA1A1AA), // Zinc-400
+    statusError: Color(0xFFE4E4E7),
   );
 }
+
+/// Global toggle to show/hide theme changing options in the UI.
+const bool showThemeSwitcher = false;
 
 class ThemeModeNotifier extends StateNotifier<AppThemeMode> {
   ThemeModeNotifier() : super(AppThemeMode.tealCyber);

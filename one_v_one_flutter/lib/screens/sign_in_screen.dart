@@ -4,7 +4,7 @@ import 'package:pinput/pinput.dart';
 import '../client.dart';
 import '../models/player_session.dart';
 import '../providers/player_provider.dart';
-import '../theme/app_colors.dart';
+import '../theme/theme_provider.dart';
 import '../widgets/player_avatar.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
@@ -42,6 +42,7 @@ class SignInScreen extends ConsumerStatefulWidget {
 }
 
 class _SignInScreenState extends ConsumerState<SignInScreen> {
+  AppThemeData get theme => ref.watch(currentThemeProvider);
   final _callsignController = TextEditingController();
   late final EmailAuthController _authController;
   bool _obscurePassword = true;
@@ -117,7 +118,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.errorMessage!),
-            backgroundColor: AppColors.error,
+            backgroundColor: theme.statusError,
           ),
         );
       }
@@ -126,7 +127,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.successMessage!),
-            backgroundColor: AppColors.success,
+            backgroundColor: theme.statusSuccess,
           ),
         );
       }
@@ -143,12 +144,12 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
             maxHeight: MediaQuery.of(context).size.height * 0.88,
           ),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: theme.surface,
             borderRadius: isDesktop
                 ? BorderRadius.circular(24)
                 : const BorderRadius.vertical(top: Radius.circular(24)),
             border: Border.all(
-              color: AppColors.surfaceBorder,
+              color: theme.surfaceBorder,
               width: 1.5,
             ),
             boxShadow: [
@@ -176,7 +177,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                         width: 44,
                         height: 4,
                         decoration: BoxDecoration(
-                          color: AppColors.textMuted.withValues(alpha: 0.5),
+                          color: theme.textMuted.withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -190,17 +191,17 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: AppColors.surfaceElevated,
+                            color: theme.surfaceElevated,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.surfaceBorder),
+                            border: Border.all(color: theme.surfaceBorder),
                           ),
                           child: Icon(
                             playerState.isAuthenticated
                                 ? Icons.verified_user_outlined
                                 : Icons.lock_outline,
                             color: playerState.isAuthenticated
-                                ? AppColors.player1
-                                : AppColors.player2,
+                                ? theme.player1
+                                : theme.player2,
                             size: 22,
                           ),
                         ),
@@ -213,8 +214,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                                 playerState.isAuthenticated
                                     ? 'Player Profile'
                                     : _getHeaderTitle(),
-                                style: const TextStyle(
-                                  color: AppColors.textPrimary,
+                                style: TextStyle(
+                                  color: theme.textPrimary,
                                   fontSize: 17,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -223,8 +224,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                                 playerState.isAuthenticated
                                     ? 'Your verified profile and battle statistics'
                                     : 'Sign in or register to track matches & ranks',
-                                style: const TextStyle(
-                                  color: AppColors.textSecondary,
+                                style: TextStyle(
+                                  color: theme.textSecondary,
                                   fontSize: 11,
                                 ),
                                 maxLines: 1,
@@ -234,9 +235,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.close,
-                            color: AppColors.textMuted,
+                            color: theme.textMuted,
                             size: 20,
                           ),
                           onPressed: () => Navigator.of(context).maybePop(),
@@ -245,7 +246,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     ),
                   ),
 
-                  const Divider(color: AppColors.surfaceBorder, height: 1),
+                  Divider(color: theme.surfaceBorder, height: 1),
 
                   // Body: Authenticated Profile vs Responsive Authentication Flow
                   Flexible(
@@ -269,7 +270,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
     if (widget.child != null) {
       return Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: theme.background,
         body: Center(child: content),
       );
     }
@@ -303,23 +304,25 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             margin: const EdgeInsets.only(bottom: 14),
             decoration: BoxDecoration(
-              color: AppColors.error.withValues(alpha: 0.12),
+              color: theme.statusError.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
+              border: Border.all(
+                color: theme.statusError.withValues(alpha: 0.4),
+              ),
             ),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.error_outline,
-                  color: AppColors.error,
+                  color: theme.statusError,
                   size: 18,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     _inlineError!,
-                    style: const TextStyle(
-                      color: AppColors.error,
+                    style: TextStyle(
+                      color: theme.statusError,
                       fontSize: 12,
                     ),
                   ),
@@ -357,10 +360,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Text(
+        Text(
           'Email Address',
           style: TextStyle(
-            color: AppColors.textSecondary,
+            color: theme.textSecondary,
             fontSize: 12,
             fontWeight: FontWeight.w600,
           ),
@@ -369,7 +372,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         TextField(
           controller: _authController.emailController,
           keyboardType: TextInputType.emailAddress,
-          style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+          style: TextStyle(color: theme.textPrimary, fontSize: 14),
           decoration: _inputDecoration(
             hint: 'player@example.com',
             icon: Icons.email_outlined,
@@ -379,10 +382,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'Password',
               style: TextStyle(
-                color: AppColors.textSecondary,
+                color: theme.textSecondary,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -393,10 +396,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   : () => _authController.navigateTo(
                       EmailFlowScreen.requestPasswordReset,
                     ),
-              child: const Text(
+              child: Text(
                 'Forgot password?',
                 style: TextStyle(
-                  color: AppColors.player1,
+                  color: theme.player1,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -408,7 +411,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         TextField(
           controller: _authController.passwordController,
           obscureText: _obscurePassword,
-          style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+          style: TextStyle(color: theme.textPrimary, fontSize: 14),
           decoration: _inputDecoration(
             hint: '••••••••',
             icon: Icons.lock_outline,
@@ -417,7 +420,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 _obscurePassword
                     ? Icons.visibility_off_outlined
                     : Icons.visibility_outlined,
-                color: AppColors.textMuted,
+                color: theme.textMuted,
                 size: 18,
               ),
               onPressed: () =>
@@ -441,7 +444,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     color: Colors.black,
                   ),
                 )
-              : const Text(
+              : Text(
                   'Sign In',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                 ),
@@ -450,9 +453,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
+            Text(
               "Don't have an account? ",
-              style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+              style: TextStyle(color: theme.textMuted, fontSize: 13),
             ),
             GestureDetector(
               onTap: isLoading
@@ -460,10 +463,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   : () => _authController.navigateTo(
                       EmailFlowScreen.startRegistration,
                     ),
-              child: const Text(
+              child: Text(
                 'Register',
                 style: TextStyle(
-                  color: AppColors.player1,
+                  color: theme.player1,
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
                 ),
@@ -481,10 +484,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Text(
+        Text(
           'Email Address',
           style: TextStyle(
-            color: AppColors.textSecondary,
+            color: theme.textSecondary,
             fontSize: 12,
             fontWeight: FontWeight.w600,
           ),
@@ -493,7 +496,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         TextField(
           controller: _authController.emailController,
           keyboardType: TextInputType.emailAddress,
-          style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+          style: TextStyle(color: theme.textPrimary, fontSize: 14),
           decoration: _inputDecoration(
             hint: 'player@example.com',
             icon: Icons.email_outlined,
@@ -517,7 +520,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     color: Colors.black,
                   ),
                 )
-              : const Text(
+              : Text(
                   'Continue',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                 ),
@@ -526,18 +529,18 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
+            Text(
               'Already have an account? ',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+              style: TextStyle(color: theme.textMuted, fontSize: 13),
             ),
             GestureDetector(
               onTap: isLoading
                   ? null
                   : () => _authController.navigateTo(EmailFlowScreen.login),
-              child: const Text(
+              child: Text(
                 'Sign In',
                 style: TextStyle(
-                  color: AppColors.player1,
+                  color: theme.player1,
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
                 ),
@@ -555,10 +558,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Text(
+        Text(
           'Enter the verification code sent to your email below.',
           style: TextStyle(
-            color: AppColors.textSecondary,
+            color: theme.textSecondary,
             fontSize: 13,
             height: 1.4,
           ),
@@ -569,19 +572,19 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: AppColors.player1.withValues(alpha: 0.1),
+            color: theme.player1.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.player1.withValues(alpha: 0.3)),
+            border: Border.all(color: theme.player1.withValues(alpha: 0.3)),
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.info_outline, color: AppColors.player1, size: 15),
+              Icon(Icons.info_outline, color: theme.player1, size: 15),
               SizedBox(width: 6),
               Text(
                 'Default test code: 1234',
                 style: TextStyle(
-                  color: AppColors.player1,
+                  color: theme.player1,
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),
@@ -602,33 +605,33 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               width: 52,
               height: 56,
               margin: const EdgeInsets.symmetric(horizontal: 4),
-              textStyle: const TextStyle(
+              textStyle: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+                color: theme.textPrimary,
               ),
               decoration: BoxDecoration(
-                color: AppColors.surfaceElevated,
+                color: theme.surfaceElevated,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.surfaceBorder, width: 1.5),
+                border: Border.all(color: theme.surfaceBorder, width: 1.5),
               ),
             ),
             focusedPinTheme: PinTheme(
               width: 52,
               height: 56,
               margin: const EdgeInsets.symmetric(horizontal: 4),
-              textStyle: const TextStyle(
+              textStyle: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: AppColors.player1,
+                color: theme.player1,
               ),
               decoration: BoxDecoration(
-                color: AppColors.surfaceElevated,
+                color: theme.surfaceElevated,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.player1, width: 2),
+                border: Border.all(color: theme.player1, width: 2),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.player1.withValues(alpha: 0.25),
+                    color: theme.player1.withValues(alpha: 0.25),
                     blurRadius: 10,
                   ),
                 ],
@@ -649,10 +652,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
             onPressed: isLoading
                 ? null
                 : () => _authController.resendVerificationCode(),
-            child: const Text(
+            child: Text(
               "Didn't receive? Send a new code",
               style: TextStyle(
-                color: AppColors.player2,
+                color: theme.player2,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -675,7 +678,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     color: Colors.black,
                   ),
                 )
-              : const Text(
+              : Text(
                   'Verify',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                 ),
@@ -686,9 +689,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
             onPressed: isLoading
                 ? null
                 : () => _authController.navigateTo(EmailFlowScreen.login),
-            child: const Text(
+            child: Text(
               'Back to sign in',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+              style: TextStyle(color: theme.textMuted, fontSize: 12),
             ),
           ),
         ),
@@ -702,15 +705,15 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Text(
+        Text(
           'Choose a password for your new player account.',
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+          style: TextStyle(color: theme.textSecondary, fontSize: 13),
         ),
         const SizedBox(height: 14),
-        const Text(
+        Text(
           'Password',
           style: TextStyle(
-            color: AppColors.textSecondary,
+            color: theme.textSecondary,
             fontSize: 12,
             fontWeight: FontWeight.w600,
           ),
@@ -719,7 +722,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         TextField(
           controller: _authController.passwordController,
           obscureText: _obscurePassword,
-          style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+          style: TextStyle(color: theme.textPrimary, fontSize: 14),
           decoration: _inputDecoration(
             hint: '••••••••',
             icon: Icons.lock_outline,
@@ -728,7 +731,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 _obscurePassword
                     ? Icons.visibility_off_outlined
                     : Icons.visibility_outlined,
-                color: AppColors.textMuted,
+                color: theme.textMuted,
                 size: 18,
               ),
               onPressed: () =>
@@ -754,7 +757,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     color: Colors.black,
                   ),
                 )
-              : const Text(
+              : Text(
                   'Complete & Sign In',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                 ),
@@ -765,9 +768,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
             onPressed: isLoading
                 ? null
                 : () => _authController.navigateTo(EmailFlowScreen.login),
-            child: const Text(
+            child: Text(
               'Back to sign in',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+              style: TextStyle(color: theme.textMuted, fontSize: 12),
             ),
           ),
         ),
@@ -781,15 +784,15 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Text(
+        Text(
           'Enter your email address to receive a reset code.',
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+          style: TextStyle(color: theme.textSecondary, fontSize: 13),
         ),
         const SizedBox(height: 14),
-        const Text(
+        Text(
           'Email Address',
           style: TextStyle(
-            color: AppColors.textSecondary,
+            color: theme.textSecondary,
             fontSize: 12,
             fontWeight: FontWeight.w600,
           ),
@@ -798,7 +801,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         TextField(
           controller: _authController.emailController,
           keyboardType: TextInputType.emailAddress,
-          style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+          style: TextStyle(color: theme.textPrimary, fontSize: 14),
           decoration: _inputDecoration(
             hint: 'player@example.com',
             icon: Icons.email_outlined,
@@ -819,7 +822,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     color: Colors.black,
                   ),
                 )
-              : const Text(
+              : Text(
                   'Request Reset Code',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                 ),
@@ -830,9 +833,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
             onPressed: isLoading
                 ? null
                 : () => _authController.navigateTo(EmailFlowScreen.login),
-            child: const Text(
+            child: Text(
               'Back to sign in',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+              style: TextStyle(color: theme.textMuted, fontSize: 12),
             ),
           ),
         ),
@@ -846,9 +849,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Text(
+        Text(
           'Enter the 4-digit reset code sent to your email (Default test code: 1234).',
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+          style: TextStyle(color: theme.textSecondary, fontSize: 13),
         ),
         const SizedBox(height: 20),
         Center(
@@ -861,30 +864,30 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               width: 52,
               height: 56,
               margin: const EdgeInsets.symmetric(horizontal: 4),
-              textStyle: const TextStyle(
+              textStyle: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+                color: theme.textPrimary,
               ),
               decoration: BoxDecoration(
-                color: AppColors.surfaceElevated,
+                color: theme.surfaceElevated,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.surfaceBorder, width: 1.5),
+                border: Border.all(color: theme.surfaceBorder, width: 1.5),
               ),
             ),
             focusedPinTheme: PinTheme(
               width: 52,
               height: 56,
               margin: const EdgeInsets.symmetric(horizontal: 4),
-              textStyle: const TextStyle(
+              textStyle: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: AppColors.player1,
+                color: theme.player1,
               ),
               decoration: BoxDecoration(
-                color: AppColors.surfaceElevated,
+                color: theme.surfaceElevated,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.player1, width: 2),
+                border: Border.all(color: theme.player1, width: 2),
               ),
             ),
             onCompleted: (_) {
@@ -907,7 +910,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     color: Colors.black,
                   ),
                 )
-              : const Text(
+              : Text(
                   'Verify Code',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                 ),
@@ -918,9 +921,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
             onPressed: isLoading
                 ? null
                 : () => _authController.navigateTo(EmailFlowScreen.login),
-            child: const Text(
+            child: Text(
               'Back to sign in',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+              style: TextStyle(color: theme.textMuted, fontSize: 12),
             ),
           ),
         ),
@@ -934,15 +937,15 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Text(
+        Text(
           'Enter your new password.',
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+          style: TextStyle(color: theme.textSecondary, fontSize: 13),
         ),
         const SizedBox(height: 14),
         TextField(
           controller: _authController.passwordController,
           obscureText: _obscurePassword,
-          style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+          style: TextStyle(color: theme.textPrimary, fontSize: 14),
           decoration: _inputDecoration(
             hint: '••••••••',
             icon: Icons.lock_outline,
@@ -951,7 +954,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 _obscurePassword
                     ? Icons.visibility_off_outlined
                     : Icons.visibility_outlined,
-                color: AppColors.textMuted,
+                color: theme.textMuted,
                 size: 18,
               ),
               onPressed: () =>
@@ -974,7 +977,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     color: Colors.black,
                   ),
                 )
-              : const Text(
+              : Text(
                   'Save & Sign In',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                 ),
@@ -985,9 +988,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
             onPressed: isLoading
                 ? null
                 : () => _authController.navigateTo(EmailFlowScreen.login),
-            child: const Text(
+            child: Text(
               'Back to sign in',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+              style: TextStyle(color: theme.textMuted, fontSize: 12),
             ),
           ),
         ),
@@ -1002,22 +1005,22 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   }) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+      hintStyle: TextStyle(color: theme.textMuted, fontSize: 13),
       filled: true,
-      fillColor: AppColors.surfaceElevated,
-      prefixIcon: Icon(icon, color: AppColors.textMuted, size: 18),
+      fillColor: theme.surfaceElevated,
+      prefixIcon: Icon(icon, color: theme.textMuted, size: 18),
       suffixIcon: suffixIcon,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.surfaceBorder),
+        borderSide: BorderSide(color: theme.surfaceBorder),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.surfaceBorder),
+        borderSide: BorderSide(color: theme.surfaceBorder),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.player1, width: 1.5),
+        borderSide: BorderSide(color: theme.player1, width: 1.5),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     );
@@ -1025,7 +1028,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
   ButtonStyle _primaryButtonStyle() {
     return ElevatedButton.styleFrom(
-      backgroundColor: AppColors.player1,
+      backgroundColor: theme.player1,
       foregroundColor: Colors.black,
       minimumSize: const Size.fromHeight(46),
       elevation: 0,
@@ -1055,9 +1058,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.surfaceElevated,
+            color: theme.surfaceElevated,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.surfaceBorder),
+            border: Border.all(color: theme.surfaceBorder),
           ),
           child: Row(
             children: [
@@ -1081,21 +1084,21 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                         avatarSeed: state.avatarSeed,
                         displayName: state.displayName,
                         size: 54,
-                        borderColor: AppColors.player1,
+                        borderColor: theme.player1,
                       ),
                       Positioned(
                         right: 0,
                         bottom: 0,
                         child: Container(
                           padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(
-                            color: AppColors.surface,
+                          decoration: BoxDecoration(
+                            color: theme.surface,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.photo_camera,
                             size: 13,
-                            color: AppColors.player1,
+                            color: theme.player1,
                           ),
                         ),
                       ),
@@ -1113,8 +1116,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                         Flexible(
                           child: Text(
                             state.displayName,
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
+                            style: TextStyle(
+                              color: theme.textPrimary,
                               fontSize: 17,
                               fontWeight: FontWeight.bold,
                             ),
@@ -1122,9 +1125,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                           ),
                         ),
                         const SizedBox(width: 6),
-                        const Icon(
+                        Icon(
                           Icons.verified,
-                          color: AppColors.player1,
+                          color: theme.player1,
                           size: 16,
                         ),
                       ],
@@ -1132,8 +1135,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     const SizedBox(height: 3),
                     Text(
                       'Account ID: ${state.playerId}',
-                      style: const TextStyle(
-                        color: AppColors.textMuted,
+                      style: TextStyle(
+                        color: theme.textMuted,
                         fontSize: 11,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -1151,10 +1154,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                           },
                         );
                       },
-                      child: const Text(
+                      child: Text(
                         'Change Profile Picture',
                         style: TextStyle(
-                          color: AppColors.player1,
+                          color: theme.player1,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1174,34 +1177,34 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
             Expanded(
               child: TextField(
                 controller: _callsignController,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
+                style: TextStyle(
+                  color: theme.textPrimary,
                   fontSize: 14,
                 ),
                 decoration: InputDecoration(
                   hintText: 'Edit your callsign',
-                  hintStyle: const TextStyle(
-                    color: AppColors.textMuted,
+                  hintStyle: TextStyle(
+                    color: theme.textMuted,
                     fontSize: 13,
                   ),
                   filled: true,
-                  fillColor: AppColors.surfaceElevated,
+                  fillColor: theme.surfaceElevated,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: AppColors.surfaceBorder,
+                    borderSide: BorderSide(
+                      color: theme.surfaceBorder,
                     ),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: AppColors.surfaceBorder,
+                    borderSide: BorderSide(
+                      color: theme.surfaceBorder,
                     ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: AppColors.player1,
+                    borderSide: BorderSide(
+                      color: theme.player1,
                       width: 1.5,
                     ),
                   ),
@@ -1215,7 +1218,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
             const SizedBox(width: 10),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.player1,
+                backgroundColor: theme.player1,
                 foregroundColor: Colors.black,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -1234,7 +1237,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                       .updateDisplayName(newName);
                 }
               },
-              child: const Text(
+              child: Text(
                 'Save',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
@@ -1244,10 +1247,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         const SizedBox(height: 20),
 
         // Career Statistics Matrix
-        const Text(
+        Text(
           'CAREER STATISTICS',
           style: TextStyle(
-            color: AppColors.textSecondary,
+            color: theme.textSecondary,
             fontSize: 11,
             fontWeight: FontWeight.bold,
             letterSpacing: 1.2,
@@ -1256,38 +1259,38 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         const SizedBox(height: 10),
         Row(
           children: [
-            _buildStatCard('Matches', '$totalMatches', AppColors.textPrimary),
+            _buildStatCard('Matches', '$totalMatches', theme.textPrimary),
             const SizedBox(width: 8),
-            _buildStatCard('Wins', '$wins', AppColors.player1),
+            _buildStatCard('Wins', '$wins', theme.player1),
             const SizedBox(width: 8),
-            _buildStatCard('Losses', '$losses', AppColors.player2),
+            _buildStatCard('Losses', '$losses', theme.player2),
             const SizedBox(width: 8),
-            _buildStatCard('Win %', '$winRate%', AppColors.success),
+            _buildStatCard('Win %', '$winRate%', theme.statusSuccess),
           ],
         ),
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: AppColors.surfaceElevated,
+            color: theme.surfaceElevated,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.surfaceBorder),
+            border: Border.all(color: theme.surfaceBorder),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Row(
+              Row(
                 children: [
                   Icon(
                     Icons.change_history,
-                    color: AppColors.player1,
+                    color: theme.player1,
                     size: 18,
                   ),
                   SizedBox(width: 8),
                   Text(
                     'Triangles Captured',
                     style: TextStyle(
-                      color: AppColors.textSecondary,
+                      color: theme.textSecondary,
                       fontSize: 13,
                     ),
                   ),
@@ -1295,8 +1298,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               ),
               Text(
                 '$triangles',
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
+                style: TextStyle(
+                  color: theme.textPrimary,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
@@ -1309,15 +1312,15 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         // Sign Out Button
         OutlinedButton.icon(
           style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.error,
-            side: const BorderSide(color: AppColors.error),
+            foregroundColor: theme.statusError,
+            side: BorderSide(color: theme.statusError),
             padding: const EdgeInsets.symmetric(vertical: 14),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-          icon: const Icon(Icons.logout, size: 18),
-          label: const Text(
+          icon: Icon(Icons.logout, size: 18),
+          label: Text(
             'Sign Out',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
@@ -1336,9 +1339,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         decoration: BoxDecoration(
-          color: AppColors.surfaceElevated,
+          color: theme.surfaceElevated,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.surfaceBorder),
+          border: Border.all(color: theme.surfaceBorder),
         ),
         child: Column(
           children: [
@@ -1353,8 +1356,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
             const SizedBox(height: 4),
             Text(
               label,
-              style: const TextStyle(
-                color: AppColors.textMuted,
+              style: TextStyle(
+                color: theme.textMuted,
                 fontSize: 10,
               ),
               maxLines: 1,

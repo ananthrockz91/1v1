@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'client.dart';
 import 'screens/home_screen.dart';
-import 'theme/app_colors.dart';
+import 'theme/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,27 +20,31 @@ void main() async {
   );
 }
 
-class OneVOneApp extends StatelessWidget {
+class OneVOneApp extends ConsumerWidget {
   const OneVOneApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = ref.watch(currentThemeProvider);
     return MaterialApp(
       title: '1v1 — Play. Compete. Win.',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: AppColors.background,
-        colorScheme: const ColorScheme.dark(
-          primary: AppColors.player1,
-          secondary: AppColors.player2,
-          surface: AppColors.surface,
-          error: AppColors.error,
+        scaffoldBackgroundColor: theme.background,
+        colorScheme: ColorScheme.dark(
+          primary: theme.accent,
+          secondary: theme.accentSecondary,
+          surface: theme.surface,
+          error: theme.statusError,
         ),
         textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: AppColors.surface,
+        appBarTheme: AppBarTheme(
+          backgroundColor: theme.surface,
           elevation: 0,
           centerTitle: false,
+        ),
+        dialogTheme: DialogThemeData(
+          backgroundColor: theme.surface,
         ),
       ),
       home: const HomeScreen(),

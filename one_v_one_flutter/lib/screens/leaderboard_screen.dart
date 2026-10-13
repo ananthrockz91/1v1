@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:one_v_one_client/one_v_one_client.dart';
 import '../client.dart';
-import '../theme/app_colors.dart';
+import '../theme/theme_provider.dart';
 
-class LeaderboardScreen extends StatefulWidget {
+class LeaderboardScreen extends ConsumerStatefulWidget {
   const LeaderboardScreen({super.key});
 
   @override
-  State<LeaderboardScreen> createState() => _LeaderboardScreenState();
+  ConsumerState<LeaderboardScreen> createState() => _LeaderboardScreenState();
 }
 
-class _LeaderboardScreenState extends State<LeaderboardScreen>
+class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   List<DailyLeaderboard> _dailyList = [];
@@ -45,7 +46,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
         _allTimeList = gameLeaderboard;
         _isLoading = false;
       });
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
       }
@@ -53,6 +54,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
   }
 
   Future<void> _triggerMaintenance() async {
+    final theme = ref.read(currentThemeProvider);
     final messenger = ScaffoldMessenger.of(context);
     messenger.showSnackBar(
       const SnackBar(
@@ -64,9 +66,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
       await _loadData();
       if (mounted) {
         messenger.showSnackBar(
-          const SnackBar(
-            content: Text('Leaderboard updated via daily maintenance process!'),
-            backgroundColor: AppColors.success,
+          SnackBar(
+            content: const Text(
+              'Leaderboard updated via daily maintenance process!',
+            ),
+            backgroundColor: theme.statusSuccess,
           ),
         );
       }
@@ -75,7 +79,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
         messenger.showSnackBar(
           SnackBar(
             content: Text('Error: $e'),
-            backgroundColor: AppColors.error,
+            backgroundColor: theme.statusError,
           ),
         );
       }
@@ -90,14 +94,19 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = ref.watch(currentThemeProvider);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.background,
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
+        backgroundColor: theme.surface,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Rankings & Leaderboards',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            color: theme.textPrimary,
+          ),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(88),
@@ -113,24 +122,28 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                 child: Row(
                   children: [
                     _buildGameFilterChip(
+                      theme,
                       'all',
                       'ALL GAMES (OVERALL)',
                       Icons.public,
                     ),
                     const SizedBox(width: 8),
                     _buildGameFilterChip(
+                      theme,
                       'triangle_tactics',
                       'TRIANGLE TACTICS',
                       Icons.change_history,
                     ),
                     const SizedBox(width: 8),
                     _buildGameFilterChip(
+                      theme,
                       'connect_four',
                       'GRAVITY DROP',
                       Icons.blur_linear,
                     ),
                     const SizedBox(width: 8),
                     _buildGameFilterChip(
+                      theme,
                       'reversi',
                       'CHROMA REVERSI',
                       Icons.radio_button_checked,
@@ -140,9 +153,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
               ),
               TabBar(
                 controller: _tabController,
-                indicatorColor: AppColors.player1,
-                labelColor: AppColors.player1,
-                unselectedLabelColor: AppColors.textMuted,
+                indicatorColor: theme.player1,
+                labelColor: theme.player1,
+                unselectedLabelColor: theme.textMuted,
                 tabs: [
                   Tab(
                     text: _selectedGameType == 'all'
@@ -161,8 +174,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
         ),
       ),
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.player1),
+          ? Center(
+              child: CircularProgressIndicator(color: theme.player1),
             )
           : Center(
               child: ConstrainedBox(
@@ -170,32 +183,32 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                 child: TabBarView(
                   controller: _tabController,
                   children: [
-                    _buildDailyTab(),
-                    _buildAllTimeTab(),
+                    _buildDailyTab(theme),
+                    _buildAllTimeTab(theme),
                   ],
                 ),
               ),
             ),
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          border: Border(top: BorderSide(color: AppColors.surfaceBorder)),
+        decoration: BoxDecoration(
+          color: theme.surface,
+          border: Border(top: BorderSide(color: theme.surfaceBorder)),
         ),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 640),
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.surfaceElevated,
-                foregroundColor: AppColors.teal,
+                backgroundColor: theme.surfaceElevated,
+                foregroundColor: theme.accent,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
-                  side: const BorderSide(color: AppColors.teal),
+                  side: BorderSide(color: theme.accent),
                 ),
               ),
-              icon: const Icon(Icons.bolt, size: 18),
+              icon: Icon(Icons.bolt, size: 18, color: theme.accent),
               label: const Text(
                 'Trigger Daily Processing Job (Demo)',
                 style: TextStyle(fontWeight: FontWeight.bold),
@@ -208,27 +221,27 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
     );
   }
 
-  Widget _buildDailyTab() {
+  Widget _buildDailyTab(AppThemeData theme) {
     if (_dailyList.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.emoji_events_outlined,
               size: 48,
-              color: AppColors.textMuted,
+              color: theme.textMuted,
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'No matches aggregated for today yet.',
-              style: TextStyle(color: AppColors.textSecondary),
+              style: TextStyle(color: theme.textSecondary),
             ),
             const SizedBox(height: 16),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.player1,
-                foregroundColor: Colors.black,
+                backgroundColor: theme.buttonBackground,
+                foregroundColor: theme.buttonForeground,
               ),
               onPressed: _triggerMaintenance,
               child: const Text('Aggregate Now'),
@@ -245,6 +258,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
       itemBuilder: (context, index) {
         final row = _dailyList[index];
         return _buildLeaderboardTile(
+          theme: theme,
           rank: row.rank,
           name: row.displayName,
           wins: row.wins,
@@ -257,12 +271,12 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
     );
   }
 
-  Widget _buildAllTimeTab() {
+  Widget _buildAllTimeTab(AppThemeData theme) {
     if (_allTimeList.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'No players registered yet.',
-          style: TextStyle(color: AppColors.textSecondary),
+          style: TextStyle(color: theme.textSecondary),
         ),
       );
     }
@@ -277,6 +291,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
         final winRate = total > 0 ? (profile.wins / total) * 100.0 : 0.0;
 
         return _buildLeaderboardTile(
+          theme: theme,
           rank: index + 1,
           name: profile.displayName,
           wins: profile.wins,
@@ -290,6 +305,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
   }
 
   Widget _buildLeaderboardTile({
+    required AppThemeData theme,
     required int rank,
     required String name,
     required int wins,
@@ -298,20 +314,28 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
     required int triangles,
     required double winRate,
   }) {
-    Color rankColor = AppColors.textMuted;
-    if (rank == 1) rankColor = Colors.amber;
-    if (rank == 2) rankColor = const Color(0xFFC0C0C0);
-    if (rank == 3) rankColor = const Color(0xFFCD7F32);
+    Color rankColor = theme.textMuted;
+    if (rank == 1) {
+      rankColor = theme.isMonochrome ? theme.textPrimary : Colors.amber;
+    } else if (rank == 2) {
+      rankColor = theme.isMonochrome
+          ? theme.textSecondary
+          : const Color(0xFFC0C0C0);
+    } else if (rank == 3) {
+      rankColor = theme.isMonochrome
+          ? theme.textMuted
+          : const Color(0xFFCD7F32);
+    }
 
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: theme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: rank <= 3
               ? rankColor.withValues(alpha: 0.3)
-              : AppColors.surfaceBorder,
+              : theme.surfaceBorder,
         ),
       ),
       child: Row(
@@ -341,8 +365,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
               children: [
                 Text(
                   name,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: TextStyle(
+                    color: theme.textPrimary,
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
@@ -350,8 +374,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                 const SizedBox(height: 4),
                 Text(
                   '$wins W • $losses L • $draws D  (${winRate.toStringAsFixed(1)}%)',
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
+                  style: TextStyle(
+                    color: theme.textSecondary,
                     fontSize: 11,
                   ),
                 ),
@@ -363,8 +387,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
             children: [
               Text(
                 '$triangles',
-                style: const TextStyle(
-                  color: AppColors.player1,
+                style: TextStyle(
+                  color: theme.player1,
                   fontWeight: FontWeight.w900,
                   fontSize: 16,
                 ),
@@ -375,8 +399,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                     : (_selectedGameType == 'connect_four'
                           ? 'Points'
                           : 'Triangles'),
-                style: const TextStyle(
-                  color: AppColors.textMuted,
+                style: TextStyle(
+                  color: theme.textMuted,
                   fontSize: 10,
                 ),
               ),
@@ -387,7 +411,12 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
     );
   }
 
-  Widget _buildGameFilterChip(String gameType, String label, IconData icon) {
+  Widget _buildGameFilterChip(
+    AppThemeData theme,
+    String gameType,
+    String label,
+    IconData icon,
+  ) {
     final isSelected = _selectedGameType == gameType;
     return InkWell(
       borderRadius: BorderRadius.circular(20),
@@ -397,11 +426,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.player1.withValues(alpha: 0.2)
-              : AppColors.surfaceElevated,
+              ? theme.player1.withValues(alpha: 0.2)
+              : theme.surfaceElevated,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? AppColors.player1 : AppColors.surfaceBorder,
+            color: isSelected ? theme.player1 : theme.surfaceBorder,
             width: isSelected ? 1.5 : 1.0,
           ),
         ),
@@ -411,13 +440,13 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
             Icon(
               icon,
               size: 13,
-              color: isSelected ? AppColors.player1 : AppColors.textMuted,
+              color: isSelected ? theme.player1 : theme.textMuted,
             ),
             const SizedBox(width: 5),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? AppColors.player1 : AppColors.textSecondary,
+                color: isSelected ? theme.player1 : theme.textSecondary,
                 fontSize: 11,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
               ),

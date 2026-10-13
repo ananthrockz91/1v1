@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:game_core/game_core.dart';
 import '../services/sound_service.dart';
-import '../theme/app_colors.dart';
 import '../theme/theme_provider.dart';
 import '../widgets/connect_four_board.dart';
 import '../widgets/connect_four_rules_dialog.dart';
@@ -11,6 +10,44 @@ import '../widgets/connect_four_rules_dialog.dart';
 enum ConnectFourMode {
   vsAi,
   passAndPlay,
+}
+
+enum GravityGridPreset {
+  classic(
+    label: 'Classic 7×6',
+    rows: 6,
+    cols: 7,
+    targetStreak: 4,
+    badge: 'Connect 4',
+  ),
+  tactical(
+    label: 'Tactical 8×7',
+    rows: 7,
+    cols: 8,
+    targetStreak: 4,
+    badge: 'Connect 4',
+  ),
+  grandArena(
+    label: 'Grand 9×8',
+    rows: 8,
+    cols: 9,
+    targetStreak: 5,
+    badge: 'Connect 5',
+  );
+
+  final String label;
+  final int rows;
+  final int cols;
+  final int targetStreak;
+  final String badge;
+
+  const GravityGridPreset({
+    required this.label,
+    required this.rows,
+    required this.cols,
+    required this.targetStreak,
+    required this.badge,
+  });
 }
 
 class ConnectFourScreen extends ConsumerStatefulWidget {
@@ -29,6 +66,8 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
   late ConnectFourEngine _engine;
   late ConnectFourState _state;
   late ConnectFourMode _mode;
+
+  GravityGridPreset _selectedPreset = GravityGridPreset.classic;
 
   static const String _p1Id = 'Player 1';
   static const String _p2AiId = 'Tactical Bot';
@@ -57,10 +96,14 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
   void _startNewGame() {
     _turnTimer?.cancel();
     final p2 = _mode == ConnectFourMode.vsAi ? _p2AiId : _p2HumanId;
+
     setState(() {
       _state = ConnectFourState.initial(
         player1Id: _p1Id,
         player2Id: p2,
+        rows: _selectedPreset.rows,
+        cols: _selectedPreset.cols,
+        targetStreak: _selectedPreset.targetStreak,
       );
       _isAiThinking = false;
       _isGameOver = false;
@@ -109,20 +152,16 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
     if (_state.isTerminal || _isAiThinking) return;
 
     final active = _state.activePlayerId;
-    // In vsAi mode, human only plays Player 1
     if (_mode == ConnectFourMode.vsAi && active != _p1Id) return;
 
-    _applyColumnMove(active, column);
+    _applyMove(active, ConnectFourMove.drop(column));
   }
 
-  void _applyColumnMove(String playerId, int column) {
-    final result = _engine.applyMove(
-      _state,
-      playerId,
-      ConnectFourMove(column: column),
-    );
+  void _applyMove(String playerId, ConnectFourMove move) {
+    final result = _engine.applyMove(_state, playerId, move);
     if (result is MoveAccepted) {
       SoundService.playMove();
+
       final next = result.nextState as ConnectFourState;
       setState(() {
         _state = next;
@@ -134,7 +173,6 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
         if (next.winnerId != null) {
           SoundService.playVictory();
         }
-        // Seamlessly update game over state while keeping board in full view
         setState(() {
           _isGameOver = true;
           _showGameOverSummary = true;
@@ -142,7 +180,6 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
         return;
       }
 
-      // Check if it's now AI's turn
       if (_mode == ConnectFourMode.vsAi && next.activePlayerId == _p2AiId) {
         _triggerAiMove();
       }
@@ -151,17 +188,16 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
 
   void _triggerAiMove() {
     setState(() => _isAiThinking = true);
-    // Realistic AI reaction delay
     Future.delayed(const Duration(milliseconds: 650), () {
       if (!mounted || _state.isTerminal) return;
 
-      final botCol = ConnectFourBot.selectBestColumn(
+      final botMove = ConnectFourBot.selectBestMove(
         state: _state,
         botPlayerId: _p2AiId,
       );
 
       setState(() => _isAiThinking = false);
-      _applyColumnMove(_p2AiId, botCol);
+      _applyMove(_p2AiId, botMove);
     });
   }
 
@@ -171,33 +207,34 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
       return;
     }
 
+    final theme = ref.read(currentThemeProvider);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
+        backgroundColor: theme.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: AppColors.surfaceBorder),
+          side: BorderSide(color: theme.surfaceBorder),
         ),
-        title: const Text(
+        title: Text(
           'Leave Match?',
-          style: TextStyle(color: AppColors.textPrimary),
+          style: TextStyle(color: theme.textPrimary),
         ),
-        content: const Text(
+        content: Text(
           'Leaving will reset the current board. Are you sure you want to quit?',
-          style: TextStyle(color: AppColors.textSecondary),
+          style: TextStyle(color: theme.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text(
+            child: Text(
               'Keep Playing',
-              style: TextStyle(color: AppColors.textMuted),
+              style: TextStyle(color: theme.textSecondary),
             ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
+              backgroundColor: theme.statusError,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -207,10 +244,7 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
               Navigator.pop(ctx);
               Navigator.pop(context);
             },
-            child: const Text(
-              'Quit Game',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            child: const Text('Quit Match'),
           ),
         ],
       ),
@@ -263,7 +297,7 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                 Icons.help_outline_rounded,
                 color: theme.accent,
               ),
-              tooltip: 'Rules & Strategy',
+              tooltip: 'Rules & Tactics Guide',
               onPressed: () => ConnectFourRulesDialog.show(context),
             ),
             IconButton(
@@ -279,13 +313,13 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
         body: SafeArea(
           child: Column(
             children: [
-              // Mode Selector & Status Header
+              // Arena Config & Mode Bar
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
+                  horizontal: 14,
+                  vertical: 8,
                 ),
-                color: AppColors.surfaceElevated,
+                color: theme.surfaceElevated,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -294,16 +328,16 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                       segments: const [
                         ButtonSegment(
                           value: ConnectFourMode.vsAi,
-                          label: Text('vs AI', style: TextStyle(fontSize: 12)),
-                          icon: Icon(Icons.smart_toy_outlined, size: 14),
+                          label: Text('vs AI', style: TextStyle(fontSize: 11)),
+                          icon: Icon(Icons.smart_toy_outlined, size: 13),
                         ),
                         ButtonSegment(
                           value: ConnectFourMode.passAndPlay,
                           label: Text(
                             '2-Player',
-                            style: TextStyle(fontSize: 12),
+                            style: TextStyle(fontSize: 11),
                           ),
-                          icon: Icon(Icons.people_outline, size: 14),
+                          icon: Icon(Icons.people_outline, size: 13),
                         ),
                       ],
                       selected: {_mode},
@@ -314,12 +348,10 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                         });
                       },
                       style: SegmentedButton.styleFrom(
-                        backgroundColor: AppColors.surface,
-                        selectedBackgroundColor: AppColors.player1.withValues(
-                          alpha: 0.2,
-                        ),
-                        selectedForegroundColor: AppColors.player1,
-                        foregroundColor: AppColors.textSecondary,
+                        backgroundColor: theme.surface,
+                        selectedBackgroundColor: theme.accentSurface,
+                        selectedForegroundColor: theme.accent,
+                        foregroundColor: theme.textSecondary,
                         visualDensity: VisualDensity.compact,
                       ),
                     ),
@@ -332,33 +364,33 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: _secondsLeft <= 5
-                            ? AppColors.error.withValues(alpha: 0.2)
-                            : AppColors.surface,
+                            ? theme.statusError.withValues(alpha: 0.2)
+                            : theme.surface,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: _secondsLeft <= 5
-                              ? AppColors.error
-                              : AppColors.surfaceBorder,
+                              ? theme.statusError
+                              : theme.surfaceBorder,
                         ),
                       ),
                       child: Row(
                         children: [
                           Icon(
                             Icons.timer_outlined,
-                            size: 14,
+                            size: 13,
                             color: _secondsLeft <= 5
-                                ? AppColors.error
-                                : AppColors.textMuted,
+                                ? theme.statusError
+                                : theme.textSecondary,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             '${_secondsLeft}s',
                             style: TextStyle(
                               color: _secondsLeft <= 5
-                                  ? AppColors.error
-                                  : AppColors.textPrimary,
+                                  ? theme.statusError
+                                  : theme.textPrimary,
                               fontWeight: FontWeight.bold,
-                              fontSize: 12,
+                              fontSize: 11.5,
                             ),
                           ),
                         ],
@@ -368,11 +400,108 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                 ),
               ),
 
-              // Player 1 vs Player 2 Status Bar
+              // Grid Preset & Hazard Controls Strip
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: theme.surface,
+                  border: Border(
+                    bottom: BorderSide(color: theme.surfaceBorder, width: 1),
+                  ),
+                ),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      // Preset chips
+                      ...GravityGridPreset.values.map((preset) {
+                        final isSelected = _selectedPreset == preset;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(8),
+                            onTap: () {
+                              if (_selectedPreset != preset) {
+                                setState(() {
+                                  _selectedPreset = preset;
+                                  _startNewGame();
+                                });
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? theme.accentSurface
+                                    : theme.surfaceElevated,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? theme.accent
+                                      : theme.surfaceBorder,
+                                  width: isSelected ? 1.4 : 1.0,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    preset.label,
+                                    style: TextStyle(
+                                      color: isSelected
+                                          ? theme.accent
+                                          : theme.textSecondary,
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.w500,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                      vertical: 1,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? theme.accent.withValues(alpha: 0.2)
+                                          : theme.surface,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      preset.badge,
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w700,
+                                        color: isSelected
+                                            ? theme.accent
+                                            : theme.textMuted,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Player 1 vs Player 2 Scoreboard
               Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
+                  horizontal: 16,
+                  vertical: 8,
                 ),
                 child: Row(
                   children: [
@@ -380,43 +509,43 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                     Expanded(
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          vertical: 8,
-                          horizontal: 12,
+                          vertical: 6,
+                          horizontal: 10,
                         ),
                         decoration: BoxDecoration(
                           color: isP1Active
-                              ? AppColors.player1.withValues(alpha: 0.15)
-                              : AppColors.surface,
-                          borderRadius: BorderRadius.circular(12),
+                              ? theme.player1Surface
+                              : theme.surface,
+                          borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: isP1Active
-                                ? AppColors.player1
-                                : AppColors.surfaceBorder,
+                                ? theme.player1
+                                : theme.surfaceBorder,
                             width: isP1Active ? 1.5 : 1.0,
                           ),
                         ),
                         child: Row(
                           children: [
                             Container(
-                              width: 14,
-                              height: 14,
-                              decoration: const BoxDecoration(
+                              width: 12,
+                              height: 12,
+                              decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: AppColors.player1,
+                                color: theme.player1,
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 6),
                             Expanded(
                               child: Text(
                                 _state.player1Id,
                                 style: TextStyle(
                                   color: isP1Active
-                                      ? AppColors.player1
-                                      : AppColors.textSecondary,
+                                      ? theme.player1
+                                      : theme.textSecondary,
                                   fontWeight: isP1Active
                                       ? FontWeight.bold
                                       : FontWeight.normal,
-                                  fontSize: 13,
+                                  fontSize: 12,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -425,13 +554,13 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                         ),
                       ),
                     ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: Text(
                         'VS',
                         style: TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 11,
+                          color: theme.textMuted,
+                          fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -440,43 +569,43 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                     Expanded(
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          vertical: 8,
-                          horizontal: 12,
+                          vertical: 6,
+                          horizontal: 10,
                         ),
                         decoration: BoxDecoration(
                           color: !isP1Active
-                              ? AppColors.player2.withValues(alpha: 0.15)
-                              : AppColors.surface,
-                          borderRadius: BorderRadius.circular(12),
+                              ? theme.player2Surface
+                              : theme.surface,
+                          borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: !isP1Active
-                                ? AppColors.player2
-                                : AppColors.surfaceBorder,
+                                ? theme.player2
+                                : theme.surfaceBorder,
                             width: !isP1Active ? 1.5 : 1.0,
                           ),
                         ),
                         child: Row(
                           children: [
                             Container(
-                              width: 14,
-                              height: 14,
-                              decoration: const BoxDecoration(
+                              width: 12,
+                              height: 12,
+                              decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: AppColors.player2,
+                                color: theme.player2,
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 6),
                             Expanded(
                               child: Text(
                                 _state.player2Id,
                                 style: TextStyle(
                                   color: !isP1Active
-                                      ? AppColors.player2
-                                      : AppColors.textSecondary,
+                                      ? theme.player2
+                                      : theme.textSecondary,
                                   fontWeight: !isP1Active
                                       ? FontWeight.bold
                                       : FontWeight.normal,
-                                  fontSize: 13,
+                                  fontSize: 12,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -488,29 +617,30 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                   ],
                 ),
               ),
+              const SizedBox(height: 6),
 
-              // AI Thinking / Turn Indicator Banner
+              // AI Thinking / Status Banner
               Container(
-                height: 28,
+                height: 24,
                 alignment: Alignment.center,
                 child: _isAiThinking
-                    ? const Row(
+                    ? Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           SizedBox(
-                            width: 12,
-                            height: 12,
+                            width: 10,
+                            height: 10,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: AppColors.player2,
+                              color: theme.player2,
                             ),
                           ),
-                          SizedBox(width: 8),
+                          const SizedBox(width: 6),
                           Text(
-                            'Tactical Bot calculating optimal drop...',
+                            'Tactical Bot calculating move...',
                             style: TextStyle(
-                              color: AppColors.player2,
-                              fontSize: 12,
+                              color: theme.player2,
+                              fontSize: 11,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -523,25 +653,25 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                             Icon(
                               Icons.stars_rounded,
                               color: theme.accent,
-                              size: 16,
+                              size: 14,
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 4),
                           ],
                           Text(
                             _state.isTerminal
                                 ? (_state.isDraw
                                       ? 'TACTICAL DRAW (BOARD FULL)'
-                                      : '🏆 ${_state.winnerId?.toUpperCase()} CONNECTS 4 IN A ROW!')
+                                      : '🏆 ${_state.winnerId?.toUpperCase()} CONNECTS ${_state.targetStreak} IN A ROW!')
                                 : '${_state.activePlayerId.toUpperCase()}\'S TURN',
                             style: TextStyle(
                               color: _state.isTerminal
                                   ? theme.accent
                                   : (isP1Active
-                                        ? AppColors.player1
-                                        : AppColors.player2),
-                              fontSize: 12.5,
+                                        ? theme.player1
+                                        : theme.player2),
+                              fontSize: 11,
                               fontWeight: FontWeight.bold,
-                              letterSpacing: 1.4,
+                              letterSpacing: 1.1,
                             ),
                           ),
                         ],
@@ -553,7 +683,7 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
-                    vertical: 8,
+                    vertical: 4,
                   ),
                   child: ConnectFourBoard(
                     state: _state,
@@ -564,23 +694,23 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                 ),
               ),
 
-              // Footer / Game Over Controls
+              // Footer / Game Over Summary
               if (_state.isTerminal || _isGameOver) ...[
                 if (_showGameOverSummary)
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 14,
+                      horizontal: 16,
+                      vertical: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceElevated,
+                      color: theme.surfaceElevated,
                       border: Border(
                         top: BorderSide(
                           color: _state.isDraw
-                              ? AppColors.surfaceBorder
+                              ? theme.surfaceBorder
                               : (_state.winnerId == _p1Id
-                                    ? AppColors.player1
-                                    : AppColors.player2),
+                                    ? theme.player1
+                                    : theme.player2),
                           width: 2.0,
                         ),
                       ),
@@ -605,11 +735,11 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                                       ? Icons.handshake_outlined
                                       : Icons.emoji_events,
                                   color: _state.isDraw
-                                      ? AppColors.textSecondary
+                                      ? theme.textSecondary
                                       : (_state.winnerId == _p1Id
-                                            ? AppColors.player1
-                                            : AppColors.player2),
-                                  size: 22,
+                                            ? theme.player1
+                                            : theme.player2),
+                                  size: 20,
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
@@ -618,12 +748,12 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                                       : '🏆 ${_state.winnerId} Wins!',
                                   style: TextStyle(
                                     color: _state.isDraw
-                                        ? AppColors.textPrimary
+                                        ? theme.textPrimary
                                         : (_state.winnerId == _p1Id
-                                              ? AppColors.player1
-                                              : AppColors.player2),
+                                              ? theme.player1
+                                              : theme.player2),
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 15,
+                                    fontSize: 14,
                                   ),
                                 ),
                               ],
@@ -632,142 +762,75 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                               style: OutlinedButton.styleFrom(
                                 visualDensity: VisualDensity.compact,
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
+                                  horizontal: 8,
                                   vertical: 4,
                                 ),
-                                side: BorderSide(
-                                  color: theme.accent,
-                                ),
+                                side: BorderSide(color: theme.accent),
                                 foregroundColor: theme.accent,
                               ),
                               onPressed: () =>
                                   setState(() => _showGameOverSummary = false),
                               icon: const Icon(
                                 Icons.remove_red_eye_outlined,
-                                size: 14,
+                                size: 13,
                               ),
                               label: const Text(
                                 'View Full Board',
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: 10.5,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 10),
                         Row(
                           children: [
                             Expanded(
                               flex: 2,
                               child: ElevatedButton.icon(
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.player1,
+                                  backgroundColor: theme.accent,
                                   foregroundColor: Colors.black,
                                   padding: const EdgeInsets.symmetric(
-                                    vertical: 12,
+                                    vertical: 10,
                                   ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(10),
                                   ),
-                                  elevation: 0,
                                 ),
                                 onPressed: _startNewGame,
-                                icon: const Icon(
-                                  Icons.replay_rounded,
-                                  size: 18,
-                                ),
+                                icon: const Icon(Icons.replay, size: 16),
                                 label: const Text(
                                   'Play Rematch',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
                                 ),
                               ),
                             ),
                             const SizedBox(width: 10),
                             Expanded(
-                              flex: 1,
                               child: OutlinedButton(
                                 style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppColors.textSecondary,
-                                  side: const BorderSide(
-                                    color: AppColors.surfaceBorder,
-                                  ),
+                                  foregroundColor: theme.textSecondary,
+                                  side: BorderSide(color: theme.surfaceBorder),
                                   padding: const EdgeInsets.symmetric(
-                                    vertical: 12,
+                                    vertical: 10,
                                   ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                 ),
                                 onPressed: () => Navigator.pop(context),
-                                child: const Text('Exit'),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  )
-                else
-                  // Minimal Inspector Pill at bottom
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    color: AppColors.surface,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.stars_rounded,
-                              color: theme.accent,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Inspecting Connected Dots',
-                              style: TextStyle(
-                                color: theme.accent,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            TextButton(
-                              style: TextButton.styleFrom(
-                                visualDensity: VisualDensity.compact,
-                                foregroundColor: AppColors.textSecondary,
-                              ),
-                              onPressed: () =>
-                                  setState(() => _showGameOverSummary = true),
-                              child: const Text(
-                                'Show Menu',
-                                style: TextStyle(fontSize: 12),
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.player1,
-                                foregroundColor: Colors.black,
-                                visualDensity: VisualDensity.compact,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                ),
-                              ),
-                              onPressed: _startNewGame,
-                              child: const Text(
-                                'Rematch',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
+                                child: const Text(
+                                  'Exit',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
                                 ),
                               ),
                             ),
@@ -776,49 +839,6 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                       ],
                     ),
                   ),
-              ] else ...[
-                // Normal In-game footer bar
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
-                  color: AppColors.surface,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Move #${_state.moveHistory.length + 1}',
-                        style: const TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      InkWell(
-                        onTap: () => ConnectFourRulesDialog.show(context),
-                        child: const Row(
-                          children: [
-                            Icon(
-                              Icons.info_outline,
-                              size: 14,
-                              color: AppColors.player1,
-                            ),
-                            SizedBox(width: 4),
-                            Text(
-                              'How to Win',
-                              style: TextStyle(
-                                color: AppColors.player1,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ],
             ],
           ),

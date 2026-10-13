@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:game_core/game_core.dart';
 import '../services/sound_service.dart';
-import '../theme/app_colors.dart';
 import '../theme/theme_provider.dart';
 import '../widgets/reversi_board.dart';
 import '../widgets/reversi_rules_dialog.dart';
@@ -319,10 +318,13 @@ class _ReversiScreenState extends ConsumerState<ReversiScreen> {
                     height: 22,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: const RadialGradient(
-                        colors: [Color(0xFF14B8A6), Color(0xFF042F2E)],
+                      gradient: RadialGradient(
+                        colors: [
+                          theme.player1,
+                          theme.player1.withValues(alpha: 0.6),
+                        ],
                       ),
-                      border: Border.all(color: AppColors.teal, width: 2),
+                      border: Border.all(color: theme.player1, width: 2),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -339,8 +341,8 @@ class _ReversiScreenState extends ConsumerState<ReversiScreen> {
                       ),
                       Text(
                         '${_state.player1Score} Disks (${(p1Pct * 100).toStringAsFixed(0)}%)',
-                        style: const TextStyle(
-                          color: AppColors.teal,
+                        style: TextStyle(
+                          color: theme.player1,
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                         ),
@@ -358,12 +360,12 @@ class _ReversiScreenState extends ConsumerState<ReversiScreen> {
                 ),
                 decoration: BoxDecoration(
                   color: _secondsLeft <= 5
-                      ? AppColors.error.withValues(alpha: 0.15)
+                      ? theme.statusError.withValues(alpha: 0.15)
                       : theme.surfaceElevated,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: _secondsLeft <= 5
-                        ? AppColors.error
+                        ? theme.statusError
                         : theme.surfaceBorder,
                   ),
                 ),
@@ -372,7 +374,9 @@ class _ReversiScreenState extends ConsumerState<ReversiScreen> {
                     Icon(
                       Icons.timer_outlined,
                       size: 14,
-                      color: _secondsLeft <= 5 ? AppColors.error : theme.accent,
+                      color: _secondsLeft <= 5
+                          ? theme.statusError
+                          : theme.accent,
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -382,7 +386,7 @@ class _ReversiScreenState extends ConsumerState<ReversiScreen> {
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                         color: _secondsLeft <= 5
-                            ? AppColors.error
+                            ? theme.statusError
                             : theme.accent,
                       ),
                     ),
@@ -390,7 +394,7 @@ class _ReversiScreenState extends ConsumerState<ReversiScreen> {
                 ),
               ),
 
-              // Player 2 (Light Disks / White)
+              // Player 2
               Row(
                 children: [
                   Column(
@@ -406,8 +410,8 @@ class _ReversiScreenState extends ConsumerState<ReversiScreen> {
                       ),
                       Text(
                         '${_state.player2Score} Disks (${(p2Pct * 100).toStringAsFixed(0)}%)',
-                        style: const TextStyle(
-                          color: Colors.white70,
+                        style: TextStyle(
+                          color: theme.player2,
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                         ),
@@ -420,10 +424,13 @@ class _ReversiScreenState extends ConsumerState<ReversiScreen> {
                     height: 22,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: const RadialGradient(
-                        colors: [Colors.white, Color(0xFF94A3B8)],
+                      gradient: RadialGradient(
+                        colors: [
+                          theme.player2,
+                          theme.player2.withValues(alpha: 0.6),
+                        ],
                       ),
-                      border: Border.all(color: Colors.white, width: 2),
+                      border: Border.all(color: theme.player2, width: 2),
                     ),
                   ),
                 ],
@@ -440,11 +447,11 @@ class _ReversiScreenState extends ConsumerState<ReversiScreen> {
                 children: [
                   Expanded(
                     flex: _state.player1Score,
-                    child: Container(color: AppColors.teal),
+                    child: Container(color: theme.player1),
                   ),
                   Expanded(
                     flex: _state.player2Score,
-                    child: Container(color: Colors.white),
+                    child: Container(color: theme.player2),
                   ),
                 ],
               ),
@@ -471,14 +478,14 @@ class _ReversiScreenState extends ConsumerState<ReversiScreen> {
         decoration: BoxDecoration(
           color: isDraw
               ? theme.surfaceElevated
-              : (won ? AppColors.teal : AppColors.player2).withValues(
+              : (won ? theme.player1 : theme.player2).withValues(
                   alpha: 0.2,
                 ),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isDraw
                 ? theme.surfaceBorder
-                : (won ? AppColors.teal : AppColors.player2),
+                : (won ? theme.player1 : theme.player2),
           ),
         ),
         child: Row(
@@ -487,14 +494,17 @@ class _ReversiScreenState extends ConsumerState<ReversiScreen> {
             Icon(
               isDraw ? Icons.handshake : Icons.emoji_events,
               size: 16,
-              color: won ? AppColors.teal : Colors.amber,
+              color: isDraw
+                  ? theme.textSecondary
+                  : (won ? theme.player1 : theme.player2),
             ),
             const SizedBox(width: 8),
             Text(
               isDraw
                   ? 'MATCH TIED (${_state.player1Score} - ${_state.player2Score})'
                   : '${winner?.toUpperCase()} VICTORIOUS (${_state.player1Score} - ${_state.player2Score})',
-              style: const TextStyle(
+              style: TextStyle(
+                color: theme.textPrimary,
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
                 letterSpacing: 1,
@@ -514,7 +524,7 @@ class _ReversiScreenState extends ConsumerState<ReversiScreen> {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: theme.accent.withValues(alpha: 0.3)),
         ),
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             SizedBox(
@@ -522,17 +532,17 @@ class _ReversiScreenState extends ConsumerState<ReversiScreen> {
               height: 14,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: AppColors.teal,
+                color: theme.accent,
               ),
             ),
-            SizedBox(width: 10),
+            const SizedBox(width: 10),
             Text(
               'TACTICAL AI CALCULATING FLANKS...',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1,
-                color: AppColors.tealLight,
+                color: theme.accent,
               ),
             ),
           ],
@@ -544,12 +554,12 @@ class _ReversiScreenState extends ConsumerState<ReversiScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: (isP1Active ? AppColors.teal : Colors.white).withValues(
+        color: (isP1Active ? theme.player1 : theme.player2).withValues(
           alpha: 0.1,
         ),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: (isP1Active ? AppColors.teal : Colors.white).withValues(
+          color: (isP1Active ? theme.player1 : theme.player2).withValues(
             alpha: 0.3,
           ),
         ),
@@ -562,7 +572,7 @@ class _ReversiScreenState extends ConsumerState<ReversiScreen> {
             height: 8,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isP1Active ? AppColors.teal : Colors.white,
+              color: isP1Active ? theme.player1 : theme.player2,
             ),
           ),
           const SizedBox(width: 8),
@@ -570,15 +580,19 @@ class _ReversiScreenState extends ConsumerState<ReversiScreen> {
             !hasLegalPlacements
                 ? 'NO LEGAL MOVES AVAILABLE — MUST PASS TURN'
                 : (isP1Active
-                      ? "YOUR TURN (DARK / TEAL)"
-                      : "OPPONENT'S TURN (LIGHT / WHITE)"),
+                      ? (theme.isMonochrome
+                            ? "YOUR TURN (P1 - WHITE)"
+                            : "YOUR TURN (P1 - TEAL)")
+                      : (theme.isMonochrome
+                            ? "OPPONENT'S TURN (P2 - ZINC)"
+                            : "OPPONENT'S TURN (P2 - AMBER)")),
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
               letterSpacing: 1,
               color: !hasLegalPlacements
-                  ? AppColors.player2
-                  : (isP1Active ? AppColors.tealLight : Colors.white),
+                  ? theme.statusWarning
+                  : (isP1Active ? theme.player1 : theme.player2),
             ),
           ),
         ],
@@ -630,8 +644,8 @@ class _ReversiScreenState extends ConsumerState<ReversiScreen> {
             Expanded(
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.player2,
-                  foregroundColor: Colors.black,
+                  backgroundColor: theme.buttonBackground,
+                  foregroundColor: theme.buttonForeground,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),

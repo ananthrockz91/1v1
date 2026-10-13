@@ -27,11 +27,10 @@ void main() {
     // Verify game touch points
     expect(find.text('Triangle Tactics'), findsOneWidget);
     expect(find.text('Gravity Drop Duel'), findsOneWidget);
-    expect(find.text('Chroma Reversi'), findsOneWidget);
-    expect(find.text('Play'), findsNWidgets(3));
+    expect(find.text('Play'), findsNWidgets(2));
 
-    // Verify platform actions & theme toggle
-    expect(find.text('Teal Cyber'), findsOneWidget);
+    // Verify platform actions (theme toggle hidden for now)
+    expect(find.text('Teal Cyber'), findsNothing);
     expect(find.byTooltip('Leaderboards'), findsOneWidget);
     expect(find.byTooltip('Serverpod Live Admin Board'), findsOneWidget);
     expect(find.text('Full Catalogue'), findsOneWidget);

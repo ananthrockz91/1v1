@@ -1,12 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:game_core/game_core.dart';
 import '../services/sound_service.dart';
-import '../theme/app_colors.dart';
+import '../theme/theme_provider.dart';
 import '../widgets/player_avatar.dart';
 import '../widgets/triangle_tactics_board.dart';
 
-class MatchReplayScreen extends StatefulWidget {
+class MatchReplayScreen extends ConsumerStatefulWidget {
   final TriangleTacticsState finalState;
   final String player1Name;
   final String player2Name;
@@ -23,10 +24,10 @@ class MatchReplayScreen extends StatefulWidget {
   });
 
   @override
-  State<MatchReplayScreen> createState() => _MatchReplayScreenState();
+  ConsumerState<MatchReplayScreen> createState() => _MatchReplayScreenState();
 }
 
-class _MatchReplayScreenState extends State<MatchReplayScreen> {
+class _MatchReplayScreenState extends ConsumerState<MatchReplayScreen> {
   late final List<TriangleTacticsState> _states;
   int _currentStep = 0;
   Timer? _playbackTimer;
@@ -127,6 +128,7 @@ class _MatchReplayScreenState extends State<MatchReplayScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = ref.watch(currentThemeProvider);
     final currentState = _states[_currentStep];
     final totalMoves = widget.finalState.moveHistory.length;
     final hasMoves = totalMoves > 0;
@@ -142,29 +144,33 @@ class _MatchReplayScreenState extends State<MatchReplayScreen> {
         currentMoveRecord?.playerId == 'Player 1';
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.background,
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
+        backgroundColor: theme.surface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, color: theme.textPrimary),
           tooltip: 'Exit Replay',
           onPressed: () {
             _stopPlayback();
             Navigator.pop(context);
           },
         ),
-        title: const Row(
+        title: Row(
           children: [
             Icon(
               Icons.movie_creation_outlined,
-              color: AppColors.player1,
+              color: theme.player1,
               size: 20,
             ),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             Text(
               'Match Replay & Verification',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: theme.textPrimary,
+              ),
             ),
           ],
         ),
@@ -173,21 +179,21 @@ class _MatchReplayScreenState extends State<MatchReplayScreen> {
             margin: const EdgeInsets.only(right: 16),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: AppColors.player1.withValues(alpha: 0.12),
+              color: theme.player1.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: AppColors.player1.withValues(alpha: 0.3),
+                color: theme.player1.withValues(alpha: 0.3),
               ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.verified, size: 14, color: AppColors.player1),
+                Icon(Icons.verified, size: 14, color: theme.player1),
                 const SizedBox(width: 6),
                 Text(
                   'Deterministic Step $_currentStep / $totalMoves',
-                  style: const TextStyle(
-                    color: AppColors.player1,
+                  style: TextStyle(
+                    color: theme.player1,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -209,10 +215,10 @@ class _MatchReplayScreenState extends State<MatchReplayScreen> {
                     horizontal: 20,
                     vertical: 12,
                   ),
-                  decoration: const BoxDecoration(
-                    color: AppColors.surface,
+                  decoration: BoxDecoration(
+                    color: theme.surface,
                     border: Border(
-                      bottom: BorderSide(color: AppColors.surfaceBorder),
+                      bottom: BorderSide(color: theme.surfaceBorder),
                     ),
                   ),
                   child: Row(
@@ -225,7 +231,7 @@ class _MatchReplayScreenState extends State<MatchReplayScreen> {
                               avatarSeed: widget.player1Avatar,
                               displayName: widget.player1Name,
                               size: 34,
-                              borderColor: AppColors.player1,
+                              borderColor: theme.player1,
                             ),
                             const SizedBox(width: 10),
                             Expanded(
@@ -236,16 +242,16 @@ class _MatchReplayScreenState extends State<MatchReplayScreen> {
                                     widget.player1Name,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: AppColors.player1,
+                                    style: TextStyle(
+                                      color: theme.player1,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13,
                                     ),
                                   ),
                                   Text(
                                     '${currentState.player1Score} pts',
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: theme.textPrimary,
                                       fontSize: 18,
                                       fontWeight: FontWeight.w900,
                                     ),
@@ -256,12 +262,12 @@ class _MatchReplayScreenState extends State<MatchReplayScreen> {
                           ],
                         ),
                       ),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: Text(
                           'VS',
                           style: TextStyle(
-                            color: AppColors.textMuted,
+                            color: theme.textMuted,
                             fontWeight: FontWeight.w900,
                             fontSize: 14,
                           ),
@@ -280,16 +286,16 @@ class _MatchReplayScreenState extends State<MatchReplayScreen> {
                                     widget.player2Name,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: AppColors.player2,
+                                    style: TextStyle(
+                                      color: theme.player2,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13,
                                     ),
                                   ),
                                   Text(
                                     '${currentState.player2Score} pts',
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: theme.textPrimary,
                                       fontSize: 18,
                                       fontWeight: FontWeight.w900,
                                     ),
@@ -302,7 +308,7 @@ class _MatchReplayScreenState extends State<MatchReplayScreen> {
                               avatarSeed: widget.player2Avatar,
                               displayName: widget.player2Name,
                               size: 34,
-                              borderColor: AppColors.player2,
+                              borderColor: theme.player2,
                             ),
                           ],
                         ),
@@ -318,9 +324,9 @@ class _MatchReplayScreenState extends State<MatchReplayScreen> {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceElevated,
-                    border: const Border(
-                      bottom: BorderSide(color: AppColors.surfaceBorder),
+                    color: theme.surfaceElevated,
+                    border: Border(
+                      bottom: BorderSide(color: theme.surfaceBorder),
                     ),
                   ),
                   child: Row(
@@ -331,10 +337,8 @@ class _MatchReplayScreenState extends State<MatchReplayScreen> {
                             : Icons.play_arrow,
                         size: 16,
                         color: currentMoveRecord == null
-                            ? AppColors.textMuted
-                            : (isP1Move
-                                  ? AppColors.player1
-                                  : AppColors.player2),
+                            ? theme.textMuted
+                            : (isP1Move ? theme.player1 : theme.player2),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -342,8 +346,8 @@ class _MatchReplayScreenState extends State<MatchReplayScreen> {
                           currentMoveRecord == null
                               ? 'Initial Board State — No moves placed yet'
                               : '${isP1Move ? widget.player1Name : widget.player2Name} connected edge ${currentMoveRecord.edgeId}',
-                          style: const TextStyle(
-                            color: AppColors.textPrimary,
+                          style: TextStyle(
+                            color: theme.textPrimary,
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
@@ -357,11 +361,8 @@ class _MatchReplayScreenState extends State<MatchReplayScreen> {
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color:
-                                (isP1Move
-                                        ? AppColors.player1
-                                        : AppColors.player2)
-                                    .withValues(alpha: 0.2),
+                            color: (isP1Move ? theme.player1 : theme.player2)
+                                .withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Row(
@@ -370,17 +371,15 @@ class _MatchReplayScreenState extends State<MatchReplayScreen> {
                               Icon(
                                 Icons.star_rounded,
                                 size: 13,
-                                color: isP1Move
-                                    ? AppColors.player1
-                                    : AppColors.player2,
+                                color: isP1Move ? theme.player1 : theme.player2,
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 '+${currentMoveRecord.claimedTriangles.length} ${currentMoveRecord.extraTurn ? "(Bonus Turn!)" : ""}',
                                 style: TextStyle(
                                   color: isP1Move
-                                      ? AppColors.player1
-                                      : AppColors.player2,
+                                      ? theme.player1
+                                      : theme.player2,
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -429,10 +428,10 @@ class _MatchReplayScreenState extends State<MatchReplayScreen> {
                     horizontal: 20,
                     vertical: 14,
                   ),
-                  decoration: const BoxDecoration(
-                    color: AppColors.surface,
+                  decoration: BoxDecoration(
+                    color: theme.surface,
                     border: Border(
-                      top: BorderSide(color: AppColors.surfaceBorder),
+                      top: BorderSide(color: theme.surfaceBorder),
                     ),
                   ),
                   child: Column(
@@ -445,8 +444,8 @@ class _MatchReplayScreenState extends State<MatchReplayScreen> {
                             '0',
                             style: TextStyle(
                               color: _currentStep == 0
-                                  ? AppColors.player1
-                                  : AppColors.textMuted,
+                                  ? theme.player1
+                                  : theme.textMuted,
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                             ),
@@ -454,11 +453,11 @@ class _MatchReplayScreenState extends State<MatchReplayScreen> {
                           Expanded(
                             child: SliderTheme(
                               data: SliderTheme.of(context).copyWith(
-                                activeTrackColor: AppColors.player1,
-                                inactiveTrackColor: AppColors.surfaceBorder,
-                                thumbColor: AppColors.player1,
+                                activeTrackColor: theme.player1,
+                                inactiveTrackColor: theme.surfaceBorder,
+                                thumbColor: theme.player1,
                                 trackHeight: 4,
-                                overlayColor: AppColors.player1.withValues(
+                                overlayColor: theme.player1.withValues(
                                   alpha: 0.2,
                                 ),
                               ),
@@ -480,8 +479,8 @@ class _MatchReplayScreenState extends State<MatchReplayScreen> {
                             '$totalMoves',
                             style: TextStyle(
                               color: _currentStep == totalMoves
-                                  ? AppColors.player1
-                                  : AppColors.textMuted,
+                                  ? theme.player1
+                                  : theme.textMuted,
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                             ),
@@ -497,8 +496,8 @@ class _MatchReplayScreenState extends State<MatchReplayScreen> {
                             icon: const Icon(Icons.first_page_rounded),
                             tooltip: 'Jump to Start',
                             color: _currentStep > 0
-                                ? AppColors.textPrimary
-                                : AppColors.textMuted,
+                                ? theme.textPrimary
+                                : theme.textMuted,
                             onPressed: _currentStep > 0
                                 ? () {
                                     _stopPlayback();
@@ -513,8 +512,8 @@ class _MatchReplayScreenState extends State<MatchReplayScreen> {
                             ),
                             tooltip: 'Previous Step',
                             color: _currentStep > 0
-                                ? AppColors.textPrimary
-                                : AppColors.textMuted,
+                                ? theme.textPrimary
+                                : theme.textMuted,
                             onPressed: _currentStep > 0
                                 ? () {
                                     _stopPlayback();
@@ -525,8 +524,8 @@ class _MatchReplayScreenState extends State<MatchReplayScreen> {
                           const SizedBox(width: 8),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.player1,
-                              foregroundColor: Colors.black,
+                              backgroundColor: theme.buttonBackground,
+                              foregroundColor: theme.buttonForeground,
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 24,
                                 vertical: 12,
@@ -563,8 +562,8 @@ class _MatchReplayScreenState extends State<MatchReplayScreen> {
                             ),
                             tooltip: 'Next Step',
                             color: _currentStep < _states.length - 1
-                                ? AppColors.textPrimary
-                                : AppColors.textMuted,
+                                ? theme.textPrimary
+                                : theme.textMuted,
                             onPressed: _currentStep < _states.length - 1
                                 ? () {
                                     _stopPlayback();
@@ -576,8 +575,8 @@ class _MatchReplayScreenState extends State<MatchReplayScreen> {
                             icon: const Icon(Icons.last_page_rounded),
                             tooltip: 'Jump to Final Result',
                             color: _currentStep < _states.length - 1
-                                ? AppColors.textPrimary
-                                : AppColors.textMuted,
+                                ? theme.textPrimary
+                                : theme.textMuted,
                             onPressed: _currentStep < _states.length - 1
                                 ? () {
                                     _stopPlayback();

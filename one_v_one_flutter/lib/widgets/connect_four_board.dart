@@ -1,12 +1,14 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:game_core/game_core.dart';
-import '../theme/app_colors.dart';
+import '../theme/theme_provider.dart';
 
-class ConnectFourBoard extends StatefulWidget {
+class ConnectFourBoard extends ConsumerStatefulWidget {
   final ConnectFourState state;
   final String currentUserId;
   final ValueChanged<int> onColumnSelected;
+  final ValueChanged<ConnectFourMove>? onMoveSelected;
   final bool isInteractive;
 
   const ConnectFourBoard({
@@ -14,14 +16,15 @@ class ConnectFourBoard extends StatefulWidget {
     required this.state,
     required this.currentUserId,
     required this.onColumnSelected,
+    this.onMoveSelected,
     this.isInteractive = true,
   });
 
   @override
-  State<ConnectFourBoard> createState() => _ConnectFourBoardState();
+  ConsumerState<ConnectFourBoard> createState() => _ConnectFourBoardState();
 }
 
-class _ConnectFourBoardState extends State<ConnectFourBoard>
+class _ConnectFourBoardState extends ConsumerState<ConnectFourBoard>
     with TickerProviderStateMixin {
   int? _hoveredColumn;
   late AnimationController _pulseController;
@@ -40,7 +43,7 @@ class _ConnectFourBoardState extends State<ConnectFourBoard>
 
     _dropController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 400),
+      duration: const Duration(milliseconds: 380),
     );
   }
 
@@ -49,9 +52,8 @@ class _ConnectFourBoardState extends State<ConnectFourBoard>
     super.didUpdateWidget(oldWidget);
     if (widget.state.moveHistory.length > oldWidget.state.moveHistory.length) {
       final lastCol = widget.state.moveHistory.last;
-      // Find row where piece landed
       int? landedRow;
-      for (int r = 0; r < ConnectFourState.rows; r++) {
+      for (int r = 0; r < widget.state.numRows; r++) {
         if (widget.state.grid[r][lastCol] != null) {
           landedRow = r;
           break;
@@ -59,11 +61,10 @@ class _ConnectFourBoardState extends State<ConnectFourBoard>
       }
 
       if (landedRow != null) {
-        final row = landedRow;
         setState(() {
           _lastDroppedCol = lastCol;
-          _lastDroppedRow = row;
-          _lastDroppedPlayer = widget.state.grid[row][lastCol];
+          _lastDroppedRow = landedRow;
+          _lastDroppedPlayer = widget.state.grid[landedRow!][lastCol];
         });
         _dropController.forward(from: 0.0);
       }
@@ -83,40 +84,42 @@ class _ConnectFourBoardState extends State<ConnectFourBoard>
     if (widget.state.activePlayerId != widget.currentUserId) return;
     if (widget.state.isColumnFull(col)) return;
 
+    if (widget.onMoveSelected != null) {
+      widget.onMoveSelected!(ConnectFourMove.drop(col));
+    }
     widget.onColumnSelected(col);
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = ref.watch(currentThemeProvider);
     final isMyTurn =
         widget.isInteractive &&
         !widget.state.isTerminal &&
         widget.state.activePlayerId == widget.currentUserId;
 
-    final myColor = widget.currentUserId == widget.state.player1Id
-        ? AppColors.player1
-        : AppColors.player2;
+    final isP1 = widget.currentUserId == widget.state.player1Id;
+    final myColor = isP1 ? theme.player1 : theme.player2;
 
     return AnimatedBuilder(
       animation: Listenable.merge([_pulseController, _dropController]),
       builder: (context, child) {
         return LayoutBuilder(
           builder: (context, constraints) {
-            // Keep 7:6 aspect ratio with padding
             final maxWidth = constraints.maxWidth;
             final maxHeight = constraints.maxHeight;
 
-            const cols = ConnectFourState.cols;
-            const rows = ConnectFourState.rows;
+            final cols = widget.state.numCols;
+            final rows = widget.state.numRows;
 
-            // Reserve top space for hover preview disc
-            final availableHeight = maxHeight - 60;
+            // Reserve top drop indicator height (44px) + spacing (6px)
+            final availableHeight = maxHeight - 50;
             final cellSizeByWidth = maxWidth / cols;
             final cellSizeByHeight = availableHeight / rows;
             final cellSize = min(
               cellSizeByWidth,
               cellSizeByHeight,
-            ).clamp(32.0, 72.0);
+            ).clamp(28.0, 68.0);
 
             final boardWidth = cellSize * cols;
             final boardHeight = cellSize * rows;
@@ -124,26 +127,27 @@ class _ConnectFourBoardState extends State<ConnectFourBoard>
             return Center(
               child: SizedBox(
                 width: boardWidth,
-                height: boardHeight + 60,
+                height: boardHeight + 50,
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Column selector / preview disc bar
+                    // Top drop / preview indicator bar
                     SizedBox(
-                      height: 52,
+                      height: 44,
                       width: boardWidth,
                       child: Row(
                         children: List.generate(cols, (c) {
                           final isHovered = _hoveredColumn == c;
-                          final isFull = widget.state.isColumnFull(c);
-                          final canDrop = isMyTurn && !isFull;
+                          final canAct =
+                              isMyTurn && !widget.state.isColumnFull(c);
 
                           return Expanded(
                             child: MouseRegion(
-                              cursor: canDrop
+                              cursor: canAct
                                   ? SystemMouseCursors.click
                                   : SystemMouseCursors.basic,
                               onEnter: (_) {
-                                if (canDrop) {
+                                if (canAct) {
                                   setState(() => _hoveredColumn = c);
                                 }
                               },
@@ -156,7 +160,7 @@ class _ConnectFourBoardState extends State<ConnectFourBoard>
                                 onTap: () => _onColumnTap(c),
                                 behavior: HitTestBehavior.opaque,
                                 child: Center(
-                                  child: isHovered && canDrop
+                                  child: isHovered && canAct
                                       ? Container(
                                           width: cellSize * 0.72,
                                           height: cellSize * 0.72,
@@ -179,19 +183,19 @@ class _ConnectFourBoardState extends State<ConnectFourBoard>
                                           ),
                                           child: const Icon(
                                             Icons.arrow_downward_rounded,
-                                            size: 18,
+                                            size: 16,
                                             color: Colors.black,
                                           ),
                                         )
-                                      : (canDrop
+                                      : (canAct
                                             ? Opacity(
                                                 opacity:
                                                     0.25 +
                                                     0.25 *
                                                         _pulseController.value,
                                                 child: Container(
-                                                  width: 8,
-                                                  height: 8,
+                                                  width: 7,
+                                                  height: 7,
                                                   decoration: BoxDecoration(
                                                     shape: BoxShape.circle,
                                                     color: myColor,
@@ -206,10 +210,12 @@ class _ConnectFourBoardState extends State<ConnectFourBoard>
                         }),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
 
-                    // Main 7x6 Interactive Board
-                    Expanded(
+                    // Main Interactive Board
+                    SizedBox(
+                      width: boardWidth,
+                      height: boardHeight,
                       child: GestureDetector(
                         onTapUp: (details) {
                           final col = (details.localPosition.dx / cellSize)
@@ -222,6 +228,7 @@ class _ConnectFourBoardState extends State<ConnectFourBoard>
                           size: Size(boardWidth, boardHeight),
                           painter: _ConnectFourPainter(
                             state: widget.state,
+                            theme: theme,
                             cellSize: cellSize,
                             hoveredCol: _hoveredColumn,
                             pulseValue: _pulseController.value,
@@ -246,6 +253,7 @@ class _ConnectFourBoardState extends State<ConnectFourBoard>
 
 class _ConnectFourPainter extends CustomPainter {
   final ConnectFourState state;
+  final AppThemeData theme;
   final double cellSize;
   final int? hoveredCol;
   final double pulseValue;
@@ -256,6 +264,7 @@ class _ConnectFourPainter extends CustomPainter {
 
   _ConnectFourPainter({
     required this.state,
+    required this.theme,
     required this.cellSize,
     required this.hoveredCol,
     required this.pulseValue,
@@ -267,13 +276,13 @@ class _ConnectFourPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    const cols = ConnectFourState.cols;
-    const rows = ConnectFourState.rows;
+    final cols = state.numCols;
+    final rows = state.numRows;
     final radius = (cellSize * 0.38);
 
     // 1. Draw outer chassis shadow and titanium frame
     final boardRect = Rect.fromLTWH(0, 0, size.width, size.height);
-    final rrect = RRect.fromRectAndRadius(boardRect, const Radius.circular(20));
+    final rrect = RRect.fromRectAndRadius(boardRect, const Radius.circular(18));
 
     // Outer glow / shadow
     final shadowPaint = Paint()
@@ -285,11 +294,17 @@ class _ConnectFourPainter extends CustomPainter {
     final chassisGradient = LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: const [
-        Color(0xFF1A2230),
-        Color(0xFF101520),
-        Color(0xFF090C12),
-      ],
+      colors: theme.isMonochrome
+          ? const [
+              Color(0xFF141414),
+              Color(0xFF0D0D0D),
+              Color(0xFF050505),
+            ]
+          : const [
+              Color(0xFF1A2230),
+              Color(0xFF101520),
+              Color(0xFF090C12),
+            ],
     );
     final chassisPaint = Paint()
       ..shader = chassisGradient.createShader(boardRect)
@@ -298,9 +313,9 @@ class _ConnectFourPainter extends CustomPainter {
 
     // Chassis border
     final borderPaint = Paint()
-      ..color = const Color(0xFF2B374A)
+      ..color = theme.surfaceBorder
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5;
+      ..strokeWidth = 2.2;
     canvas.drawRRect(rrect, borderPaint);
 
     // 2. Highlight hovered column channel
@@ -312,15 +327,15 @@ class _ConnectFourPainter extends CustomPainter {
         size.height,
       );
       final hoverGlow = Paint()
-        ..color = AppColors.player1.withValues(alpha: 0.06 + 0.04 * pulseValue)
+        ..color = theme.accent.withValues(alpha: 0.08 + 0.05 * pulseValue)
         ..style = PaintingStyle.fill;
       canvas.drawRRect(
-        RRect.fromRectAndRadius(colRect, const Radius.circular(12)),
+        RRect.fromRectAndRadius(colRect, const Radius.circular(10)),
         hoverGlow,
       );
     }
 
-    // 3. Draw each slot and placed discs
+    // 3. Draw each slot, obstacles, and placed discs
     final winningSet = <String>{};
     for (final coord in state.winningCoords) {
       winningSet.add('${coord[0]}_${coord[1]}');
@@ -333,20 +348,31 @@ class _ConnectFourPainter extends CustomPainter {
           r * cellSize + cellSize / 2,
         );
 
+        final isObstacle = state.isObstacle(r, c);
         final occupant = state.grid[r][c];
         final isAnimating =
             (c == animatingCol && r == animatingRow && dropProgress < 1.0);
 
+        if (isObstacle) {
+          // Draw hazard obstacle peg
+          _drawObstaclePeg(canvas, center, radius);
+          continue;
+        }
+
         // Dark recessed socket hole
         final socketBg = Paint()
-          ..color = const Color(0xFF06080C)
+          ..color = theme.isMonochrome
+              ? const Color(0xFF080808)
+              : const Color(0xFF06080C)
           ..style = PaintingStyle.fill;
         canvas.drawCircle(center, radius, socketBg);
 
         final socketRim = Paint()
-          ..color = const Color(0xFF1E2638)
+          ..color = theme.isMonochrome
+              ? const Color(0xFF1F1F23)
+              : const Color(0xFF1E2638)
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.0;
+          ..strokeWidth = 1.8;
         canvas.drawCircle(center, radius, socketRim);
 
         // Draw disc if occupied and not currently dropping from top
@@ -370,7 +396,6 @@ class _ConnectFourPainter extends CustomPainter {
         dropProgress < 1.0) {
       final targetY = animatingRow! * cellSize + cellSize / 2;
       final startY = -cellSize;
-      // Bounce curve
       final bounceFactor = Curves.bounceOut.transform(dropProgress);
       final currentY = startY + (targetY - startY) * bounceFactor;
       final currentCenter = Offset(
@@ -387,10 +412,42 @@ class _ConnectFourPainter extends CustomPainter {
       );
     }
 
-    // 5. Draw neon laser victory line across 4 winning discs
-    if (state.isTerminal && state.winningCoords.length >= 4) {
-      _drawVictoryLaser(canvas, winningSet, radius);
+    // 5. Draw neon laser victory line across winning discs
+    if (state.isTerminal && state.winningCoords.length >= state.targetStreak) {
+      _drawVictoryLaser(canvas, radius);
     }
+  }
+
+  void _drawObstaclePeg(Canvas canvas, Offset center, double radius) {
+    // Industrial steel barrier peg
+    final obsBg = Paint()
+      ..shader = const RadialGradient(
+        colors: [Color(0xFF3F3F46), Color(0xFF18181B)],
+      ).createShader(Rect.fromCircle(center: center, radius: radius))
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(center, radius - 1.0, obsBg);
+
+    // Hazard rim
+    final obsRim = Paint()
+      ..color = const Color(0xFFF97316).withValues(alpha: 0.8)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+    canvas.drawCircle(center, radius - 1.0, obsRim);
+
+    // Center metallic hazard crosshair
+    final crosshairPaint = Paint()
+      ..color = const Color(0xFFFB923C)
+      ..strokeWidth = 2.0;
+    canvas.drawLine(
+      center - const Offset(5, 0),
+      center + const Offset(5, 0),
+      crosshairPaint,
+    );
+    canvas.drawLine(
+      center - const Offset(0, 5),
+      center + const Offset(0, 5),
+      crosshairPaint,
+    );
   }
 
   void _drawDisc({
@@ -401,8 +458,8 @@ class _ConnectFourPainter extends CustomPainter {
     required bool isWinning,
   }) {
     final isP1 = playerId == state.player1Id;
-    final primaryColor = isP1 ? AppColors.player1 : AppColors.player2;
-    final darkColor = isP1 ? const Color(0xFF007788) : const Color(0xFF994400);
+    final primaryColor = isP1 ? theme.player1 : theme.player2;
+    final darkColor = isP1 ? theme.player1Dark : theme.player2Dark;
 
     // Glowing halo for discs
     final glowPaint = Paint()
@@ -439,20 +496,21 @@ class _ConnectFourPainter extends CustomPainter {
       ..strokeWidth = 1.2;
     canvas.drawCircle(center, radius - 1.5, rimPaint);
 
-    // Winning disc teal pulse ring
+    // Winning disc pulse ring
     if (isWinning) {
       final winRing = Paint()
-        ..color = AppColors.tealLight.withValues(alpha: 0.8 + 0.2 * pulseValue)
+        ..color = theme.accentSecondary.withValues(
+          alpha: 0.8 + 0.2 * pulseValue,
+        )
         ..style = PaintingStyle.stroke
         ..strokeWidth = 3.0;
       canvas.drawCircle(center, radius + 2 + (pulseValue * 2), winRing);
     }
   }
 
-  void _drawVictoryLaser(Canvas canvas, Set<String> winningSet, double radius) {
+  void _drawVictoryLaser(Canvas canvas, double radius) {
     if (state.winningCoords.isEmpty) return;
 
-    // Ensure sorted along connection line
     final sorted = List<List<int>>.from(state.winningCoords)
       ..sort((a, b) {
         final colComp = a[1].compareTo(b[1]);
@@ -472,9 +530,9 @@ class _ConnectFourPainter extends CustomPainter {
       last[0] * cellSize + cellSize / 2,
     );
 
-    // 1. Ultra-wide neon background glow beam
+    // 1. Neon background glow beam
     final wideGlow = Paint()
-      ..color = AppColors.tealLight.withValues(alpha: 0.4 + 0.3 * pulseValue)
+      ..color = theme.accent.withValues(alpha: 0.4 + 0.3 * pulseValue)
       ..strokeWidth = 20.0 + (pulseValue * 6.0)
       ..strokeCap = StrokeCap.round
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 16);
@@ -482,7 +540,7 @@ class _ConnectFourPainter extends CustomPainter {
 
     // 2. Focused vibrant laser beam
     final laserGlow = Paint()
-      ..color = AppColors.tealLight.withValues(alpha: 0.85 + 0.15 * pulseValue)
+      ..color = theme.accent.withValues(alpha: 0.85 + 0.15 * pulseValue)
       ..strokeWidth = 9.0 + (pulseValue * 2.5)
       ..strokeCap = StrokeCap.round
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
@@ -495,9 +553,11 @@ class _ConnectFourPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
     canvas.drawLine(pStart, pEnd, laserCore);
 
-    // 4. Draw highlighted target beacons on each of the 4 connected dots
+    // 4. Draw highlighted target beacons on connected dots
     final beaconRingPaint = Paint()
-      ..color = AppColors.tealLight.withValues(alpha: 0.85 + 0.15 * pulseValue)
+      ..color = theme.accentSecondary.withValues(
+        alpha: 0.85 + 0.15 * pulseValue,
+      )
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3.2;
 
@@ -511,19 +571,15 @@ class _ConnectFourPainter extends CustomPainter {
         sorted[i][0] * cellSize + cellSize / 2,
       );
 
-      // Outer pulse shockwave ring
       canvas.drawCircle(
         dotCenter,
         radius + 3.0 + (pulseValue * 4.0),
         beaconRingPaint,
       );
-
-      // Center bright white star node
       canvas.drawCircle(dotCenter, 6.0, beaconFillPaint);
 
-      // Inner teal spark
       final spark = Paint()
-        ..color = AppColors.tealLight
+        ..color = theme.accentSecondary
         ..style = PaintingStyle.fill;
       canvas.drawCircle(dotCenter, 3.2, spark);
     }
@@ -532,6 +588,7 @@ class _ConnectFourPainter extends CustomPainter {
   @override
   bool shouldRepaint(_ConnectFourPainter oldDelegate) {
     return oldDelegate.state != state ||
+        oldDelegate.theme != theme ||
         oldDelegate.hoveredCol != hoveredCol ||
         oldDelegate.pulseValue != pulseValue ||
         oldDelegate.dropProgress != dropProgress ||

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../client.dart';
-import '../theme/app_colors.dart';
+import '../theme/theme_provider.dart';
 
-class ArchitectureDialog extends StatefulWidget {
+class ArchitectureDialog extends ConsumerStatefulWidget {
   const ArchitectureDialog({super.key});
 
   static void show(BuildContext context) {
@@ -13,10 +14,10 @@ class ArchitectureDialog extends StatefulWidget {
   }
 
   @override
-  State<ArchitectureDialog> createState() => _ArchitectureDialogState();
+  ConsumerState<ArchitectureDialog> createState() => _ArchitectureDialogState();
 }
 
-class _ArchitectureDialogState extends State<ArchitectureDialog> {
+class _ArchitectureDialogState extends ConsumerState<ArchitectureDialog> {
   bool _isLoadingHealth = true;
   Map<String, dynamic>? _healthData;
   String? _healthError;
@@ -67,11 +68,13 @@ class _ArchitectureDialogState extends State<ArchitectureDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = ref.watch(currentThemeProvider);
+
     return Dialog(
-      backgroundColor: AppColors.surface,
+      backgroundColor: theme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: AppColors.surfaceBorder),
+        side: BorderSide(color: theme.surfaceBorder),
       ),
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: ConstrainedBox(
@@ -87,24 +90,24 @@ class _ArchitectureDialogState extends State<ArchitectureDialog> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: AppColors.player1.withValues(alpha: 0.15),
+                      color: theme.player1.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.memory_rounded,
-                      color: AppColors.player1,
+                      color: theme.player1,
                       size: 26,
                     ),
                   ),
                   const SizedBox(width: 14),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Serverpod Architecture',
                           style: TextStyle(
-                            color: AppColors.textPrimary,
+                            color: theme.textPrimary,
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
@@ -112,7 +115,7 @@ class _ArchitectureDialogState extends State<ArchitectureDialog> {
                         Text(
                           'Full-Stack Architecture & Live Cloud Infrastructure',
                           style: TextStyle(
-                            color: AppColors.textSecondary,
+                            color: theme.textSecondary,
                             fontSize: 12,
                           ),
                         ),
@@ -120,7 +123,7 @@ class _ArchitectureDialogState extends State<ArchitectureDialog> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, color: AppColors.textMuted),
+                    icon: Icon(Icons.close, color: theme.textMuted),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
@@ -134,14 +137,14 @@ class _ArchitectureDialogState extends State<ArchitectureDialog> {
                   vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceElevated,
+                  color: theme.surfaceElevated,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color:
                         _healthData?['status'] == 'healthy' ||
                             _healthData?['database']?['connected'] == true
-                        ? AppColors.player1.withValues(alpha: 0.4)
-                        : AppColors.surfaceBorder,
+                        ? theme.player1.withValues(alpha: 0.4)
+                        : theme.surfaceBorder,
                   ),
                 ),
                 child: Row(
@@ -151,10 +154,10 @@ class _ArchitectureDialogState extends State<ArchitectureDialog> {
                       height: 10,
                       decoration: BoxDecoration(
                         color: _isLoadingHealth
-                            ? Colors.amber
+                            ? theme.statusWarning
                             : (_healthData != null
-                                  ? Colors.greenAccent
-                                  : Colors.redAccent),
+                                  ? theme.statusSuccess
+                                  : theme.statusError),
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -167,18 +170,18 @@ class _ArchitectureDialogState extends State<ArchitectureDialog> {
                                   ? 'Serverpod Cloud: ONLINE (${_healthData?["server"]?["runMode"] ?? "production"}) • DB Latency: ${_healthData?["database"]?["latencyMs"] ?? "10"}ms'
                                   : (_healthError ??
                                         'Live Cloud Status: Standby')),
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
+                        style: TextStyle(
+                          color: theme.textPrimary,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.refresh,
                         size: 16,
-                        color: AppColors.player1,
+                        color: theme.player1,
                       ),
                       tooltip: 'Refresh Health Ping',
                       onPressed: _fetchHealthData,
@@ -193,56 +196,63 @@ class _ArchitectureDialogState extends State<ArchitectureDialog> {
                 child: ListView(
                   children: [
                     _buildFeatureCard(
+                      theme: theme,
                       icon: Icons.alt_route_rounded,
-                      color: AppColors.player1,
+                      color: theme.player1,
                       title: 'Real-Time Streaming WebSockets',
                       sub: 'MatchEndpoint & EventStreams',
                       desc:
                           'Low-latency bidirectional move streaming. Edge placement, triangle capture events, and board state synchronization run over Serverpod WebSockets with deterministic verification.',
                     ),
                     _buildFeatureCard(
+                      theme: theme,
                       icon: Icons.storage_rounded,
-                      color: AppColors.player2,
+                      color: theme.player2,
                       title: 'PostgreSQL Database & Schema Migrations',
                       sub: 'Automated Migration Toolchain',
                       desc:
                           'Player profiles, match records, ELO ratings, and move histories are persisted with Serverpod ORM relations. Tracked migrations run automatically on Cloud deploy.',
                     ),
                     _buildFeatureCard(
+                      theme: theme,
                       icon: Icons.cloud_upload_rounded,
-                      color: AppColors.tealLight,
+                      color: theme.accentSecondary,
                       title: 'Serverpod Cloud Storage',
                       sub: 'Custom Player Avatars',
                       desc:
                           'Direct file uploads for player avatars uploaded from desktop or mobile and stored securely in public Serverpod Cloud Storage buckets with fallback caching.',
                     ),
                     _buildFeatureCard(
+                      theme: theme,
                       icon: Icons.schedule_rounded,
-                      color: AppColors.teal,
+                      color: theme.statusSuccess,
                       title: 'Future Calls & Scheduled Maintenance',
                       sub: 'Autonomous Cron Tasks',
                       desc:
                           'Server-driven daily maintenance jobs scheduled with cron expressions. Aggregates leaderboard standings, prunes stale uncompleted matches, and flushes expired caches.',
                     ),
                     _buildFeatureCard(
+                      theme: theme,
                       icon: Icons.lock_outline_rounded,
-                      color: AppColors.tealLight,
+                      color: theme.player1,
                       title: 'Authentication & Session Security',
                       sub: 'serverpod_auth_idp',
                       desc:
                           'JWT tokens, password hashing with SHA-512 pepper, automated guest profile provisioning, and seamless auth token persistence across app reloads.',
                     ),
                     _buildFeatureCard(
+                      theme: theme,
                       icon: Icons.speed_rounded,
-                      color: AppColors.teal,
+                      color: theme.player2,
                       title: 'High-Performance Local & Priority Caches',
                       sub: 'Serverpod Cache Infrastructure',
                       desc:
                           'Zero-latency caching for player profiles and leaderboard queries, slashing database load and guaranteeing instant lobby response times.',
                     ),
                     _buildFeatureCard(
+                      theme: theme,
                       icon: Icons.webhook_rounded,
-                      color: AppColors.tealLight,
+                      color: theme.accentSecondary,
                       title: 'Unified Serverpod Cloud Web Serving',
                       sub: 'Single Docker Deployment',
                       desc:
@@ -256,8 +266,8 @@ class _ArchitectureDialogState extends State<ArchitectureDialog> {
               // Close button
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.player1,
-                  foregroundColor: Colors.black,
+                  backgroundColor: theme.buttonBackground,
+                  foregroundColor: theme.buttonForeground,
                   minimumSize: const Size.fromHeight(42),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -277,6 +287,7 @@ class _ArchitectureDialogState extends State<ArchitectureDialog> {
   }
 
   Widget _buildFeatureCard({
+    required AppThemeData theme,
     required IconData icon,
     required Color color,
     required String title,
@@ -287,9 +298,9 @@ class _ArchitectureDialogState extends State<ArchitectureDialog> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
+        color: theme.surfaceElevated,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.surfaceBorder),
+        border: Border.all(color: theme.surfaceBorder),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -311,8 +322,8 @@ class _ArchitectureDialogState extends State<ArchitectureDialog> {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
+                      style: TextStyle(
+                        color: theme.textPrimary,
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
                       ),
@@ -341,8 +352,8 @@ class _ArchitectureDialogState extends State<ArchitectureDialog> {
                 const SizedBox(height: 4),
                 Text(
                   desc,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
+                  style: TextStyle(
+                    color: theme.textSecondary,
                     fontSize: 11.5,
                     height: 1.35,
                   ),

@@ -26,6 +26,8 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  /// Toggle whether Chroma Reversi is displayed on the home page.
+  static const bool _enableReversi = false;
   final _roomCodeController = TextEditingController();
 
   @override
@@ -500,7 +502,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       child: Icon(
                                         Icons.login_rounded,
                                         size: 15,
-                                        color: theme.accent,
+                                        color: theme.isMonochrome
+                                            ? Colors.white
+                                            : theme.player2,
                                       ),
                                     ),
                                   ],
@@ -710,32 +714,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       );
                     },
                   ),
-                  const SizedBox(height: 16),
-
-                  // Game Touch Point 3: Chroma Reversi (Othello Duel)
-                  _buildGameTouchPoint(
-                    theme: theme,
-                    title: 'Chroma Reversi',
-                    tagline: 'Othello Duel: Brisk Flanking & Mind Strategy',
-                    description:
-                        'Flank enemy discs in 8 directions across an 8x8 grid to trigger cascade flips, secure invincible corners, and dominate territory.',
-                    accentColor: theme.accent,
-                    badge: 'MIND DUEL',
-                    icon: Icons.radio_button_checked,
-                    modes: const [
-                      'Minimax AI Bot',
-                      'Pass & Play',
-                      'Flank Tactics',
-                    ],
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ReversiHubScreen(),
-                        ),
-                      );
-                    },
-                  ),
+                  // Game Touch Point 3: Chroma Reversi (Othello Duel) - disabled; can be enabled when needed
+                  if (_enableReversi) ...[
+                    const SizedBox(height: 16),
+                    _buildGameTouchPoint(
+                      theme: theme,
+                      title: 'Chroma Reversi',
+                      tagline: 'Othello Duel: Brisk Flanking & Mind Strategy',
+                      description:
+                          'Flank enemy discs in 8 directions across an 8x8 grid to trigger cascade flips, secure invincible corners, and dominate territory.',
+                      accentColor: theme.accent,
+                      badge: 'MIND DUEL',
+                      icon: Icons.radio_button_checked,
+                      modes: const [
+                        'Minimax AI Bot',
+                        'Pass & Play',
+                        'Flank Tactics',
+                      ],
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ReversiHubScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                   const SizedBox(height: 22),
 
                   // Quick Join / Private Room Row
@@ -756,14 +761,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           decoration: BoxDecoration(
                             color: theme.isMonochrome
                                 ? const Color(0xFF27272A)
-                                : theme.accentSurface,
+                                : theme.player2.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: theme.isMonochrome
+                                  ? const Color(0xFF3F3F46)
+                                  : theme.player2.withValues(alpha: 0.35),
+                            ),
                           ),
                           child: Icon(
                             Icons.vpn_key_outlined,
                             color: theme.isMonochrome
                                 ? Colors.white
-                                : theme.accentSecondary,
+                                : theme.player2,
                             size: 18,
                           ),
                         ),
@@ -889,7 +899,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           title: 'Tic-Tac-Toe Duel',
                           accentColor: theme.isMonochrome
                               ? Colors.white70
-                              : theme.accent,
+                              : theme.player2,
                           icon: Icons.grid_3x3,
                         ),
                       ),
@@ -900,7 +910,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           title: 'Memory Duel',
                           accentColor: theme.isMonochrome
                               ? Colors.white70
-                              : theme.accentSecondary,
+                              : theme.player2,
                           icon: Icons.psychology_outlined,
                         ),
                       ),
@@ -935,11 +945,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required String description,
     required Color accentColor,
     required String badge,
+    Color? badgeColor,
+    Color? iconColor,
     required IconData icon,
     required List<String> modes,
     required VoidCallback onTap,
   }) {
     final effectiveAccent = theme.isMonochrome ? Colors.white : accentColor;
+    final effectiveOrange = theme.isMonochrome
+        ? const Color(0xFFA1A1AA)
+        : theme.player2;
+    final effectiveBadgeColor = badgeColor ?? effectiveOrange;
+    final effectiveIconColor = iconColor ?? effectiveOrange;
+
     return Container(
       decoration: BoxDecoration(
         color: theme.cardBackground,
@@ -981,13 +999,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             decoration: BoxDecoration(
                               color: theme.isMonochrome
                                   ? const Color(0xFF18181B)
-                                  : effectiveAccent.withValues(alpha: 0.15),
+                                  : effectiveIconColor.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(12),
-                              border: theme.isMonochrome
-                                  ? Border.all(color: const Color(0xFF3F3F46))
-                                  : null,
+                              border: Border.all(
+                                color: theme.isMonochrome
+                                    ? const Color(0xFF3F3F46)
+                                    : effectiveIconColor.withValues(
+                                        alpha: 0.35,
+                                      ),
+                              ),
                             ),
-                            child: Icon(icon, color: effectiveAccent, size: 24),
+                            child: Icon(
+                              icon,
+                              color: effectiveIconColor,
+                              size: 24,
+                            ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -1028,14 +1054,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color: theme.badgeBackground,
+                        color: theme.isMonochrome
+                            ? const Color(0xFF18181B)
+                            : effectiveBadgeColor.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: theme.badgeBorder),
+                        border: Border.all(
+                          color: theme.isMonochrome
+                              ? const Color(0xFF3F3F46)
+                              : effectiveBadgeColor.withValues(alpha: 0.45),
+                        ),
                       ),
                       child: Text(
                         badge,
                         style: TextStyle(
-                          color: theme.badgeText,
+                          color: effectiveBadgeColor,
                           fontSize: 9.5,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.0,

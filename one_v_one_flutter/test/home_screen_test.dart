@@ -38,11 +38,11 @@ void main() {
       expect(find.text('SELECT YOUR ARENA'), findsOneWidget);
       expect(find.byType(RichText), findsWidgets);
 
-      // Verify game touch points
+      // Verify game touch points (Chroma Reversi disabled from home screen)
       expect(find.text('Triangle Tactics'), findsOneWidget);
       expect(find.text('Gravity Drop Duel'), findsOneWidget);
-      expect(find.text('Chroma Reversi'), findsOneWidget);
-      expect(find.text('Play'), findsNWidgets(3));
+      expect(find.text('Chroma Reversi'), findsNothing);
+      expect(find.text('Play'), findsNWidgets(2));
 
       // Verify Guest mode: only Guest indicator and Sign In action are shown
       expect(find.text('Guest'), findsOneWidget);

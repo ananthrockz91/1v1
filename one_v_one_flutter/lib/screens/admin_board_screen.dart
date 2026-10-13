@@ -879,15 +879,18 @@ class _AdminBoardScreenState extends ConsumerState<AdminBoardScreen>
                 size: 20,
               ),
               const SizedBox(width: 8),
-              Text(
-                'Multi-Game Telemetry Breakdown',
-                style: TextStyle(
-                  color: theme.textPrimary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
+              Expanded(
+                child: Text(
+                  'Multi-Game Telemetry Breakdown',
+                  style: TextStyle(
+                    color: theme.textPrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(

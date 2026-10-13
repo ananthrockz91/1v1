@@ -640,6 +640,36 @@ class _AdminEndpoint {
       }
     });
   }
+
+  _ida.Future<String> getGameTypeStatsJson(
+    _ist.TestSessionBuilder sessionBuilder,
+  ) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'admin',
+            method: 'getGameTypeStatsJson',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'admin',
+          methodName: 'getGameTypeStatsJson',
+          parameters: _ist.testObjectToJson({}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<String>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
 }
 
 class _LeaderboardEndpoint {
@@ -717,6 +747,41 @@ class _LeaderboardEndpoint {
       }
     });
   }
+
+  _ida.Future<List<_ieqwrllr.PlayerProfile>> getGameLeaderboard(
+    _ist.TestSessionBuilder sessionBuilder, {
+    required String gameType,
+    required int limit,
+  }) async {
+    return _ist.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _ist.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'leaderboard',
+            method: 'getGameLeaderboard',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'leaderboard',
+          methodName: 'getGameLeaderboard',
+          parameters: _ist.testObjectToJson({
+            'gameType': gameType,
+            'limit': limit,
+          }),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _ida.Future<List<_ieqwrllr.PlayerProfile>>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
 }
 
 class _MatchEndpoint {
@@ -732,6 +797,7 @@ class _MatchEndpoint {
   _ida.Future<_i5d8m0ei.GameMatch> createMatch(
     _ist.TestSessionBuilder sessionBuilder, {
     required String playerId,
+    String? gameType,
     required int boardSize,
     required bool isPublic,
   }) async {
@@ -748,6 +814,7 @@ class _MatchEndpoint {
           methodName: 'createMatch',
           parameters: _ist.testObjectToJson({
             'playerId': playerId,
+            'gameType': gameType,
             'boardSize': boardSize,
             'isPublic': isPublic,
           }),
@@ -804,6 +871,7 @@ class _MatchEndpoint {
   _ida.Future<_i5d8m0ei.GameMatch> findMatch(
     _ist.TestSessionBuilder sessionBuilder, {
     required String playerId,
+    String? gameType,
     required int boardSize,
   }) async {
     return _ist.callAwaitableFunctionAndHandleExceptions(() async {
@@ -819,6 +887,7 @@ class _MatchEndpoint {
           methodName: 'findMatch',
           parameters: _ist.testObjectToJson({
             'playerId': playerId,
+            'gameType': gameType,
             'boardSize': boardSize,
           }),
           serializationManager: _serializationManager,

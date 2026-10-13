@@ -525,12 +525,16 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
                         value: '${d.localCacheEntries}',
                         subtitle: 'In-memory keys (TTL enabled)',
                         icon: Icons.bolt_outlined,
-                        color: Colors.purpleAccent,
+                        color: AppColors.tealLight,
                       ),
                     ],
                   );
                 },
               ),
+              const SizedBox(height: 20),
+
+              // Multi-Game Arena Telemetry Card
+              _buildGameBreakdownCard(d),
               const SizedBox(height: 24),
 
               // Interactive Action Triggers
@@ -762,6 +766,195 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
     );
   }
 
+  Widget _buildGameBreakdownCard(AdminDashboardData d) {
+    int triangleActive = 0, triangleWaiting = 0, triangleCompleted = 0;
+    int connectFourActive = 0, connectFourWaiting = 0, connectFourCompleted = 0;
+    int reversiActive = 0, reversiWaiting = 0, reversiCompleted = 0;
+
+    for (final m in d.recentMatches) {
+      if (m.gameType == 'triangle_tactics') {
+        if (m.status == 'in_progress') {
+          triangleActive++;
+        } else if (m.status == 'waiting') {
+          triangleWaiting++;
+        } else if (m.status == 'completed') {
+          triangleCompleted++;
+        }
+      } else if (m.gameType == 'connect_four') {
+        if (m.status == 'in_progress') {
+          connectFourActive++;
+        } else if (m.status == 'waiting') {
+          connectFourWaiting++;
+        } else if (m.status == 'completed') {
+          connectFourCompleted++;
+        }
+      } else if (m.gameType == 'reversi') {
+        if (m.status == 'in_progress') {
+          reversiActive++;
+        } else if (m.status == 'waiting') {
+          reversiWaiting++;
+        } else if (m.status == 'completed') {
+          reversiCompleted++;
+        }
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.surfaceBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.grid_view_rounded,
+                color: AppColors.player1,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Multi-Game Telemetry Breakdown',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceElevated,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text(
+                  '3 ENGINES ACTIVE',
+                  style: TextStyle(
+                    color: AppColors.player1,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _buildGameTelemetryItem(
+                  title: 'Triangle Tactics',
+                  icon: Icons.change_history,
+                  color: AppColors.player1,
+                  active: triangleActive,
+                  waiting: triangleWaiting,
+                  completed: triangleCompleted,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildGameTelemetryItem(
+                  title: 'Gravity Drop',
+                  icon: Icons.blur_linear,
+                  color: AppColors.tealLight,
+                  active: connectFourActive,
+                  waiting: connectFourWaiting,
+                  completed: connectFourCompleted,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildGameTelemetryItem(
+                  title: 'Chroma Reversi',
+                  icon: Icons.radio_button_checked,
+                  color: AppColors.teal,
+                  active: reversiActive,
+                  waiting: reversiWaiting,
+                  completed: reversiCompleted,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGameTelemetryItem({
+    required String title,
+    required IconData icon,
+    required Color color,
+    required int active,
+    required int waiting,
+    required int completed,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color, size: 16),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Live: $active',
+                style: const TextStyle(
+                  color: AppColors.success,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                'Wait: $waiting',
+                style: const TextStyle(
+                  color: AppColors.player2,
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Completed: $completed',
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 10,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // -------------------------------------------------------------
   // TAB 2: LIVE MATCHES TABLE (game_match)
   // -------------------------------------------------------------
@@ -791,6 +984,27 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
             ? AppColors.player2
             : AppColors.textMuted;
 
+        final String gameName;
+        final IconData gameIcon;
+        final Color gameColor;
+        if (m.gameType == 'triangle_tactics') {
+          gameName = 'TRIANGLE';
+          gameIcon = Icons.change_history;
+          gameColor = AppColors.player1;
+        } else if (m.gameType == 'connect_four') {
+          gameName = 'GRAVITY DROP';
+          gameIcon = Icons.blur_linear;
+          gameColor = AppColors.tealLight;
+        } else if (m.gameType == 'reversi') {
+          gameName = 'REVERSI';
+          gameIcon = Icons.radio_button_checked;
+          gameColor = AppColors.teal;
+        } else {
+          gameName = m.gameType.toUpperCase();
+          gameIcon = Icons.sports_esports;
+          gameColor = AppColors.player2;
+        }
+
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -800,25 +1014,61 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
           ),
           child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceElevated,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.surfaceBorder),
-                ),
-                child: Text(
-                  m.roomCode ?? 'PUBLIC',
-                  style: const TextStyle(
-                    color: AppColors.player1,
-                    fontFamily: 'monospace',
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
+              // Game Badge & Room Code Column
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: gameColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: gameColor.withValues(alpha: 0.35),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(gameIcon, size: 10, color: gameColor),
+                        const SizedBox(width: 4),
+                        Text(
+                          gameName,
+                          style: TextStyle(
+                            color: gameColor,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceElevated,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: AppColors.surfaceBorder),
+                    ),
+                    child: Text(
+                      m.roomCode ?? 'PUBLIC',
+                      style: const TextStyle(
+                        color: AppColors.player1,
+                        fontFamily: 'monospace',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -836,7 +1086,7 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Score: ${m.player1Score} - ${m.player2Score} • Turn: ${m.activePlayerId} • Board Size: ${m.boardSize}',
+                      'Score: ${m.player1Score} - ${m.player2Score} • Turn: ${m.activePlayerId} • Game: ${m.gameType}',
                       style: const TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 11,
@@ -990,7 +1240,7 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
       _FeatureInfo(
         title: 'In-Memory Caching (session.caches.local)',
         icon: Icons.flash_on,
-        color: Colors.purpleAccent,
+        color: AppColors.tealLight,
         description:
             'High-speed in-memory cache with TTL (5m daily leaderboards, 2m all-time leaderboards, 5m player profiles). '
             'Group invalidation automatically wipes "leaderboards" cache on daily aggregation.',
@@ -1006,7 +1256,7 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
       _FeatureInfo(
         title: 'Real-Time WebSocket Streaming (session.messages)',
         icon: Icons.stream,
-        color: Colors.cyanAccent,
+        color: AppColors.tealLight,
         description:
             'Live multiplayer gameplay streams over WebSockets via Serverpod\'s message hub. '
             'Subscribing to match_\$matchId allows instant broadcast of player moves, scores, and forfeits.',
@@ -1014,7 +1264,7 @@ class _AdminBoardScreenState extends State<AdminBoardScreen>
       _FeatureInfo(
         title: 'Direct Cloud Storage (session.storage & FileUploader)',
         icon: Icons.cloud_upload_outlined,
-        color: Colors.blueAccent,
+        color: AppColors.teal,
         description:
             'Player avatars stream directly to Serverpod Cloud Storage using presigned upload descriptions '
             'and native FileUploader, eliminating the need to store heavy base64 strings in database rows.',

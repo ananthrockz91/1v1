@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:serverpod/serverpod.dart';
 import '../generated/protocol.dart';
 import '../services/daily_maintenance_processor.dart';
@@ -99,5 +100,49 @@ class AdminEndpoint extends Endpoint {
       recentJobLogs: recentJobLogs,
       recentPlayers: recentPlayers,
     );
+  }
+
+  /// Returns real-time breakdown of matches by gameType (triangle_tactics, connect_four, reversi)
+  /// including waiting, in-progress, completed, and total counts.
+  Future<String> getGameTypeStatsJson(Session session) async {
+    final matches = await GameMatch.db.find(session);
+    final Map<String, Map<String, int>> stats = {
+      'triangle_tactics': {
+        'waiting': 0,
+        'in_progress': 0,
+        'completed': 0,
+        'total': 0,
+      },
+      'connect_four': {
+        'waiting': 0,
+        'in_progress': 0,
+        'completed': 0,
+        'total': 0,
+      },
+      'reversi': {
+        'waiting': 0,
+        'in_progress': 0,
+        'completed': 0,
+        'total': 0,
+      },
+    };
+
+    for (final m in matches) {
+      final gType = m.gameType;
+      final map = stats.putIfAbsent(
+        gType,
+        () => {'waiting': 0, 'in_progress': 0, 'completed': 0, 'total': 0},
+      );
+      map['total'] = (map['total'] ?? 0) + 1;
+      if (m.status == 'waiting') map['waiting'] = (map['waiting'] ?? 0) + 1;
+      if (m.status == 'in_progress') {
+        map['in_progress'] = (map['in_progress'] ?? 0) + 1;
+      }
+      if (m.status == 'completed') {
+        map['completed'] = (map['completed'] ?? 0) + 1;
+      }
+    }
+
+    return jsonEncode(stats);
   }
 }

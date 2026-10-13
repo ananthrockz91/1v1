@@ -321,6 +321,16 @@ class Endpoints extends _is.EndpointDispatch {
               ) async => (endpoints['admin'] as _i5t1w2d2.AdminEndpoint)
                   .getDashboardData(session),
         ),
+        'getGameTypeStatsJson': _is.MethodConnector(
+          name: 'getGameTypeStatsJson',
+          params: {},
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['admin'] as _i5t1w2d2.AdminEndpoint)
+                  .getGameTypeStatsJson(session),
+        ),
       },
     );
     connectors['leaderboard'] = _is.EndpointConnector(
@@ -373,6 +383,32 @@ class Endpoints extends _is.EndpointDispatch {
                         limit: params['limit'],
                       ),
         ),
+        'getGameLeaderboard': _is.MethodConnector(
+          name: 'getGameLeaderboard',
+          params: {
+            'gameType': _is.ParameterDescription(
+              name: 'gameType',
+              type: _is.getType<String>(),
+              nullable: false,
+            ),
+            'limit': _is.ParameterDescription(
+              name: 'limit',
+              type: _is.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _is.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['leaderboard'] as _iy80ldha.LeaderboardEndpoint)
+                      .getGameLeaderboard(
+                        session,
+                        gameType: params['gameType'],
+                        limit: params['limit'],
+                      ),
+        ),
       },
     );
     connectors['match'] = _is.EndpointConnector(
@@ -386,6 +422,11 @@ class Endpoints extends _is.EndpointDispatch {
               name: 'playerId',
               type: _is.getType<String>(),
               nullable: false,
+            ),
+            'gameType': _is.ParameterDescription(
+              name: 'gameType',
+              type: _is.getType<String?>(),
+              nullable: true,
             ),
             'boardSize': _is.ParameterDescription(
               name: 'boardSize',
@@ -406,6 +447,7 @@ class Endpoints extends _is.EndpointDispatch {
                   (endpoints['match'] as _iznotijq.MatchEndpoint).createMatch(
                     session,
                     playerId: params['playerId'],
+                    gameType: params['gameType'],
                     boardSize: params['boardSize'],
                     isPublic: params['isPublic'],
                   ),
@@ -443,6 +485,11 @@ class Endpoints extends _is.EndpointDispatch {
               type: _is.getType<String>(),
               nullable: false,
             ),
+            'gameType': _is.ParameterDescription(
+              name: 'gameType',
+              type: _is.getType<String?>(),
+              nullable: true,
+            ),
             'boardSize': _is.ParameterDescription(
               name: 'boardSize',
               type: _is.getType<int>(),
@@ -457,6 +504,7 @@ class Endpoints extends _is.EndpointDispatch {
                   (endpoints['match'] as _iznotijq.MatchEndpoint).findMatch(
                     session,
                     playerId: params['playerId'],
+                    gameType: params['gameType'],
                     boardSize: params['boardSize'],
                   ),
         ),

@@ -42,7 +42,7 @@ class ConnectFourRulesDialog extends StatelessWidget {
                       gradient: LinearGradient(
                         colors: [
                           AppColors.player1.withValues(alpha: 0.3),
-                          Colors.blueAccent.withValues(alpha: 0.3),
+                          AppColors.tealLight.withValues(alpha: 0.3),
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
@@ -103,7 +103,7 @@ class ConnectFourRulesDialog extends StatelessWidget {
                 children: [
                   _buildHighlightCard(
                     icon: Icons.emoji_events_outlined,
-                    iconColor: Colors.amberAccent,
+                    iconColor: AppColors.tealLight,
                     title: 'Objective: Connect 4 Discs',
                     description:
                         'Be the first player to form an unbroken horizontal, vertical, or diagonal line of four consecutive discs in your color.',

@@ -15,6 +15,10 @@ class AppThemeData {
   final Color surfaceBorder;
   final Color accent;
   final Color accentSecondary;
+  final Color accentDark;
+  final Color accentSurface;
+  final Color heroGradientStart;
+  final Color heroGradientEnd;
   final Color logoPrimary;
   final Color logoSecondary;
   final Color logoVs;
@@ -37,6 +41,10 @@ class AppThemeData {
     required this.surfaceBorder,
     required this.accent,
     required this.accentSecondary,
+    required this.accentDark,
+    required this.accentSurface,
+    required this.heroGradientStart,
+    required this.heroGradientEnd,
     required this.logoPrimary,
     required this.logoSecondary,
     required this.logoVs,
@@ -62,6 +70,10 @@ class AppThemeData {
     surfaceBorder: Color(0xFF263552),
     accent: Color(0xFF14B8A6), // Vibrant Teal
     accentSecondary: Color(0xFF2DD4BF), // Light Teal
+    accentDark: Color(0xFF0F766E), // Deep Teal
+    accentSurface: Color(0x2214B8A6), // Soft Teal Tint
+    heroGradientStart: Color(0xFF0F2B2B), // Teal Tinted Surface
+    heroGradientEnd: Color(0xFF131B2E),
     logoPrimary: Color(0xFF14B8A6), // Teal
     logoSecondary: Color(0xFF14B8A6), // Teal (unified teal branding)
     logoVs: Color(0xFF64748B),
@@ -85,6 +97,10 @@ class AppThemeData {
     surfaceBorder: Color(0xFF27272A), // Hairline zinc border
     accent: Color(0xFFFFFFFF), // Pure Crisp White
     accentSecondary: Color(0xFFD4D4D8), // Zinc-300
+    accentDark: Color(0xFF52525B), // Zinc-600
+    accentSurface: Color(0xFF18181B), // Soft Zinc Tint
+    heroGradientStart: Color(0xFF18181B),
+    heroGradientEnd: Color(0xFF0A0A0A),
     logoPrimary: Color(0xFFFFFFFF), // Pure White
     logoSecondary: Color(0xFFFFFFFF), // Pure White
     logoVs: Color(0xFF71717A), // Zinc-500

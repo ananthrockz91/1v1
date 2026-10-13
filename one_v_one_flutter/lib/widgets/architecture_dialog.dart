@@ -210,7 +210,7 @@ class _ArchitectureDialogState extends State<ArchitectureDialog> {
                     ),
                     _buildFeatureCard(
                       icon: Icons.cloud_upload_rounded,
-                      color: Colors.amberAccent,
+                      color: AppColors.tealLight,
                       title: 'Serverpod Cloud Storage',
                       sub: 'Custom Player Avatars',
                       desc:
@@ -218,7 +218,7 @@ class _ArchitectureDialogState extends State<ArchitectureDialog> {
                     ),
                     _buildFeatureCard(
                       icon: Icons.schedule_rounded,
-                      color: Colors.purpleAccent,
+                      color: AppColors.teal,
                       title: 'Future Calls & Scheduled Maintenance',
                       sub: 'Autonomous Cron Tasks',
                       desc:
@@ -226,7 +226,7 @@ class _ArchitectureDialogState extends State<ArchitectureDialog> {
                     ),
                     _buildFeatureCard(
                       icon: Icons.lock_outline_rounded,
-                      color: Colors.lightBlueAccent,
+                      color: AppColors.tealLight,
                       title: 'Authentication & Session Security',
                       sub: 'serverpod_auth_idp',
                       desc:
@@ -234,7 +234,7 @@ class _ArchitectureDialogState extends State<ArchitectureDialog> {
                     ),
                     _buildFeatureCard(
                       icon: Icons.speed_rounded,
-                      color: Colors.tealAccent,
+                      color: AppColors.teal,
                       title: 'High-Performance Local & Priority Caches',
                       sub: 'Serverpod Cache Infrastructure',
                       desc:
@@ -242,7 +242,7 @@ class _ArchitectureDialogState extends State<ArchitectureDialog> {
                     ),
                     _buildFeatureCard(
                       icon: Icons.webhook_rounded,
-                      color: Colors.orangeAccent,
+                      color: AppColors.tealLight,
                       title: 'Unified Serverpod Cloud Web Serving',
                       sub: 'Single Docker Deployment',
                       desc:

@@ -285,19 +285,19 @@ class _TriangleTacticsHubScreenState
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      const Color(0xFF142232),
-                      AppColors.surfaceElevated,
+                      theme.heroGradientStart,
+                      theme.surfaceElevated,
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: AppColors.player1.withValues(alpha: 0.35),
+                    color: theme.accent.withValues(alpha: 0.35),
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.player1.withValues(alpha: 0.08),
+                      color: theme.accent.withValues(alpha: 0.08),
                       blurRadius: 20,
                       offset: const Offset(0, 6),
                     ),
@@ -315,13 +315,16 @@ class _TriangleTacticsHubScreenState
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.player1.withValues(alpha: 0.15),
+                            color: theme.badgeBackground,
                             borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: theme.badgeBorder,
+                            ),
                           ),
-                          child: const Text(
+                          child: Text(
                             'HEXAGONAL LATTICE',
                             style: TextStyle(
-                              color: AppColors.player1,
+                              color: theme.badgeText,
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 1.2,
@@ -330,18 +333,18 @@ class _TriangleTacticsHubScreenState
                         ),
                         InkWell(
                           onTap: () => GameRulesDialog.show(context),
-                          child: const Row(
+                          child: Row(
                             children: [
                               Icon(
                                 Icons.menu_book_rounded,
                                 size: 14,
-                                color: AppColors.player1,
+                                color: theme.accent,
                               ),
-                              SizedBox(width: 4),
+                              const SizedBox(width: 4),
                               Text(
                                 'Guide',
                                 style: TextStyle(
-                                  color: AppColors.player1,
+                                  color: theme.accent,
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -352,10 +355,10 @@ class _TriangleTacticsHubScreenState
                       ],
                     ),
                     const SizedBox(height: 12),
-                    const Text(
+                    Text(
                       'Triangle Tactics',
                       style: TextStyle(
-                        color: AppColors.textPrimary,
+                        color: theme.textPrimary,
                         fontSize: 24,
                         fontWeight: FontWeight.w900,
                       ),

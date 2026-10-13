@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../theme/app_colors.dart';
 import '../theme/theme_provider.dart';
 import '../widgets/connect_four_rules_dialog.dart';
 import 'connect_four_screen.dart';
@@ -99,19 +98,19 @@ class ConnectFourHubScreen extends ConsumerWidget {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      const Color(0xFF102138),
-                      AppColors.surfaceElevated,
+                      theme.heroGradientStart,
+                      theme.surfaceElevated,
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: Colors.blueAccent.withValues(alpha: 0.35),
+                    color: theme.accent.withValues(alpha: 0.35),
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.blueAccent.withValues(alpha: 0.08),
+                      color: theme.accent.withValues(alpha: 0.08),
                       blurRadius: 20,
                       offset: const Offset(0, 6),
                     ),
@@ -129,13 +128,16 @@ class ConnectFourHubScreen extends ConsumerWidget {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.blueAccent.withValues(alpha: 0.15),
+                            color: theme.badgeBackground,
                             borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: theme.badgeBorder,
+                            ),
                           ),
-                          child: const Text(
+                          child: Text(
                             '7x6 VERTICAL GRID',
                             style: TextStyle(
-                              color: Colors.blueAccent,
+                              color: theme.badgeText,
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 1.2,
@@ -144,18 +146,18 @@ class ConnectFourHubScreen extends ConsumerWidget {
                         ),
                         InkWell(
                           onTap: () => ConnectFourRulesDialog.show(context),
-                          child: const Row(
+                          child: Row(
                             children: [
                               Icon(
                                 Icons.menu_book_rounded,
                                 size: 14,
-                                color: Colors.blueAccent,
+                                color: theme.accent,
                               ),
-                              SizedBox(width: 4),
+                              const SizedBox(width: 4),
                               Text(
                                 'Guide',
                                 style: TextStyle(
-                                  color: Colors.blueAccent,
+                                  color: theme.accent,
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -166,19 +168,19 @@ class ConnectFourHubScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    const Text(
+                    Text(
                       'Gravity Drop Duel',
                       style: TextStyle(
-                        color: AppColors.textPrimary,
+                        color: theme.textPrimary,
                         fontSize: 24,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                     const SizedBox(height: 6),
-                    const Text(
+                    Text(
                       'Drop neon discs down 7 columns obeying real gravity physics. Be the first to connect four discs horizontally, vertically, or diagonally!',
                       style: TextStyle(
-                        color: AppColors.textSecondary,
+                        color: theme.textSecondary,
                         fontSize: 13,
                         height: 1.45,
                       ),
@@ -188,10 +190,10 @@ class ConnectFourHubScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 24),
 
-              const Text(
+              Text(
                 'SELECT PLAY MODE',
                 style: TextStyle(
-                  color: AppColors.textMuted,
+                  color: theme.textMuted,
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.5,
@@ -201,8 +203,9 @@ class ConnectFourHubScreen extends ConsumerWidget {
 
               // Mode 1: Play vs AI
               _buildModeCard(
+                theme: theme,
                 icon: Icons.smart_toy_outlined,
-                iconColor: Colors.blueAccent,
+                iconColor: theme.accent,
                 title: 'Solo vs AI (Tactical Bot)',
                 subtitle:
                     'Challenge our minimax bot with intelligent defensive blocking',
@@ -222,8 +225,9 @@ class ConnectFourHubScreen extends ConsumerWidget {
 
               // Mode 2: Pass & Play
               _buildModeCard(
+                theme: theme,
                 icon: Icons.people_outline,
-                iconColor: AppColors.player2,
+                iconColor: theme.accentSecondary,
                 title: 'Pass & Play (Local 2-Player)',
                 subtitle:
                     'Take turns dropping discs on the same screen with a friend',
@@ -241,10 +245,10 @@ class ConnectFourHubScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 20),
 
-              const Text(
+              Text(
                 'GAME GUIDE & STRATEGY',
                 style: TextStyle(
-                  color: AppColors.textMuted,
+                  color: theme.textMuted,
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.5,
@@ -254,41 +258,41 @@ class ConnectFourHubScreen extends ConsumerWidget {
 
               // Strategy Guide Card
               ListTile(
-                tileColor: AppColors.surface,
+                tileColor: theme.surface,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
-                  side: const BorderSide(color: AppColors.surfaceBorder),
+                  side: BorderSide(color: theme.surfaceBorder),
                 ),
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.blueAccent.withValues(alpha: 0.15),
+                    color: theme.accent.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.shield_outlined,
-                    color: Colors.blueAccent,
+                    color: theme.accent,
                     size: 20,
                   ),
                 ),
-                title: const Text(
+                title: Text(
                   'Rules, Vectors & Winning Tips',
                   style: TextStyle(
-                    color: AppColors.textPrimary,
+                    color: theme.textPrimary,
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
                 ),
-                subtitle: const Text(
+                subtitle: Text(
                   'Learn how to control column 3 and set up unblockable forks',
                   style: TextStyle(
-                    color: AppColors.textSecondary,
+                    color: theme.textSecondary,
                     fontSize: 12,
                   ),
                 ),
-                trailing: const Icon(
+                trailing: Icon(
                   Icons.chevron_right,
-                  color: AppColors.textMuted,
+                  color: theme.textMuted,
                   size: 20,
                 ),
                 onTap: () => ConnectFourRulesDialog.show(context),
@@ -301,6 +305,7 @@ class ConnectFourHubScreen extends ConsumerWidget {
   }
 
   Widget _buildModeCard({
+    required AppThemeData theme,
     required IconData icon,
     required Color iconColor,
     required String title,
@@ -310,9 +315,9 @@ class ConnectFourHubScreen extends ConsumerWidget {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: theme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.surfaceBorder),
+        border: Border.all(color: theme.surfaceBorder),
       ),
       child: Material(
         color: Colors.transparent,
@@ -341,8 +346,8 @@ class ConnectFourHubScreen extends ConsumerWidget {
                           Expanded(
                             child: Text(
                               title,
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
+                              style: TextStyle(
+                                color: theme.textPrimary,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 15,
                               ),
@@ -372,8 +377,8 @@ class ConnectFourHubScreen extends ConsumerWidget {
                       const SizedBox(height: 4),
                       Text(
                         subtitle,
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
+                        style: TextStyle(
+                          color: theme.textSecondary,
                           fontSize: 12,
                         ),
                       ),
@@ -381,9 +386,9 @@ class ConnectFourHubScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Icon(
+                Icon(
                   Icons.chevron_right,
-                  color: AppColors.textMuted,
+                  color: theme.textMuted,
                   size: 20,
                 ),
               ],

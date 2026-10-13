@@ -13,9 +13,11 @@ admin:
   - triggerDailyMaintenance:
   - clearCaches:
   - getDashboardData:
+  - getGameTypeStatsJson:
 leaderboard:
   - getDailyLeaderboard:
   - getAllTimeLeaderboard:
+  - getGameLeaderboard:
 match:
   - createMatch:
   - joinMatch:

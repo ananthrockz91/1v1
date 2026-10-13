@@ -17,3 +17,7 @@ export 'src/engine/connect_four_state.dart';
 export 'src/engine/connect_four_move.dart';
 export 'src/engine/connect_four_engine.dart';
 export 'src/engine/connect_four_bot.dart';
+export 'src/engine/reversi_state.dart';
+export 'src/engine/reversi_move.dart';
+export 'src/engine/reversi_engine.dart';
+export 'src/engine/reversi_bot.dart';

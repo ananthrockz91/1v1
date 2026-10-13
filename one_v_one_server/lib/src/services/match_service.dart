@@ -24,6 +24,7 @@ class MatchService {
   static Future<GameMatch> createMatch(
     Session session, {
     required String playerId,
+    String gameType = TriangleTacticsEngine.engineGameId,
     int boardSize = 4,
     bool isPublic = false,
   }) async {
@@ -32,19 +33,46 @@ class MatchService {
     final matchId = _generateMatchId();
     final roomCode = isPublic ? null : _generateRoomCode();
 
-    final initialState = TriangleTacticsState.initial(
-      player1Id: playerId,
-      player2Id: '',
-      boardSize: boardSize,
-      boardShape: BoardShape.hexagon,
-      startingPlayerId: playerId,
-    );
+    String rulesetVersion;
+    String stateJson;
+    int p1Score = 0;
+    int p2Score = 0;
+
+    if (gameType == ConnectFourEngine.engineGameId) {
+      rulesetVersion = ConnectFourEngine.engineRulesetVersion;
+      final initialState = ConnectFourState.initial(
+        player1Id: playerId,
+        player2Id: '',
+        startingPlayerId: playerId,
+      );
+      stateJson = jsonEncode(initialState.toJson());
+    } else if (gameType == ReversiEngine.engineGameId) {
+      rulesetVersion = ReversiEngine.engineRulesetVersion;
+      final initialState = ReversiState.initial(
+        player1Id: playerId,
+        player2Id: '',
+      );
+      p1Score = 2;
+      p2Score = 2;
+      stateJson = jsonEncode(initialState.toJson());
+    } else {
+      gameType = TriangleTacticsEngine.engineGameId;
+      rulesetVersion = TriangleTacticsEngine.engineRulesetVersion;
+      final initialState = TriangleTacticsState.initial(
+        player1Id: playerId,
+        player2Id: '',
+        boardSize: boardSize,
+        boardShape: BoardShape.hexagon,
+        startingPlayerId: playerId,
+      );
+      stateJson = jsonEncode(initialState.toJson());
+    }
 
     final now = DateTime.now();
     final match = GameMatch(
       matchId: matchId,
-      gameType: TriangleTacticsEngine.engineGameId,
-      rulesetVersion: TriangleTacticsEngine.engineRulesetVersion,
+      gameType: gameType,
+      rulesetVersion: rulesetVersion,
       boardSize: boardSize,
       roomCode: roomCode,
       isPublic: isPublic,
@@ -52,12 +80,12 @@ class MatchService {
       player1Id: playerId,
       player2Id: null,
       activePlayerId: playerId,
-      player1Score: 0,
-      player2Score: 0,
+      player1Score: p1Score,
+      player2Score: p2Score,
       stateVersion: 0,
       winnerId: null,
       isDraw: false,
-      stateJson: jsonEncode(initialState.toJson()),
+      stateJson: stateJson,
       createdAt: now,
       updatedAt: now,
       completedAt: null,
@@ -112,17 +140,28 @@ class MatchService {
         );
       }
 
-      final existingState = TriangleTacticsState.fromJson(
-        jsonDecode(match.stateJson) as Map<String, dynamic>,
-      );
-
-      final readyState = existingState.copyWith(
-        player2Id: playerId,
-      );
+      if (match.gameType == ConnectFourEngine.engineGameId) {
+        final existingState = ConnectFourState.fromJson(
+          jsonDecode(match.stateJson) as Map<String, dynamic>,
+        );
+        final readyState = existingState.copyWith(player2Id: playerId);
+        match.stateJson = jsonEncode(readyState.toJson());
+      } else if (match.gameType == ReversiEngine.engineGameId) {
+        final existingState = ReversiState.fromJson(
+          jsonDecode(match.stateJson) as Map<String, dynamic>,
+        );
+        final readyState = existingState.copyWith(player2Id: playerId);
+        match.stateJson = jsonEncode(readyState.toJson());
+      } else {
+        final existingState = TriangleTacticsState.fromJson(
+          jsonDecode(match.stateJson) as Map<String, dynamic>,
+        );
+        final readyState = existingState.copyWith(player2Id: playerId);
+        match.stateJson = jsonEncode(readyState.toJson());
+      }
 
       match.player2Id = playerId;
       match.status = 'in_progress';
-      match.stateJson = jsonEncode(readyState.toJson());
       match.updatedAt = DateTime.now();
 
       updatedMatch = await GameMatch.db.updateRow(
@@ -159,6 +198,7 @@ class MatchService {
   static Future<GameMatch> findMatch(
     Session session, {
     required String playerId,
+    String gameType = TriangleTacticsEngine.engineGameId,
     int boardSize = 4,
   }) async {
     await PlayerService.getOrCreateProfile(session, playerId: playerId);
@@ -167,27 +207,41 @@ class MatchService {
     GameMatch? matched;
 
     await session.db.transaction((tx) async {
-      // Find open public match with same board size where player1 != current player
+      // Find open public match with same gameType and board size where player1 != current player
       final candidate = await GameMatch.db.findFirstRow(
         session,
         where: (t) =>
             t.isPublic.equals(true) &
             t.status.equals('waiting') &
+            t.gameType.equals(gameType) &
             t.boardSize.equals(boardSize) &
             t.player1Id.notEquals(playerId),
         transaction: tx,
       );
 
       if (candidate != null) {
-        final existingState = TriangleTacticsState.fromJson(
-          jsonDecode(candidate.stateJson) as Map<String, dynamic>,
-        );
-
-        final readyState = existingState.copyWith(player2Id: playerId);
+        if (candidate.gameType == ConnectFourEngine.engineGameId) {
+          final existingState = ConnectFourState.fromJson(
+            jsonDecode(candidate.stateJson) as Map<String, dynamic>,
+          );
+          final readyState = existingState.copyWith(player2Id: playerId);
+          candidate.stateJson = jsonEncode(readyState.toJson());
+        } else if (candidate.gameType == ReversiEngine.engineGameId) {
+          final existingState = ReversiState.fromJson(
+            jsonDecode(candidate.stateJson) as Map<String, dynamic>,
+          );
+          final readyState = existingState.copyWith(player2Id: playerId);
+          candidate.stateJson = jsonEncode(readyState.toJson());
+        } else {
+          final existingState = TriangleTacticsState.fromJson(
+            jsonDecode(candidate.stateJson) as Map<String, dynamic>,
+          );
+          final readyState = existingState.copyWith(player2Id: playerId);
+          candidate.stateJson = jsonEncode(readyState.toJson());
+        }
 
         candidate.player2Id = playerId;
         candidate.status = 'in_progress';
-        candidate.stateJson = jsonEncode(readyState.toJson());
         candidate.updatedAt = DateTime.now();
 
         matched = await GameMatch.db.updateRow(
@@ -225,6 +279,7 @@ class MatchService {
     return await createMatch(
       session,
       playerId: playerId,
+      gameType: gameType,
       boardSize: boardSize,
       isPublic: true,
     );
@@ -272,37 +327,105 @@ class MatchService {
         );
       }
 
-      final state = TriangleTacticsState.fromJson(
-        jsonDecode(match.stateJson) as Map<String, dynamic>,
-      );
+      int nextStateVersion;
+      int p1Score;
+      int p2Score;
+      String nextPlayerId;
+      bool isTerminal;
+      String? winnerId;
+      bool isDraw;
+      String nextStateJson;
+      String? edgeId;
+      List<String>? claimedTriangles;
+      bool extraTurnAwarded = false;
 
-      final engine = TriangleTacticsEngine();
-      final move = TriangleTacticsMove(
-        node1: GridNode(node1R, node1C),
-        node2: GridNode(node2R, node2C),
-      );
-
-      final result = engine.applyMove(state, playerId, move);
-
-      if (result is MoveRejected) {
-        throw ArgumentError(result.violation.message);
+      if (match.gameType == ConnectFourEngine.engineGameId) {
+        final state = ConnectFourState.fromJson(
+          jsonDecode(match.stateJson) as Map<String, dynamic>,
+        );
+        final engine = ConnectFourEngine();
+        final move = ConnectFourMove(column: node1C);
+        final result = engine.applyMove(state, playerId, move);
+        if (result is MoveRejected) {
+          throw ArgumentError(result.violation.message);
+        }
+        final accepted = result as MoveAccepted;
+        final nextState = accepted.nextState as ConnectFourState;
+        nextStateVersion = nextState.stateVersion;
+        p1Score = (accepted.winnerId == match.player1Id) ? 1 : 0;
+        p2Score = (accepted.winnerId == match.player2Id) ? 1 : 0;
+        nextPlayerId = accepted.nextPlayerId;
+        isTerminal = accepted.isTerminal;
+        winnerId = accepted.winnerId;
+        isDraw = accepted.isDraw;
+        nextStateJson = jsonEncode(nextState.toJson());
+        edgeId = 'col_$node1C';
+      } else if (match.gameType == ReversiEngine.engineGameId) {
+        final state = ReversiState.fromJson(
+          jsonDecode(match.stateJson) as Map<String, dynamic>,
+        );
+        final engine = ReversiEngine();
+        final move = (node1R < 0 || node1C < 0)
+            ? const ReversiMove.pass()
+            : ReversiMove(row: node1R, col: node1C);
+        final result = engine.applyMove(state, playerId, move);
+        if (result is MoveRejected) {
+          throw ArgumentError(result.violation.message);
+        }
+        final accepted = result as MoveAccepted;
+        final nextState = accepted.nextState as ReversiState;
+        nextStateVersion = nextState.stateVersion;
+        p1Score = nextState.player1Score;
+        p2Score = nextState.player2Score;
+        nextPlayerId = accepted.nextPlayerId;
+        isTerminal = accepted.isTerminal;
+        winnerId = accepted.winnerId;
+        isDraw = accepted.isDraw;
+        nextStateJson = jsonEncode(nextState.toJson());
+        edgeId = (node1R < 0 || node1C < 0)
+            ? 'pass'
+            : 'reversi_${node1R}_$node1C';
+      } else {
+        final state = TriangleTacticsState.fromJson(
+          jsonDecode(match.stateJson) as Map<String, dynamic>,
+        );
+        final engine = TriangleTacticsEngine();
+        final move = TriangleTacticsMove(
+          node1: GridNode(node1R, node1C),
+          node2: GridNode(node2R, node2C),
+        );
+        final result = engine.applyMove(state, playerId, move);
+        if (result is MoveRejected) {
+          throw ArgumentError(result.violation.message);
+        }
+        final accepted = result as MoveAccepted;
+        final nextState = accepted.nextState;
+        nextStateVersion = nextState.stateVersion;
+        p1Score = nextState.player1Score;
+        p2Score = nextState.player2Score;
+        nextPlayerId = accepted.nextPlayerId;
+        isTerminal = accepted.isTerminal;
+        winnerId = accepted.winnerId;
+        isDraw = accepted.isDraw;
+        nextStateJson = jsonEncode(nextState.toJson());
+        edgeId = accepted.edgeId;
+        claimedTriangles = accepted.newlyClaimedTriangles;
+        extraTurnAwarded = accepted.extraTurnAwarded;
       }
 
-      final accepted = result as MoveAccepted;
-      final nextState = accepted.nextState;
       final now = DateTime.now();
 
       // Update game_match row
-      match.stateVersion = nextState.stateVersion;
-      match.player1Score = nextState.player1Score;
-      match.player2Score = nextState.player2Score;
-      match.activePlayerId = accepted.nextPlayerId;
-      match.status = accepted.isTerminal ? 'completed' : 'in_progress';
-      match.winnerId = accepted.winnerId;
-      match.isDraw = accepted.isDraw;
-      match.stateJson = jsonEncode(nextState.toJson());
+      match.stateVersion = nextStateVersion;
+      match.player1Score = p1Score;
+      match.player2Score = p2Score;
+      match.activePlayerId = nextPlayerId;
+      match.status = isTerminal ? 'completed' : 'in_progress';
+      match.winnerId = winnerId;
+      match.isDraw = isDraw;
+      match.stateJson = nextStateJson;
       match.updatedAt = now;
-      if (accepted.isTerminal) {
+      if (isTerminal) {
         match.completedAt = now;
       }
 
@@ -315,33 +438,32 @@ class MatchService {
       // Insert audit record
       final moveRecord = MatchMoveRecord(
         matchId: matchId,
-        moveIndex: state.moveHistory.length,
+        moveIndex: match.stateVersion,
         playerId: playerId,
         node1R: node1R,
         node1C: node1C,
         node2R: node2R,
         node2C: node2C,
-        edgeId: accepted.edgeId,
-        claimedTrianglesJson: jsonEncode(accepted.newlyClaimedTriangles),
-        extraTurn: accepted.extraTurnAwarded,
-        stateVersion: nextState.stateVersion,
+        edgeId: edgeId,
+        claimedTrianglesJson: jsonEncode(claimedTriangles ?? []),
+        extraTurn: extraTurnAwarded,
+        stateVersion: nextStateVersion,
         createdAt: now,
       );
       await MatchMoveRecord.db.insertRow(session, moveRecord, transaction: tx);
 
       // If match finished, update player statistics
-      if (accepted.isTerminal) {
-        final p1Won = accepted.winnerId == match.player1Id;
-        final p2Won = accepted.winnerId == match.player2Id;
-        final draw = accepted.isDraw;
+      if (isTerminal) {
+        final p1Won = winnerId == match.player1Id;
+        final p2Won = winnerId == match.player2Id;
 
         await PlayerService.recordMatchResult(
           session,
           playerId: match.player1Id,
           isWin: p1Won,
           isLoss: p2Won,
-          isDraw: draw,
-          trianglesCaptured: nextState.player1Score,
+          isDraw: isDraw,
+          trianglesCaptured: p1Score,
           transaction: tx,
         );
 
@@ -351,8 +473,8 @@ class MatchService {
             playerId: match.player2Id!,
             isWin: p2Won,
             isLoss: p1Won,
-            isDraw: draw,
-            trianglesCaptured: nextState.player2Score,
+            isDraw: isDraw,
+            trianglesCaptured: p2Score,
             transaction: tx,
           );
         }
@@ -360,17 +482,17 @@ class MatchService {
 
       broadcastEvent = MatchEvent(
         matchId: matchId,
-        eventType: accepted.isTerminal ? 'matchCompleted' : 'moveAccepted',
-        stateVersion: nextState.stateVersion,
-        activePlayerId: accepted.nextPlayerId,
-        edgeId: accepted.edgeId,
-        claimedTriangles: accepted.newlyClaimedTriangles,
-        extraTurn: accepted.extraTurnAwarded,
-        player1Score: nextState.player1Score,
-        player2Score: nextState.player2Score,
-        isTerminal: accepted.isTerminal,
-        winnerId: accepted.winnerId,
-        isDraw: accepted.isDraw,
+        eventType: isTerminal ? 'matchCompleted' : 'moveAccepted',
+        stateVersion: nextStateVersion,
+        activePlayerId: nextPlayerId,
+        edgeId: edgeId,
+        claimedTriangles: claimedTriangles,
+        extraTurn: extraTurnAwarded,
+        player1Score: p1Score,
+        player2Score: p2Score,
+        isTerminal: isTerminal,
+        winnerId: winnerId,
+        isDraw: isDraw,
         stateJson: match.stateJson,
         timestamp: now,
       );
@@ -428,14 +550,30 @@ class MatchService {
 
       // Ensure inner engine state is also terminal
       try {
-        final existingState = TriangleTacticsState.fromJson(
-          jsonDecode(match.stateJson) as Map<String, dynamic>,
-        );
-        final terminalState = existingState.copyWith(
-          isTerminal: true,
-          winnerId: winnerId,
-        );
-        match.stateJson = jsonEncode(terminalState.toJson());
+        if (match.gameType == ConnectFourEngine.engineGameId) {
+          final s = ConnectFourState.fromJson(
+            jsonDecode(match.stateJson) as Map<String, dynamic>,
+          );
+          match.stateJson = jsonEncode(
+            s.copyWith(isTerminal: true, winnerId: winnerId).toJson(),
+          );
+        } else if (match.gameType == ReversiEngine.engineGameId) {
+          final s = ReversiState.fromJson(
+            jsonDecode(match.stateJson) as Map<String, dynamic>,
+          );
+          match.stateJson = jsonEncode(
+            s.copyWith(isTerminal: true, winnerId: winnerId).toJson(),
+          );
+        } else {
+          final existingState = TriangleTacticsState.fromJson(
+            jsonDecode(match.stateJson) as Map<String, dynamic>,
+          );
+          final terminalState = existingState.copyWith(
+            isTerminal: true,
+            winnerId: winnerId,
+          );
+          match.stateJson = jsonEncode(terminalState.toJson());
+        }
       } catch (_) {}
 
       match.status = 'completed';

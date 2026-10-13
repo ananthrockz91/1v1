@@ -289,6 +289,15 @@ class EndpointAdmin extends _isc.EndpointRef {
         'getDashboardData',
         {},
       );
+
+  /// Returns real-time breakdown of matches by gameType (triangle_tactics, connect_four, reversi)
+  /// including waiting, in-progress, completed, and total counts.
+  _ida.Future<String> getGameTypeStatsJson() =>
+      caller.callServerEndpoint<String>(
+        'admin',
+        'getGameTypeStatsJson',
+        {},
+      );
 }
 
 /// {@category Endpoint}
@@ -321,6 +330,20 @@ class EndpointLeaderboard extends _isc.EndpointRef {
     'getAllTimeLeaderboard',
     {'limit': limit},
   );
+
+  /// Fetch leaderboard filtered by gameType ('all', 'triangle_tactics', 'connect_four', 'reversi').
+  /// Computes game-specific wins and standings from completed matches.
+  _ida.Future<List<_i380unr6.PlayerProfile>> getGameLeaderboard({
+    required String gameType,
+    required int limit,
+  }) => caller.callServerEndpoint<List<_i380unr6.PlayerProfile>>(
+    'leaderboard',
+    'getGameLeaderboard',
+    {
+      'gameType': gameType,
+      'limit': limit,
+    },
+  );
 }
 
 /// {@category Endpoint}
@@ -333,6 +356,7 @@ class EndpointMatch extends _isc.EndpointRef {
   /// Create a new match (private or public).
   _ida.Future<_i5zwpjwi.GameMatch> createMatch({
     required String playerId,
+    String? gameType,
     required int boardSize,
     required bool isPublic,
   }) => caller.callServerEndpoint<_i5zwpjwi.GameMatch>(
@@ -340,6 +364,7 @@ class EndpointMatch extends _isc.EndpointRef {
     'createMatch',
     {
       'playerId': playerId,
+      'gameType': gameType,
       'boardSize': boardSize,
       'isPublic': isPublic,
     },
@@ -361,12 +386,14 @@ class EndpointMatch extends _isc.EndpointRef {
   /// Matchmake with an available player.
   _ida.Future<_i5zwpjwi.GameMatch> findMatch({
     required String playerId,
+    String? gameType,
     required int boardSize,
   }) => caller.callServerEndpoint<_i5zwpjwi.GameMatch>(
     'match',
     'findMatch',
     {
       'playerId': playerId,
+      'gameType': gameType,
       'boardSize': boardSize,
     },
   );

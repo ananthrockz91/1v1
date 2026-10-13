@@ -16,6 +16,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
   List<DailyLeaderboard> _dailyList = [];
   List<PlayerProfile> _allTimeList = [];
   bool _isLoading = true;
+  String _selectedGameType = 'all';
 
   @override
   void initState() {
@@ -34,11 +35,14 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
     setState(() => _isLoading = true);
     try {
       final daily = await client.leaderboard.getDailyLeaderboard(limit: 50);
-      final allTime = await client.leaderboard.getAllTimeLeaderboard(limit: 50);
+      final gameLeaderboard = await client.leaderboard.getGameLeaderboard(
+        gameType: _selectedGameType,
+        limit: 50,
+      );
       if (!mounted) return;
       setState(() {
         _dailyList = daily;
-        _allTimeList = allTime;
+        _allTimeList = gameLeaderboard;
         _isLoading = false;
       });
     } catch (_) {
@@ -78,6 +82,12 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
     }
   }
 
+  void _onGameFilterChanged(String gameType) {
+    if (_selectedGameType == gameType) return;
+    setState(() => _selectedGameType = gameType);
+    _loadData();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -89,15 +99,65 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
           'Rankings & Leaderboards',
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: AppColors.player1,
-          labelColor: AppColors.player1,
-          unselectedLabelColor: AppColors.textMuted,
-          tabs: const [
-            Tab(text: 'DAILY RANKINGS'),
-            Tab(text: 'ALL-TIME LEGENDS'),
-          ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(88),
+          child: Column(
+            children: [
+              // Horizontal Game Type Filter Chips
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 6,
+                ),
+                child: Row(
+                  children: [
+                    _buildGameFilterChip(
+                      'all',
+                      'ALL GAMES (OVERALL)',
+                      Icons.public,
+                    ),
+                    const SizedBox(width: 8),
+                    _buildGameFilterChip(
+                      'triangle_tactics',
+                      'TRIANGLE TACTICS',
+                      Icons.change_history,
+                    ),
+                    const SizedBox(width: 8),
+                    _buildGameFilterChip(
+                      'connect_four',
+                      'GRAVITY DROP',
+                      Icons.blur_linear,
+                    ),
+                    const SizedBox(width: 8),
+                    _buildGameFilterChip(
+                      'reversi',
+                      'CHROMA REVERSI',
+                      Icons.radio_button_checked,
+                    ),
+                  ],
+                ),
+              ),
+              TabBar(
+                controller: _tabController,
+                indicatorColor: AppColors.player1,
+                labelColor: AppColors.player1,
+                unselectedLabelColor: AppColors.textMuted,
+                tabs: [
+                  Tab(
+                    text: _selectedGameType == 'all'
+                        ? 'DAILY RANKINGS'
+                        : 'ACTIVE STANDINGS',
+                  ),
+                  Tab(
+                    text: _selectedGameType == 'all'
+                        ? 'ALL-TIME LEGENDS'
+                        : 'HALL OF FAME',
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
       body: _isLoading
@@ -128,11 +188,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.surfaceElevated,
-                foregroundColor: AppColors.player2,
+                foregroundColor: AppColors.teal,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
-                  side: const BorderSide(color: AppColors.player2),
+                  side: const BorderSide(color: AppColors.teal),
                 ),
               ),
               icon: const Icon(Icons.bolt, size: 18),
@@ -309,13 +369,61 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                   fontSize: 16,
                 ),
               ),
-              const Text(
-                'Triangles',
-                style: TextStyle(color: AppColors.textMuted, fontSize: 10),
+              Text(
+                _selectedGameType == 'reversi'
+                    ? 'Disks'
+                    : (_selectedGameType == 'connect_four'
+                          ? 'Points'
+                          : 'Triangles'),
+                style: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 10,
+                ),
               ),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildGameFilterChip(String gameType, String label, IconData icon) {
+    final isSelected = _selectedGameType == gameType;
+    return InkWell(
+      borderRadius: BorderRadius.circular(20),
+      onTap: () => _onGameFilterChanged(gameType),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.player1.withValues(alpha: 0.2)
+              : AppColors.surfaceElevated,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? AppColors.player1 : AppColors.surfaceBorder,
+            width: isSelected ? 1.5 : 1.0,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 13,
+              color: isSelected ? AppColors.player1 : AppColors.textMuted,
+            ),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? AppColors.player1 : AppColors.textSecondary,
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:game_core/game_core.dart';
 import '../services/sound_service.dart';
 import '../theme/app_colors.dart';
+import '../theme/theme_provider.dart';
 import '../widgets/connect_four_board.dart';
 import '../widgets/connect_four_rules_dialog.dart';
 
@@ -218,6 +219,7 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = ref.watch(currentThemeProvider);
     final soundEnabled = ref.watch(soundEnabledProvider);
     final isP1Active = _state.activePlayerId == _state.player1Id;
 
@@ -227,27 +229,27 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
         if (!didPop) _confirmExit();
       },
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: theme.background,
         appBar: AppBar(
-          backgroundColor: AppColors.surface,
+          backgroundColor: theme.surface,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+            icon: Icon(Icons.arrow_back, color: theme.textPrimary),
             onPressed: _confirmExit,
           ),
-          title: const Text(
+          title: Text(
             'Gravity Drop Duel',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+              color: theme.textPrimary,
             ),
           ),
           actions: [
             IconButton(
               icon: Icon(
                 soundEnabled ? Icons.volume_up : Icons.volume_off,
-                color: soundEnabled ? AppColors.player1 : AppColors.textMuted,
+                color: soundEnabled ? theme.accent : theme.textMuted,
               ),
               tooltip: soundEnabled ? 'Mute' : 'Unmute',
               onPressed: () {
@@ -257,17 +259,17 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
               },
             ),
             IconButton(
-              icon: const Icon(
+              icon: Icon(
                 Icons.help_outline_rounded,
-                color: AppColors.player1,
+                color: theme.accent,
               ),
               tooltip: 'Rules & Strategy',
               onPressed: () => ConnectFourRulesDialog.show(context),
             ),
             IconButton(
-              icon: const Icon(
+              icon: Icon(
                 Icons.refresh_rounded,
-                color: AppColors.textSecondary,
+                color: theme.textSecondary,
               ),
               tooltip: 'Restart Game',
               onPressed: _startNewGame,
@@ -518,9 +520,9 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           if (_state.isTerminal) ...[
-                            const Icon(
+                            Icon(
                               Icons.stars_rounded,
-                              color: Colors.amberAccent,
+                              color: theme.accent,
                               size: 16,
                             ),
                             const SizedBox(width: 6),
@@ -533,7 +535,7 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                                 : '${_state.activePlayerId.toUpperCase()}\'S TURN',
                             style: TextStyle(
                               color: _state.isTerminal
-                                  ? Colors.amberAccent
+                                  ? theme.accent
                                   : (isP1Active
                                         ? AppColors.player1
                                         : AppColors.player2),
@@ -633,10 +635,10 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                                   horizontal: 10,
                                   vertical: 4,
                                 ),
-                                side: const BorderSide(
-                                  color: Colors.amberAccent,
+                                side: BorderSide(
+                                  color: theme.accent,
                                 ),
-                                foregroundColor: Colors.amberAccent,
+                                foregroundColor: theme.accent,
                               ),
                               onPressed: () =>
                                   setState(() => _showGameOverSummary = false),
@@ -718,18 +720,18 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Row(
+                        Row(
                           children: [
                             Icon(
                               Icons.stars_rounded,
-                              color: Colors.amberAccent,
+                              color: theme.accent,
                               size: 18,
                             ),
-                            SizedBox(width: 6),
+                            const SizedBox(width: 6),
                             Text(
                               'Inspecting Connected Dots',
                               style: TextStyle(
-                                color: Colors.amberAccent,
+                                color: theme.accent,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
                               ),

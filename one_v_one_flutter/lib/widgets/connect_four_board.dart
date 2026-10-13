@@ -439,10 +439,10 @@ class _ConnectFourPainter extends CustomPainter {
       ..strokeWidth = 1.2;
     canvas.drawCircle(center, radius - 1.5, rimPaint);
 
-    // Winning disc golden pulse ring
+    // Winning disc teal pulse ring
     if (isWinning) {
       final winRing = Paint()
-        ..color = Colors.amberAccent.withValues(alpha: 0.8 + 0.2 * pulseValue)
+        ..color = AppColors.tealLight.withValues(alpha: 0.8 + 0.2 * pulseValue)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 3.0;
       canvas.drawCircle(center, radius + 2 + (pulseValue * 2), winRing);
@@ -474,7 +474,7 @@ class _ConnectFourPainter extends CustomPainter {
 
     // 1. Ultra-wide neon background glow beam
     final wideGlow = Paint()
-      ..color = Colors.amberAccent.withValues(alpha: 0.4 + 0.3 * pulseValue)
+      ..color = AppColors.tealLight.withValues(alpha: 0.4 + 0.3 * pulseValue)
       ..strokeWidth = 20.0 + (pulseValue * 6.0)
       ..strokeCap = StrokeCap.round
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 16);
@@ -482,7 +482,7 @@ class _ConnectFourPainter extends CustomPainter {
 
     // 2. Focused vibrant laser beam
     final laserGlow = Paint()
-      ..color = Colors.amberAccent.withValues(alpha: 0.85 + 0.15 * pulseValue)
+      ..color = AppColors.tealLight.withValues(alpha: 0.85 + 0.15 * pulseValue)
       ..strokeWidth = 9.0 + (pulseValue * 2.5)
       ..strokeCap = StrokeCap.round
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
@@ -497,7 +497,7 @@ class _ConnectFourPainter extends CustomPainter {
 
     // 4. Draw highlighted target beacons on each of the 4 connected dots
     final beaconRingPaint = Paint()
-      ..color = Colors.amberAccent.withValues(alpha: 0.85 + 0.15 * pulseValue)
+      ..color = AppColors.tealLight.withValues(alpha: 0.85 + 0.15 * pulseValue)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3.2;
 
@@ -521,9 +521,9 @@ class _ConnectFourPainter extends CustomPainter {
       // Center bright white star node
       canvas.drawCircle(dotCenter, 6.0, beaconFillPaint);
 
-      // Inner amber spark
+      // Inner teal spark
       final spark = Paint()
-        ..color = Colors.amberAccent
+        ..color = AppColors.tealLight
         ..style = PaintingStyle.fill;
       canvas.drawCircle(dotCenter, 3.2, spark);
     }

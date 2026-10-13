@@ -14,6 +14,7 @@ import 'leaderboard_screen.dart';
 import 'sign_in_screen.dart';
 import 'triangle_tactics_hub_screen.dart';
 import 'connect_four_hub_screen.dart';
+import 'reversi_hub_screen.dart';
 import '../widgets/architecture_dialog.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -459,7 +460,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               Icons.leaderboard_outlined,
                               color: theme.isMonochrome
                                   ? Colors.white70
-                                  : Colors.amberAccent,
+                                  : theme.accent,
                               size: 20,
                             ),
                             tooltip: 'Leaderboards',
@@ -571,6 +572,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         context,
                         MaterialPageRoute(
                           builder: (_) => const ConnectFourHubScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Game Touch Point 3: Chroma Reversi (Othello Duel)
+                  _buildGameTouchPoint(
+                    theme: theme,
+                    title: 'Chroma Reversi',
+                    tagline: 'Othello Duel: Brisk Flanking & Mind Strategy',
+                    description:
+                        'Flank enemy discs in 8 directions across an 8x8 grid to trigger cascade flips, secure invincible corners, and dominate territory.',
+                    accentColor: AppColors.teal,
+                    badge: 'MIND DUEL',
+                    icon: Icons.radio_button_checked,
+                    modes: const [
+                      'Minimax AI Bot',
+                      'Pass & Play',
+                      'Flank Tactics',
+                    ],
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ReversiHubScreen(),
                         ),
                       );
                     },

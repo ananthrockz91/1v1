@@ -7,12 +7,14 @@ class MatchEndpoint extends Endpoint {
   Future<GameMatch> createMatch(
     Session session, {
     required String playerId,
+    String? gameType,
     int boardSize = 4,
     bool isPublic = false,
   }) async {
     return await MatchService.createMatch(
       session,
       playerId: playerId,
+      gameType: gameType ?? 'triangle_tactics',
       boardSize: boardSize,
       isPublic: isPublic,
     );
@@ -35,11 +37,13 @@ class MatchEndpoint extends Endpoint {
   Future<GameMatch> findMatch(
     Session session, {
     required String playerId,
+    String? gameType,
     int boardSize = 4,
   }) async {
     return await MatchService.findMatch(
       session,
       playerId: playerId,
+      gameType: gameType ?? 'triangle_tactics',
       boardSize: boardSize,
     );
   }

@@ -2,25 +2,34 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/match_provider.dart';
 import '../theme/app_colors.dart';
+import '../theme/theme_provider.dart';
 import 'game_screen.dart';
 import 'lobby_screen.dart';
 import 'connect_four_screen.dart';
+import 'reversi_screen.dart';
 import '../widgets/game_rules_dialog.dart';
 import '../widgets/connect_four_rules_dialog.dart';
+import '../widgets/reversi_rules_dialog.dart';
 
 class GameCatalogueScreen extends ConsumerWidget {
   const GameCatalogueScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = ref.watch(currentThemeProvider);
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.background,
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
+        backgroundColor: theme.surface,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Game Catalogue',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            color: theme.textPrimary,
+          ),
         ),
       ),
       body: Center(
@@ -29,10 +38,10 @@ class GameCatalogueScreen extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.all(20),
             children: [
-              const Text(
+              Text(
                 'ACTIVE TITLES',
                 style: TextStyle(
-                  color: AppColors.textMuted,
+                  color: theme.textMuted,
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.5,
@@ -47,7 +56,7 @@ class GameCatalogueScreen extends ConsumerWidget {
                 description:
                     'Connect discrete lattice nodes with lines to complete elementary triangular faces. Every triangle captured awards points and grants an immediate extra turn.',
                 isPlayable: true,
-                accentColor: AppColors.player1,
+                accentColor: theme.accent,
                 badge: 'PLAYABLE NOW',
                 icon: Icons.change_history,
                 onRules: () => GameRulesDialog.show(context),
@@ -80,7 +89,7 @@ class GameCatalogueScreen extends ConsumerWidget {
                 description:
                     'Deterministic vertical drop strategy. Align four discs vertically, horizontally, or diagonally. Challenge our tactical minimax bot or battle locally in pass & play!',
                 isPlayable: true,
-                accentColor: Colors.blueAccent,
+                accentColor: theme.accentSecondary,
                 badge: 'NEW TITLE',
                 icon: Icons.blur_linear,
                 playButtonText: 'Play vs AI Bot',
@@ -107,12 +116,48 @@ class GameCatalogueScreen extends ConsumerWidget {
                   );
                 },
               ),
+              const SizedBox(height: 16),
+
+              // Chroma Reversi (Playable)
+              _buildGameCard(
+                title: 'Chroma Reversi',
+                tagline: 'Othello Duel: Brisk Flanking & Cascade Flips',
+                description:
+                    'Rapid-paced 8x8 territorial mind game. Flank opponent discs along 8 directions to trigger cascading flips. Control the four corners to seal victory!',
+                isPlayable: true,
+                accentColor: theme.accent,
+                badge: 'MIND STRATEGY',
+                icon: Icons.radio_button_checked,
+                playButtonText: 'Play vs AI Bot',
+                onRules: () => ReversiRulesDialog.show(context),
+                onPlay: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ReversiScreen(
+                        initialMode: ReversiScreenMode.vsAi,
+                      ),
+                    ),
+                  );
+                },
+                secondaryButtonText: 'Pass & Play',
+                onSecondaryPlay: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ReversiScreen(
+                        initialMode: ReversiScreenMode.passAndPlay,
+                      ),
+                    ),
+                  );
+                },
+              ),
               const SizedBox(height: 24),
 
-              const Text(
+              Text(
                 'COMING SOON',
                 style: TextStyle(
-                  color: AppColors.textMuted,
+                  color: theme.textMuted,
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.5,
@@ -127,7 +172,7 @@ class GameCatalogueScreen extends ConsumerWidget {
                 description:
                     'Turn-based alignment strategy. First to align 3 consecutive marks takes the round.',
                 isPlayable: false,
-                accentColor: Colors.purpleAccent,
+                accentColor: theme.accentSecondary,
                 badge: 'COMING SOON',
                 icon: Icons.grid_3x3,
               ),
@@ -139,7 +184,7 @@ class GameCatalogueScreen extends ConsumerWidget {
                 description:
                     'Reveal tiles to find matched pairs in real time with quick combo bonuses.',
                 isPlayable: false,
-                accentColor: Colors.tealAccent,
+                accentColor: theme.accent,
                 badge: 'COMING SOON',
                 icon: Icons.psychology_outlined,
               ),

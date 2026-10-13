@@ -216,45 +216,62 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
       final stream = client.match.streamMatchEvents(matchId);
       _streamSub = stream.listen(
         (event) {
+          final isMatchStarted = event.eventType == 'matchStarted';
+          final isCompleted = event.isTerminal;
+
+          TriangleTacticsState? nextGameState;
           if (event.stateJson != null) {
             try {
               final json = jsonDecode(event.stateJson!) as Map<String, dynamic>;
-              final nextGameState = TriangleTacticsState.fromJson(json);
-
-              var updatedMatch = state.match;
-              final isMatchStarted = event.eventType == 'matchStarted';
-              if (updatedMatch != null) {
-                final isCompleted = event.isTerminal;
-                final newStatus = isCompleted
-                    ? 'completed'
-                    : (isMatchStarted ? 'in_progress' : updatedMatch.status);
-
-                updatedMatch = updatedMatch.copyWith(
-                  status: newStatus,
-                  player2Id: nextGameState.player2Id,
-                  activePlayerId: event.activePlayerId,
-                  stateVersion: event.stateVersion,
-                  player1Score: event.player1Score,
-                  player2Score: event.player2Score,
-                  stateJson: event.stateJson!,
-                );
-              }
-
-              state = state.copyWith(
-                match: updatedMatch,
-                gameState: nextGameState,
-                showExtraTurnNotice: false,
-              );
-              if (updatedMatch != null &&
-                  updatedMatch.player2Id != null &&
-                  updatedMatch.player2Id!.isNotEmpty) {
-                _fetchProfiles(
-                  updatedMatch.player1Id,
-                  updatedMatch.player2Id,
-                  force: isMatchStarted,
-                );
-              }
+              nextGameState = TriangleTacticsState.fromJson(json);
             } catch (_) {}
+          }
+
+          var updatedMatch = state.match;
+          if (updatedMatch != null) {
+            final newStatus = isCompleted
+                ? 'completed'
+                : (isMatchStarted ? 'in_progress' : updatedMatch.status);
+
+            String? p2 = nextGameState?.player2Id;
+            if (p2 == null || p2.isEmpty) {
+              if (event.stateJson != null) {
+                try {
+                  final json =
+                      jsonDecode(event.stateJson!) as Map<String, dynamic>;
+                  if (json['player2Id'] != null) {
+                    p2 = json['player2Id'].toString();
+                  }
+                } catch (_) {}
+              }
+            }
+
+            updatedMatch = updatedMatch.copyWith(
+              status: newStatus,
+              player2Id: (p2 != null && p2.isNotEmpty)
+                  ? p2
+                  : updatedMatch.player2Id,
+              activePlayerId: event.activePlayerId,
+              stateVersion: event.stateVersion,
+              player1Score: event.player1Score,
+              player2Score: event.player2Score,
+              stateJson: event.stateJson ?? updatedMatch.stateJson,
+            );
+          }
+
+          state = state.copyWith(
+            match: updatedMatch,
+            gameState: nextGameState ?? state.gameState,
+            showExtraTurnNotice: false,
+          );
+          if (updatedMatch != null &&
+              updatedMatch.player2Id != null &&
+              updatedMatch.player2Id!.isNotEmpty) {
+            _fetchProfiles(
+              updatedMatch.player1Id,
+              updatedMatch.player2Id,
+              force: isMatchStarted,
+            );
           }
         },
         onError: (err) {
@@ -267,11 +284,15 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
     }
   }
 
-  Future<void> createPrivateMatch({int boardSize = 4}) async {
+  Future<void> createPrivateMatch({
+    int boardSize = 4,
+    String gameType = 'triangle_tactics',
+  }) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
       final match = await client.match.createMatch(
         playerId: PlayerSession.currentId,
+        gameType: gameType,
         boardSize: boardSize,
         isPublic: false,
       );
@@ -323,11 +344,15 @@ class MatchNotifier extends StateNotifier<MatchUiState> {
     }
   }
 
-  Future<void> playOnline({int boardSize = 4}) async {
+  Future<void> playOnline({
+    int boardSize = 4,
+    String gameType = 'triangle_tactics',
+  }) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
       final match = await client.match.findMatch(
         playerId: PlayerSession.currentId,
+        gameType: gameType,
         boardSize: boardSize,
       );
       _onMatchUpdated(match);

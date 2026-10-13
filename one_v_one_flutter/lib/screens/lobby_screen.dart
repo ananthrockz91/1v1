@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../providers/match_provider.dart';
 import '../theme/theme_provider.dart';
+import 'connect_four_screen.dart';
 import 'game_screen.dart';
 
 class LobbyScreen extends ConsumerWidget {
@@ -14,10 +15,22 @@ class LobbyScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.listen<MatchUiState>(matchProvider, (prev, next) {
       if (next.match?.status == 'in_progress') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const GameScreen()),
-        );
+        if (next.match?.gameType == 'connect_four') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ConnectFourScreen(
+                initialMode: ConnectFourMode.online,
+                onlineMatch: next.match,
+              ),
+            ),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const GameScreen()),
+          );
+        }
       }
     });
 
@@ -270,7 +283,9 @@ class LobbyScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Triangle Tactics (4x4)',
+                            match?.gameType == 'connect_four'
+                                ? 'Gravity Drop Duel (7×6)'
+                                : 'Triangle Tactics (4x4)',
                             style: TextStyle(
                               color: theme.textPrimary,
                               fontSize: 16,

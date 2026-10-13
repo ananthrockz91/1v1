@@ -5,6 +5,7 @@ import '../providers/player_provider.dart';
 import '../theme/theme_provider.dart';
 import '../widgets/game_rules_dialog.dart';
 import '../widgets/architecture_dialog.dart';
+import 'connect_four_screen.dart';
 import 'game_screen.dart';
 import 'lobby_screen.dart';
 import 'sign_in_screen.dart';
@@ -170,10 +171,22 @@ class _TriangleTacticsHubScreenState
                 if (!mounted) return;
                 final match = ref.read(matchProvider).match;
                 if (match != null && match.status == 'in_progress') {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const GameScreen()),
-                  );
+                  if (match.gameType == 'connect_four') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ConnectFourScreen(
+                          initialMode: ConnectFourMode.online,
+                          onlineMatch: match,
+                        ),
+                      ),
+                    );
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const GameScreen()),
+                    );
+                  }
                 }
               }
             },

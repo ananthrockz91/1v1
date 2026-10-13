@@ -93,6 +93,90 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
   StreamSubscription<MatchEvent>? _matchSubscription;
   bool _isWaitingForOpponent = false;
 
+  String _player1Name = 'Player 1';
+  String _player2Name = 'Player 2';
+
+  String _getRoomCode() {
+    if (_onlineMatch == null) return '';
+    if (_onlineMatch!.roomCode != null && _onlineMatch!.roomCode!.isNotEmpty) {
+      return _onlineMatch!.roomCode!;
+    }
+    final id = _onlineMatch!.matchId;
+    if (id.length > 6) {
+      return id.substring(id.length - 6).toUpperCase();
+    }
+    return id.toUpperCase();
+  }
+
+  String _getDisplayName(bool isP1) {
+    if (_mode == ConnectFourMode.online) {
+      return isP1 ? _player1Name : _player2Name;
+    }
+    if (_mode == ConnectFourMode.vsAi) {
+      return isP1 ? '${PlayerSession.displayName} (You)' : _p2AiId;
+    }
+    return isP1 ? _p1Id : _p2HumanId;
+  }
+
+  String _getPlayerName(String? playerId) {
+    if (playerId == null || playerId.isEmpty) return 'Nobody';
+    if (playerId == PlayerSession.currentId) return PlayerSession.displayName;
+    if (playerId == _state.player1Id || playerId == _p1Id) {
+      return _player1Name.replaceAll(' (You)', '');
+    }
+    if (playerId == _state.player2Id ||
+        playerId == _p2AiId ||
+        playerId == _p2HumanId) {
+      return _player2Name.replaceAll(' (You)', '');
+    }
+    return playerId;
+  }
+
+  Future<void> _fetchProfiles() async {
+    final p1Id = _onlineMatch?.player1Id ?? _state.player1Id;
+    final p2Id = _onlineMatch?.player2Id ?? _state.player2Id;
+
+    if (p1Id == PlayerSession.currentId) {
+      if (mounted) {
+        setState(() {
+          _player1Name = '${PlayerSession.displayName} (You)';
+        });
+      }
+    } else if (p1Id.isNotEmpty) {
+      try {
+        final profile = await client.player.getProfile(p1Id);
+        if (mounted && profile != null && profile.displayName.isNotEmpty) {
+          setState(() {
+            _player1Name = profile.displayName;
+          });
+        }
+      } catch (_) {}
+    }
+
+    if (p2Id == PlayerSession.currentId) {
+      if (mounted) {
+        setState(() {
+          _player2Name = '${PlayerSession.displayName} (You)';
+        });
+      }
+    } else if (p2Id.isNotEmpty) {
+      try {
+        final profile = await client.player.getProfile(p2Id);
+        if (mounted && profile != null && profile.displayName.isNotEmpty) {
+          setState(() {
+            _player2Name = profile.displayName;
+          });
+        }
+      } catch (_) {}
+    } else if (_isWaitingForOpponent) {
+      if (mounted) {
+        setState(() {
+          _player2Name = 'Waiting...';
+        });
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -139,6 +223,15 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
     _isWaitingForOpponent = match.status == 'waiting';
     _isGameOver = _state.isTerminal;
 
+    _player1Name = match.player1Id == PlayerSession.currentId
+        ? '${PlayerSession.displayName} (You)'
+        : 'Player 1';
+    _player2Name = match.player2Id == PlayerSession.currentId
+        ? '${PlayerSession.displayName} (You)'
+        : (_isWaitingForOpponent ? 'Waiting...' : 'Player 2');
+
+    _fetchProfiles();
+
     _matchSubscription = client.match
         .streamMatchEvents(match.matchId)
         .listen(
@@ -164,7 +257,14 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
             );
           } catch (_) {}
         }
+        if (_onlineMatch != null) {
+          _onlineMatch = _onlineMatch!.copyWith(
+            status: 'in_progress',
+            player2Id: _state.player2Id,
+          );
+        }
       });
+      _fetchProfiles();
       SoundService.playMove();
       _startTimer();
       return;
@@ -183,6 +283,13 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
               _state = nextState;
               _secondsLeft = 30;
             });
+            if (_onlineMatch != null) {
+              _onlineMatch = _onlineMatch!.copyWith(
+                stateVersion: nextState.stateVersion,
+                player1Score: event.player1Score,
+                player2Score: event.player2Score,
+              );
+            }
           }
         } catch (_) {}
       }
@@ -276,20 +383,54 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
 
     if (_mode == ConnectFourMode.online) {
       if (_state.activePlayerId != PlayerSession.currentId) {
+        final theme = ref.read(currentThemeProvider);
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Opponent's turn — please wait for their move"),
-            duration: Duration(milliseconds: 900),
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: theme.surfaceElevated,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+              side: BorderSide(color: theme.surfaceBorder),
+            ),
+            content: Text(
+              "Opponent's turn — please wait for their move",
+              style: TextStyle(color: theme.textPrimary),
+            ),
+            duration: const Duration(milliseconds: 900),
           ),
         );
         return;
       }
 
-      // Optimistically apply locally
-      _applyMove(PlayerSession.currentId, ConnectFourMove.drop(column));
+      final currentVersion = _state.stateVersion;
+      final result = _engine.applyMove(
+        _state,
+        PlayerSession.currentId,
+        ConnectFourMove.drop(column),
+      );
+      if (result is! MoveAccepted) return;
 
-      // Transmit to Serverpod backend
+      // Optimistically apply locally
+      SoundService.playMove();
+      final next = result.nextState as ConnectFourState;
+      setState(() {
+        _state = next;
+        _secondsLeft = 30;
+      });
+
+      if (next.isTerminal) {
+        _turnTimer?.cancel();
+        if (next.winnerId != null) {
+          SoundService.playVictory();
+        }
+        setState(() {
+          _isGameOver = true;
+          _showGameOverSummary = true;
+        });
+      }
+
+      // Transmit to Serverpod backend with version captured BEFORE applying
       if (_onlineMatch != null) {
         client.match
             .submitMove(
@@ -299,9 +440,31 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
               node1C: column,
               node2R: 0,
               node2C: column,
-              clientStateVersion: _state.stateVersion,
+              clientStateVersion: currentVersion,
             )
-            .catchError((_) => _onlineMatch!);
+            .then((updatedMatch) {
+              _onlineMatch = updatedMatch;
+            })
+            .catchError((err) {
+              debugPrint('submitMove failed: $err');
+              if (mounted) {
+                final theme = ref.read(currentThemeProvider);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    behavior: SnackBarBehavior.floating,
+                    backgroundColor: theme.surfaceElevated,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      side: BorderSide(color: theme.statusError),
+                    ),
+                    content: Text(
+                      'Move error: $err',
+                      style: TextStyle(color: theme.statusError),
+                    ),
+                  ),
+                );
+              }
+            });
       }
       return;
     }
@@ -538,7 +701,7 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
-                                  'Room #${_onlineMatch!.matchId.substring(0, _onlineMatch!.matchId.length >= 6 ? 6 : _onlineMatch!.matchId.length).toUpperCase()}',
+                                  'Room #${_getRoomCode()}',
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontFamily: 'monospace',
@@ -815,7 +978,7 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Room Code: ${_onlineMatch!.matchId.substring(0, _onlineMatch!.matchId.length >= 6 ? 6 : _onlineMatch!.matchId.length).toUpperCase()}',
+                              'Room Code: ${_getRoomCode()}',
                               style: TextStyle(
                                 color: theme.accent,
                                 fontSize: 11,
@@ -834,19 +997,19 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                         ),
                         tooltip: 'Copy Room Code',
                         onPressed: () {
-                          final code = _onlineMatch!.matchId
-                              .substring(
-                                0,
-                                _onlineMatch!.matchId.length >= 6
-                                    ? 6
-                                    : _onlineMatch!.matchId.length,
-                              )
-                              .toUpperCase();
+                          final code = _getRoomCode();
                           Clipboard.setData(ClipboardData(text: code));
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
+                              behavior: SnackBarBehavior.floating,
+                              backgroundColor: theme.surfaceElevated,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                side: BorderSide(color: theme.surfaceBorder),
+                              ),
                               content: Text(
                                 'Copied room code $code to clipboard!',
+                                style: TextStyle(color: theme.textPrimary),
                               ),
                               duration: const Duration(seconds: 2),
                             ),
@@ -897,14 +1060,7 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                _mode == ConnectFourMode.online
-                                    ? (_state.player1Id ==
-                                              PlayerSession.currentId
-                                          ? '${PlayerSession.displayName} (You)'
-                                          : (_state.player1Id.isNotEmpty
-                                                ? _state.player1Id
-                                                : 'Player 1'))
-                                    : _state.player1Id,
+                                _getDisplayName(true),
                                 style: TextStyle(
                                   color: isP1Active
                                       ? theme.player1
@@ -964,16 +1120,7 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                _mode == ConnectFourMode.online
-                                    ? (_state.player2Id ==
-                                              PlayerSession.currentId
-                                          ? '${PlayerSession.displayName} (You)'
-                                          : (_state.player2Id.isNotEmpty
-                                                ? _state.player2Id
-                                                : (_isWaitingForOpponent
-                                                      ? 'Waiting...'
-                                                      : 'Challenger')))
-                                    : _state.player2Id,
+                                _getDisplayName(false),
                                 style: TextStyle(
                                   color: !isP1Active
                                       ? theme.player2
@@ -1037,7 +1184,7 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                             _state.isTerminal
                                 ? (_state.isDraw
                                       ? 'TACTICAL DRAW (BOARD FULL)'
-                                      : '🏆 ${_state.winnerId?.toUpperCase()} CONNECTS ${_state.targetStreak} IN A ROW!')
+                                      : '🏆 ${_getPlayerName(_state.winnerId).toUpperCase()} CONNECTS ${_state.targetStreak} IN A ROW!')
                                 : (_isWaitingForOpponent
                                       ? 'AWAITING OPPONENT TO JOIN...'
                                       : (_mode == ConnectFourMode.online
@@ -1045,7 +1192,7 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                                                       PlayerSession.currentId
                                                   ? 'YOUR TURN — DROP A DISC'
                                                   : 'OPPONENT\'S TURN — PLEASE WAIT')
-                                            : '${_state.activePlayerId.toUpperCase()}\'S TURN')),
+                                            : '${_getPlayerName(_state.activePlayerId).toUpperCase()}\'S TURN')),
                             style: TextStyle(
                               color: _state.isTerminal
                                   ? theme.accent
@@ -1077,9 +1224,21 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                   ),
                   child: ConnectFourBoard(
                     state: _state,
-                    currentUserId: _state.activePlayerId,
+                    currentUserId: _mode == ConnectFourMode.online
+                        ? PlayerSession.currentId
+                        : (_mode == ConnectFourMode.vsAi
+                              ? _p1Id
+                              : _state.activePlayerId),
                     onColumnSelected: _onColumnSelected,
-                    isInteractive: !_isAiThinking && !_state.isTerminal,
+                    isInteractive:
+                        !_state.isTerminal &&
+                        !_isWaitingForOpponent &&
+                        (_mode == ConnectFourMode.online
+                            ? _state.activePlayerId == PlayerSession.currentId
+                            : (_mode == ConnectFourMode.vsAi
+                                  ? !_isAiThinking &&
+                                        _state.activePlayerId == _p1Id
+                                  : true)),
                   ),
                 ),
               ),
@@ -1135,8 +1294,8 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                                                   PlayerSession.currentId
                                               ? '🏆 Victory! You Won!'
                                               : (_mode == ConnectFourMode.online
-                                                    ? 'Defeat — Opponent Won'
-                                                    : '🏆 ${_state.winnerId} Wins!'));
+                                                    ? 'Defeat — ${_getPlayerName(_state.winnerId)} Won'
+                                                    : '🏆 ${_getPlayerName(_state.winnerId)} Wins!'));
 
                                     return Row(
                                       children: [

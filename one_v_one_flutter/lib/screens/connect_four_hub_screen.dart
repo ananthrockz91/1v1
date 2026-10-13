@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../client.dart';
-import '../models/player_session.dart';
+import '../providers/match_provider.dart';
+import '../providers/player_provider.dart';
 import '../theme/theme_provider.dart';
 import '../widgets/connect_four_rules_dialog.dart';
 import '../widgets/room_action_card.dart';
 import 'connect_four_screen.dart';
+import 'game_screen.dart';
+import 'lobby_screen.dart';
+import 'sign_in_screen.dart';
 
 class ConnectFourHubScreen extends ConsumerStatefulWidget {
   const ConnectFourHubScreen({super.key});
@@ -26,25 +29,107 @@ class _ConnectFourHubScreenState extends ConsumerState<ConnectFourHubScreen> {
     super.dispose();
   }
 
+  void _showAuthPrompt(BuildContext context, String action) {
+    final theme = ref.read(currentThemeProvider);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: theme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: theme.surfaceBorder),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.lock_outline, color: theme.player1, size: 22),
+            const SizedBox(width: 8),
+            Text(
+              'Sign In Required',
+              style: TextStyle(
+                color: theme.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Please sign in or create an account to $action. It only takes a few seconds and keeps your matches saved!',
+          style: TextStyle(
+            color: theme.textSecondary,
+            fontSize: 13.5,
+            height: 1.4,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: theme.textMuted),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.buttonBackground,
+              foregroundColor: theme.buttonForeground,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              SignInScreen.show(context);
+            },
+            child: const Text(
+              'Sign In / Register',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _startOnlineQuickMatch() async {
     setState(() => _isMatchmaking = true);
     try {
-      final match = await client.match.findMatch(
-        playerId: PlayerSession.currentId,
-        gameType: 'connect_four',
-        boardSize: 7,
-      );
+      await ref
+          .read(matchProvider.notifier)
+          .playOnline(
+            gameType: 'connect_four',
+            boardSize: 7,
+          );
       if (!mounted) return;
       setState(() => _isMatchmaking = false);
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ConnectFourScreen(
-            initialMode: ConnectFourMode.online,
-            onlineMatch: match,
+      final matchState = ref.read(matchProvider);
+      if (matchState.errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(matchState.errorMessage!),
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
-        ),
-      );
+        );
+        return;
+      }
+      final match = matchState.match;
+      if (match == null) return;
+      if (match.status == 'in_progress') {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ConnectFourScreen(
+              initialMode: ConnectFourMode.online,
+              onlineMatch: match,
+            ),
+          ),
+        );
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const LobbyScreen()),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() => _isMatchmaking = false);
@@ -64,23 +149,36 @@ class _ConnectFourHubScreenState extends ConsumerState<ConnectFourHubScreen> {
   }
 
   Future<void> _createPrivateRoom() async {
+    if (!ref.read(playerProfileProvider).isAuthenticated) {
+      _showAuthPrompt(context, 'create a private room');
+      return;
+    }
     setState(() => _isCreatingRoom = true);
     try {
-      final match = await client.match.createMatch(
-        playerId: PlayerSession.currentId,
-        gameType: 'connect_four',
-        boardSize: 7,
-        isPublic: false,
-      );
+      await ref
+          .read(matchProvider.notifier)
+          .createPrivateMatch(
+            gameType: 'connect_four',
+            boardSize: 7,
+          );
       if (!mounted) return;
       setState(() => _isCreatingRoom = false);
+      final matchState = ref.read(matchProvider);
+      if (matchState.errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Failed to create private room: ${matchState.errorMessage}',
+            ),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+        return;
+      }
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => ConnectFourScreen(
-            initialMode: ConnectFourMode.online,
-            onlineMatch: match,
-          ),
+          builder: (_) => const LobbyScreen(),
         ),
       );
     } catch (e) {
@@ -181,20 +279,39 @@ class _ConnectFourHubScreenState extends ConsumerState<ConnectFourHubScreen> {
               if (code.length == 6) {
                 Navigator.pop(dialogCtx);
                 try {
-                  final match = await client.match.joinMatch(
-                    playerId: PlayerSession.currentId,
-                    roomCode: code,
-                  );
+                  await ref.read(matchProvider.notifier).joinPrivateMatch(code);
                   if (!mounted) return;
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ConnectFourScreen(
-                        initialMode: ConnectFourMode.online,
-                        onlineMatch: match,
+                  final matchState = ref.read(matchProvider);
+                  if (matchState.errorMessage != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(matchState.errorMessage!),
+                        backgroundColor: Theme.of(context).colorScheme.error,
                       ),
-                    ),
-                  );
+                    );
+                    return;
+                  }
+                  final match = matchState.match;
+                  if (match != null && match.status == 'in_progress') {
+                    if (match.gameType == 'connect_four') {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ConnectFourScreen(
+                            initialMode: ConnectFourMode.online,
+                            onlineMatch: match,
+                          ),
+                        ),
+                      );
+                    } else {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const GameScreen(),
+                        ),
+                      );
+                    }
+                  }
                 } catch (e) {
                   if (!mounted) return;
                   final msg = e

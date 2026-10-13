@@ -25,3 +25,11 @@ Thumbs.db
 
 # Build output
 build/
+
+# Secrets and credentials
+*.env
+*.env.*
+**/config/passwords.yaml
+**/firebase_service_account_key.json
+*.pem
+*.key

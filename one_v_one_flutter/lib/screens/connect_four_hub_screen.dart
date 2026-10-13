@@ -137,7 +137,7 @@ class ConnectFourHubScreen extends ConsumerWidget {
                             ),
                           ),
                           child: Text(
-                            'VARIABLE GRIDS & HAZARDS',
+                            'VARIABLE ARENA GRIDS',
                             style: TextStyle(
                               color: theme.badgeText,
                               fontSize: 10,

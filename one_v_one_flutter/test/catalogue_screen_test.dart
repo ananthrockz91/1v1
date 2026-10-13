@@ -34,7 +34,7 @@ void main() {
     // Verify titles
     expect(find.text('Tic-Tac-Toe Duel'), findsOneWidget);
     expect(find.text('Gravity Drop Duel'), findsOneWidget);
-    expect(find.text('Chroma Reversi'), findsOneWidget);
+    expect(find.text('Chroma Reversi'), findsNothing);
     expect(find.text('Memory Duel'), findsOneWidget);
   });
 }

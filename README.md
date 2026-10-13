@@ -6,13 +6,13 @@
 [![Serverpod](https://img.shields.io/badge/Serverpod-4.0.4-blue)](https://serverpod.dev)
 [![Flutter](https://img.shields.io/badge/Flutter-3.20+-02569B?logo=flutter)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-3.10+-0175C2?logo=dart)](https://dart.dev)
-[![Tests](https://img.shields.io/badge/Tests-54%20Passing-success)](packages/game_core)
+[![Tests](https://img.shields.io/badge/Tests-55%20Passing-success)](packages/game_core)
 [![License](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE)
 
 - 🌐 **Live Web Application:** [https://onevone.serverpod.space/](https://onevone.serverpod.space/)
 - 🔌 **Serverpod Cloud API:** [https://onevone.api.serverpod.space/](https://onevone.api.serverpod.space/)
 - 🩺 **System Health Probe:** [https://onevone.serverpod.space/healthz](https://onevone.serverpod.space/healthz)
-- 🏆 **Hackathon Reviewers & Judges:** See [`HACKATHON_SHOWCASE.md`](HACKATHON_SHOWCASE.md) and [`SUBMISSION.md`](SUBMISSION.md) for the complete 15-subsystem Serverpod evaluation package.
+- 🏆 **Hackathon Reviewers & Judges:** See [`HACKATHON_SHOWCASE.md`](HACKATHON_SHOWCASE.md) for the complete 15-subsystem Serverpod evaluation package.
 
 ---
 
@@ -30,22 +30,26 @@ The platform is designed around deterministic strategy games where outcomes are 
 A territorial geometry strategy game played on an equilateral triangular lattice of pegs of order $n$:
 - **Lattice Geometry:** $V = \frac{(n + 1)(n + 2)}{2}$ discrete pegs, $E = \frac{3n(n + 1)}{2}$ connectable edge segments, and $F = n^2$ elementary triangular faces.
 - **Rules of Play:** Players take turns connecting adjacent pegs with colored neon edges. Completing an elementary triangle claims that face for the player, scores 1 point, and awards an **instant bonus turn**. The player with the most triangles when all edges are placed wins.
+- **Playable Modes:** Real-Time Online 1v1 (WebSockets), Tactical AI, Pass & Play.
 - **Engine Package:** [`packages/game_core/lib/src/triangle_tactics/`](packages/game_core/lib/src/triangle_tactics/)
 - **Rules Documentation:** [`docs/game_rules.md`](docs/game_rules.md)
 
-### 2. Gravity Drop Duel (Connect Four)
-A vertical column tactical game featuring variable arena sizes:
+### 2. Flagship Title: Gravity Drop Duel (Connect Four)
+A vertical column tactical game featuring full online multiplayer and variable arena sizes:
+- **Playable Modes:**
+  - **Real-Time Online 1v1:** Matchmaking over Serverpod WebSockets (`session.messages`), private rooms with 6-character room codes (`?room=CODE`), and authoritative server state validation (`clientStateVersion`).
+  - **Tactical AI:** Offline 2-ply minimax lookahead bot with tactical defensive blocking.
+  - **Pass & Play:** Local two-player hotseat duel.
 - **Variable Arenas:**
   - **Classic 7×6**: 42 slots, Connect 4.
   - **Tactical 8×7**: 56 slots, Connect 4.
   - **Grand 9×8**: 72 slots, Connect 5.
-- **Features:** 4-angle vector win detection ($0^\circ, 45^\circ, 90^\circ, 135^\circ$), column drop guides, bouncy disc animations, and an offline 2-ply minimax lookahead bot with tactical defensive blocking.
+- **Features:** 4-angle vector win detection ($0^\circ, 45^\circ, 90^\circ, 135^\circ$), interactive column drop guides, bouncy disc animations, and real-time turn synchronization.
 - **Engine Package:** [`packages/game_core/lib/src/connect_four/`](packages/game_core/lib/src/connect_four/)
 
-### 3. Reversi (Othello Duel)
-A territorial disk-flipping game on a standard 8×8 grid:
-- **Features:** Real-time legal move ray-casting in all 8 cardinal directions, dynamic tile flip previews, and an offline heuristic AI evaluating corner dominance, mobility, and positional stability matrices.
-- **Engine Package:** [`packages/game_core/lib/src/reversi/`](packages/game_core/lib/src/reversi/)
+### 3. Engine & Upcoming Titles
+- **Chroma Reversi (Othello Duel):** Pure Dart 8×8 territorial disk-flipping engine (`packages/game_core/lib/src/reversi/`) with 8-direction raycasting, corner dominance matrices, and heuristic AI bot. Preserved in the engine and game catalogue for upcoming seasonal activation.
+- **Future Titles:** Tic-Tac-Toe Duel & Memory Duel catalogued for upcoming release.
 
 ---
 
@@ -294,8 +298,7 @@ serverpod cloud deploy
 | Document | Purpose & Description |
 |---|---|
 | [`HACKATHON_SHOWCASE.md`](HACKATHON_SHOWCASE.md) | Dedicated hackathon presentation package and 15-subsystem judge evaluation guide. |
-| [`SUBMISSION.md`](SUBMISSION.md) | Official hackathon submission statement mapping our architecture to judging criteria. |
-| [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md) | 2-minute video presentation transcript and demonstration flow. |
+| [`docs/hackathon_demo.md`](docs/hackathon_demo.md) | 2-minute video presentation transcript and demonstration flow. |
 | [`docs/serverpod_features.md`](docs/serverpod_features.md) | Exhaustive guide of all 15 Serverpod subsystems with code references and configurations. |
 | [`docs/architecture.md`](docs/architecture.md) | System topology, sequence diagrams, and state machines. |
 | [`docs/game_rules.md`](docs/game_rules.md) | Complete mathematical and algorithmic rules specifications. |

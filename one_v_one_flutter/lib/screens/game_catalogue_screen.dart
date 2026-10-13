@@ -4,11 +4,9 @@ import '../providers/match_provider.dart';
 import '../theme/theme_provider.dart';
 import 'game_screen.dart';
 import 'lobby_screen.dart';
-import 'connect_four_screen.dart';
-import 'reversi_screen.dart';
+import 'connect_four_hub_screen.dart';
 import '../widgets/game_rules_dialog.dart';
 import '../widgets/connect_four_rules_dialog.dart';
-import '../widgets/reversi_rules_dialog.dart';
 
 class GameCatalogueScreen extends ConsumerWidget {
   const GameCatalogueScreen({super.key});
@@ -88,68 +86,20 @@ class GameCatalogueScreen extends ConsumerWidget {
                 title: 'Gravity Drop Duel',
                 tagline: 'Connect Four: 7x6 Column Alignment Tactics',
                 description:
-                    'Deterministic vertical drop strategy. Align four discs vertically, horizontally, or diagonally. Challenge our tactical minimax bot or battle locally in pass & play!',
+                    'Deterministic vertical drop strategy. Align four discs vertically, horizontally, or diagonally. Compete in real-time online 1v1 multiplayer, challenge our tactical minimax bot, or battle locally in pass & play!',
                 isPlayable: true,
-                accentColor: theme.accentSecondary,
-                badge: 'NEW TITLE',
+                accentColor: theme.isMonochrome
+                    ? const Color(0xFFA1A1AA)
+                    : theme.player2,
+                badge: 'NEW',
                 icon: Icons.blur_linear,
-                playButtonText: 'Play vs AI Bot',
+                playButtonText: 'Play Gravity Drop Duel',
                 onRules: () => ConnectFourRulesDialog.show(context),
                 onPlay: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const ConnectFourScreen(
-                        initialMode: ConnectFourMode.vsAi,
-                      ),
-                    ),
-                  );
-                },
-                secondaryButtonText: 'Pass & Play',
-                onSecondaryPlay: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ConnectFourScreen(
-                        initialMode: ConnectFourMode.passAndPlay,
-                      ),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Chroma Reversi (Playable)
-              _buildGameCard(
-                theme: theme,
-                title: 'Chroma Reversi',
-                tagline: 'Othello Duel: Brisk Flanking & Cascade Flips',
-                description:
-                    'Rapid-paced 8x8 territorial mind game. Flank opponent discs along 8 directions to trigger cascading flips. Control the four corners to seal victory!',
-                isPlayable: true,
-                accentColor: theme.accent,
-                badge: 'MIND STRATEGY',
-                icon: Icons.radio_button_checked,
-                playButtonText: 'Play vs AI Bot',
-                onRules: () => ReversiRulesDialog.show(context),
-                onPlay: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ReversiScreen(
-                        initialMode: ReversiScreenMode.vsAi,
-                      ),
-                    ),
-                  );
-                },
-                secondaryButtonText: 'Pass & Play',
-                onSecondaryPlay: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ReversiScreen(
-                        initialMode: ReversiScreenMode.passAndPlay,
-                      ),
+                      builder: (_) => const ConnectFourHubScreen(),
                     ),
                   );
                 },

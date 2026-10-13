@@ -12,7 +12,8 @@
 **1v1** is a full-stack, competitive, real-time multiplayer gaming platform built from the ground up in **Dart**, combining **Serverpod 4.0.4** and **Flutter Web/Mobile**.
 
 Unlike standard hackathon prototypes that run on mock databases and polling, **1v1** is deployed live on **Serverpod Cloud** with a managed PostgreSQL cluster, leveraging **15 distinct Serverpod core subsystems**:
-- **Multi-Game Deterministic Architecture**: Featuring two competitive titles: **Triangle Tactics** (hexagonal territory strategy) and **Gravity Drop Duel** (Connect Four with gravity drops, 4-angle vector win detection, and tactical AI bot).
+- **Multi-Game Deterministic Architecture**: Featuring two flagship competitive titles: **Triangle Tactics** (hexagonal territory strategy) and **Gravity Drop Duel** (Connect Four with gravity drops, 4-angle vector win detection, tactical AI, and full real-time Online 1v1 multiplayer).
+- **Authoritative Online 1v1 Multiplayer for Both Arenas**: Both Triangle Tactics and Gravity Drop Duel support sub-50ms WebSocket multiplayer via Serverpod `session.messages`, private room codes, and QR deep linking.
 - **Pure Rules Engine Isolation** (`packages/game_core`) with formal invariant assertions and deterministic replay.
 - **Native Serverpod Cloud Storage** for avatar uploads.
 - **Serverpod Cron & Future Calls** for daily leaderboard compaction and stale lobby cleanup.
@@ -53,10 +54,12 @@ Follow these 4 simple steps to test the entire full-stack experience live:
 3. Scroll down to inspect the **Recent Matches** table and **Cron Maintenance Audit Logs**.
 4. Click **"Trigger Daily Maintenance"** to execute the Serverpod Future Call and watch the log table update immediately!
 
-### 5. Play Gravity Drop Duel (Connect Four)
-1. On the Home screen or Game Catalogue, click **"Play vs AI"** on the **Gravity Drop Duel** card.
-2. Drop discs down columns with column guides and bouncy physics.
-3. Observe the AI blocking moves and 4-in-a-row victory laser beam!
+### 5. Play Gravity Drop Duel (Connect Four) — Online 1v1 & Tactical AI
+1. On the Home screen, click the **Gravity Drop Duel** card to enter the arena hub.
+2. Experience **Online 1v1 Multiplayer**: tap **"Quick Match"** or **"Create Private Room"** to challenge an opponent over real-time Serverpod WebSockets with 6-character room codes.
+3. Or tap **"🤖 Play vs Tactical Bot"** to test your defensive blocking and diagonal tactics offline against the 2-ply minimax engine.
+4. Select from multiple arena sizes: **Classic 7×6**, **Tactical 8×7**, or **Grand Arena 9×8 (Connect 5)**.
+5. Drop discs with bouncy gravity physics, column guide indicators, authoritative server optimistic concurrency validation (`clientStateVersion`), and 4-angle vector win detection!
 
 ---
 
@@ -243,7 +246,7 @@ The table below maps every **Serverpod subsystem** to its exact files in the cod
 | **1** | **Type-Safe API Endpoints & Generated Clients** | • Server: [`lib/src/endpoints/*`](one_v_one_server/lib/src/endpoints/)<br>• Client: [`one_v_one_client/`](one_v_one_client/) | **How**: Endpoints (`MatchEndpoint`, `PlayerEndpoint`, `LeaderboardEndpoint`, `AdminEndpoint`) auto-generate strongly-typed Dart client SDKs.<br>**Where**: Consumed directly by Flutter Riverpod notifiers (`match_provider.dart`, `player_provider.dart`, etc.) with zero manual JSON parsing or REST boilerplate. |
 | **2** | **Serverpod ORM & Relational Entities** | • Models: [`lib/src/models/*.spy.yaml`](one_v_one_server/lib/src/models/)<br>• Generated: `lib/src/generated/*` | **How**: Declarative schema definitions compile into type-safe entity classes and query builders.<br>**Where**: PostgreSQL tables for `game_match` (board state), `match_move_record` (move history), `player_profile` (ELO, win/loss stats), `daily_leaderboard` (daily rankings), and `scheduled_job_log` (audit trail). |
 | **3** | **Declarative Database Migrations** | • Migrations: [`one_v_one_server/migrations/`](one_v_one_server/migrations/) | **How**: Schema evolutions are versioned into SQL scripts and automatically verified and applied on server boot (`serverpod start`).<br>**Where**: Executed seamlessly during Serverpod Cloud deployment (`scloud deploy`) and embedded PostgreSQL test runners with zero manual SQL scripts. |
-| **4** | **Real-Time WebSocket Streaming** | • Server: [`match_endpoint.dart`](one_v_one_server/lib/src/endpoints/match_endpoint.dart)<br>• Hub: `session.messages`<br>• Client: [`match_provider.dart`](one_v_one_flutter/lib/providers/match_provider.dart) | **How**: Bidirectional event streaming over Serverpod's message hub channel `match_$matchId`.<br>**Where**: Real-time 1v1 gameplay dispatches live turn events (`MatchEvent.moveMade`), player readiness, forfeit alerts, and game-over announcements in sub-50ms without polling. |
+| **4** | **Real-Time WebSocket Streaming** | • Server: [`match_endpoint.dart`](one_v_one_server/lib/src/endpoints/match_endpoint.dart)<br>• Hub: `session.messages`<br>• Client: [`match_provider.dart`](one_v_one_flutter/lib/providers/match_provider.dart) | **How**: Bidirectional event streaming over Serverpod's message hub channel `match_$matchId`.<br>**Where**: Real-time 1v1 gameplay for both Triangle Tactics and Gravity Drop Duel dispatches live turn events (`MatchEvent.moveMade`), player readiness, forfeit alerts, and game-over announcements in sub-50ms without polling. |
 | **5** | **Future Calls & Scheduled Cron Tasks** | • Job: [`jobs/daily_maintenance_call.dart`](one_v_one_server/lib/src/jobs/daily_maintenance_call.dart)<br>• Processor: [`daily_maintenance_processor.dart`](one_v_one_server/lib/src/services/daily_maintenance_processor.dart)<br>• Boot: [`server.dart:145`](one_v_one_server/lib/server.dart#L145) | **How**: Serverpod background cron scheduler registered at startup (`pod.registerFutureCall`) running nightly at 1:00 AM IST (`30 19 * * *` UTC).<br>**Where**: Automatically cleans up abandoned lobbies older than 30 minutes, rolls up daily match wins into leaderboard standings, flushes stale caches, and reschedules itself. |
 | **6** | **Authentication & IDP Callbacks** | • Auth: `serverpod_auth_idp`<br>• Config: [`server.dart:21`](one_v_one_server/lib/server.dart#L21)<br>• UI: [`sign_in_screen.dart`](one_v_one_flutter/lib/screens/sign_in_screen.dart) | **How**: Secure JWT authentication and password hashing. Uses `onAfterAccountCreated` lifecycle callback hook.<br>**Where**: When a new user registers via email/password or guest mode, Serverpod automatically links the auth user ID to an initial `PlayerProfile` with 1200 base ELO. |
 | **7** | **In-Memory Caching (`session.caches.local`)** | • Endpoints: [`leaderboard_endpoint.dart`](one_v_one_server/lib/src/endpoints/leaderboard_endpoint.dart), [`player_endpoint.dart`](one_v_one_server/lib/src/endpoints/player_endpoint.dart) | **How**: RAM caching with TTL and group invalidation (`session.caches.local.invalidateGroup`).<br>**Where**: Caches high-traffic leaderboard queries (5-min TTL) and player profiles (5-min TTL). Invalidated atomically when players update avatars or when daily maintenance runs. |

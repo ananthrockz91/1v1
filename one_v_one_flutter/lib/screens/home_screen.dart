@@ -14,6 +14,7 @@ import 'leaderboard_screen.dart';
 import 'sign_in_screen.dart';
 import 'triangle_tactics_hub_screen.dart';
 import 'connect_four_hub_screen.dart';
+import 'connect_four_screen.dart';
 import '../widgets/architecture_dialog.dart';
 import '../widgets/brand_favicon_logo.dart';
 
@@ -132,10 +133,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 if (!mounted) return;
                 final match = ref.read(matchProvider).match;
                 if (match != null && match.status == 'in_progress') {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const GameScreen()),
-                  );
+                  if (match.gameType == 'connect_four') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ConnectFourScreen(
+                          initialMode: ConnectFourMode.online,
+                          onlineMatch: match,
+                        ),
+                      ),
+                    );
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const GameScreen()),
+                    );
+                  }
                 }
               }
             },
@@ -234,31 +247,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       // Left: Favicon Logo + Brand Name & Platform Label
-                      Flexible(
+                      Expanded(
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const BrandFaviconLogo(size: 34),
-                            const SizedBox(width: 10),
+                            const BrandFaviconLogo(size: 32),
+                            const SizedBox(width: 9),
                             Flexible(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
-                                    '1v1',
+                                    'Multiplayer Online',
                                     style: TextStyle(
                                       color: theme.textPrimary,
-                                      fontSize: 16,
+                                      fontSize: 15,
                                       fontWeight: FontWeight.w900,
-                                      letterSpacing: 0.5,
+                                      letterSpacing: 0.3,
                                     ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                   Text(
-                                    'Multiplayer Gaming Platform',
+                                    'Gaming Platform',
                                     style: TextStyle(
                                       color: theme.textSecondary,
-                                      fontSize: 10.5,
+                                      fontSize: 11,
                                       fontWeight: FontWeight.w500,
                                       letterSpacing: 0.2,
                                     ),
@@ -274,6 +288,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                       // Platform Actions & Theme Switcher
                       Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           if (showThemeSwitcher) ...[
                             // Theme Switcher Toggle Pill
@@ -357,54 +372,97 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             const SizedBox(width: 4),
                           ],
                           if (playerState.isAuthenticated) ...[
-                            IconButton(
-                              icon: Icon(
-                                Icons.memory_rounded,
-                                color: theme.isMonochrome
-                                    ? Colors.white70
-                                    : theme.accent,
-                                size: 20,
+                            // HUD Capsule for Rankings, Architecture & Admin Board
+                            Container(
+                              margin: const EdgeInsets.only(right: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 2,
+                                vertical: 2,
                               ),
-                              tooltip: 'Serverpod Live Admin Board',
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => const AdminBoardScreen(),
+                              decoration: BoxDecoration(
+                                color: theme.surfaceElevated.withValues(
+                                  alpha: 0.8,
+                                ),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: theme.surfaceBorder,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.leaderboard_outlined,
+                                      color: theme.isMonochrome
+                                          ? Colors.white70
+                                          : theme.accent,
+                                      size: 18,
+                                    ),
+                                    constraints: const BoxConstraints(
+                                      minWidth: 32,
+                                      minHeight: 32,
+                                    ),
+                                    padding: const EdgeInsets.all(5),
+                                    splashRadius: 18,
+                                    tooltip: 'Leaderboards',
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const LeaderboardScreen(),
+                                        ),
+                                      );
+                                    },
                                   ),
-                                );
-                              },
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                Icons.hub_outlined,
-                                color: theme.isMonochrome
-                                    ? Colors.white70
-                                    : theme.accentSecondary,
-                                size: 20,
-                              ),
-                              tooltip: 'Serverpod Architecture & Cloud Specs',
-                              onPressed: () => ArchitectureDialog.show(context),
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                Icons.leaderboard_outlined,
-                                color: theme.isMonochrome
-                                    ? Colors.white70
-                                    : theme.accent,
-                                size: 20,
-                              ),
-                              tooltip: 'Leaderboards',
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => const LeaderboardScreen(),
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.hub_outlined,
+                                      color: theme.isMonochrome
+                                          ? Colors.white70
+                                          : theme.accentSecondary,
+                                      size: 18,
+                                    ),
+                                    constraints: const BoxConstraints(
+                                      minWidth: 32,
+                                      minHeight: 32,
+                                    ),
+                                    padding: const EdgeInsets.all(5),
+                                    splashRadius: 18,
+                                    tooltip:
+                                        'Serverpod Architecture & Cloud Specs',
+                                    onPressed: () =>
+                                        ArchitectureDialog.show(context),
                                   ),
-                                );
-                              },
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.memory_rounded,
+                                      color: theme.isMonochrome
+                                          ? Colors.white70
+                                          : theme.accent,
+                                      size: 18,
+                                    ),
+                                    constraints: const BoxConstraints(
+                                      minWidth: 32,
+                                      minHeight: 32,
+                                    ),
+                                    padding: const EdgeInsets.all(5),
+                                    splashRadius: 18,
+                                    tooltip: 'Serverpod Live Admin Board',
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const AdminBoardScreen(),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
                             ),
-                            const SizedBox(width: 4),
                           ],
 
                           // Guest / User Profile Chip on the Right Extreme
@@ -450,111 +508,67 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               ),
                             )
                           else
-                            // Authenticated Profile Chip
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: theme.surfaceElevated,
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: theme.accent.withValues(alpha: 0.6),
+                            // Authenticated Profile Pill (Unified Tap -> Player Profile)
+                            InkWell(
+                              borderRadius: BorderRadius.circular(22),
+                              onTap: () => SignInScreen.show(context),
+                              child: Container(
+                                padding: const EdgeInsets.fromLTRB(
+                                  4,
+                                  4,
+                                  10,
+                                  4,
                                 ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  GestureDetector(
-                                    onTap: () {
-                                      AvatarPickerSheet.show(
-                                        context: context,
-                                        initialSeed: playerState.avatarSeed,
-                                        onSelected: (newSeed) {
-                                          ref
-                                              .read(
-                                                playerProfileProvider.notifier,
-                                              )
-                                              .updateAvatar(newSeed);
-                                        },
-                                      );
-                                    },
-                                    child: Stack(
-                                      children: [
-                                        PlayerAvatar(
-                                          avatarSeed: playerState.avatarSeed,
-                                          displayName: playerState.displayName,
-                                          size: 24,
-                                          borderColor: theme.player1,
-                                        ),
-                                        Positioned(
-                                          right: 0,
-                                          bottom: 0,
-                                          child: Container(
-                                            padding: const EdgeInsets.all(1),
-                                            decoration: BoxDecoration(
-                                              color: theme.surface,
-                                              shape: BoxShape.circle,
-                                            ),
-                                            child: Icon(
-                                              Icons.photo_camera,
-                                              size: 8,
-                                              color: theme.textSecondary,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                decoration: BoxDecoration(
+                                  color: theme.surfaceElevated,
+                                  borderRadius: BorderRadius.circular(22),
+                                  border: Border.all(
+                                    color: theme.accent.withValues(alpha: 0.45),
+                                    width: 1.2,
                                   ),
-                                  const SizedBox(width: 8),
-                                  GestureDetector(
-                                    onTap: () => SignInScreen.show(context),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        ConstrainedBox(
-                                          constraints: const BoxConstraints(
-                                            maxWidth: 80,
-                                          ),
-                                          child: Text(
-                                            playerState.displayName,
-                                            style: TextStyle(
-                                              color: theme.textPrimary,
-                                              fontSize: 12.5,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 5,
-                                            vertical: 2,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: theme.player1.withValues(
-                                              alpha: 0.15,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              6,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            'VERIFIED',
-                                            style: TextStyle(
-                                              color: theme.player1,
-                                              fontSize: 8.5,
-                                              fontWeight: FontWeight.bold,
-                                              letterSpacing: 0.5,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: theme.accent.withValues(
+                                        alpha: 0.1,
+                                      ),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 2),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    PlayerAvatar(
+                                      avatarSeed: playerState.avatarSeed,
+                                      displayName: playerState.displayName,
+                                      size: 26,
+                                      borderColor: theme.player1,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 5,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: theme.player1.withValues(
+                                          alpha: 0.15,
+                                        ),
+                                        borderRadius: BorderRadius.circular(5),
+                                      ),
+                                      child: Text(
+                                        'VERIFIED',
+                                        style: TextStyle(
+                                          color: theme.player1,
+                                          fontSize: 8.5,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 0.4,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                         ],
@@ -575,7 +589,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 style: TextStyle(
                                   fontSize: 48,
                                   fontWeight: FontWeight.w900,
-                                  color: theme.logoPrimary,
+                                  color: theme.player2,
                                   letterSpacing: -2,
                                 ),
                               ),
@@ -592,7 +606,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 style: TextStyle(
                                   fontSize: 48,
                                   fontWeight: FontWeight.w900,
-                                  color: theme.player2,
+                                  color: theme.logoPrimary,
                                   letterSpacing: -2,
                                 ),
                               ),
@@ -683,9 +697,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     badge: 'NEW TITLE',
                     icon: Icons.blur_linear,
                     modes: const [
-                      'Classic 7×6',
-                      'Tactical 8×7',
-                      'Grand 9×8',
+                      'Online 1v1',
+                      'Tactical AI',
+                      'Pass & Play',
                     ],
                     onTap: () {
                       Navigator.push(
@@ -897,7 +911,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   // Footer Telemetry Bar
                   Center(
                     child: Text(
-                      '1v1 • ',
+                      '1v1 • Multiplayer Online Gaming Platform',
                       style: TextStyle(
                         color: theme.textMuted.withValues(alpha: 0.6),
                         fontSize: 11,

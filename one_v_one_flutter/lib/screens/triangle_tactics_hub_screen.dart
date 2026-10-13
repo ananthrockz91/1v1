@@ -8,6 +8,7 @@ import '../widgets/architecture_dialog.dart';
 import 'game_screen.dart';
 import 'lobby_screen.dart';
 import 'sign_in_screen.dart';
+import '../widgets/room_action_card.dart';
 
 class TriangleTacticsHubScreen extends ConsumerStatefulWidget {
   const TriangleTacticsHubScreen({super.key});
@@ -471,71 +472,54 @@ class _TriangleTacticsHubScreenState
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: theme.surface,
-                        foregroundColor: theme.textPrimary,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        side: BorderSide(color: theme.surfaceBorder),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: () async {
-                        if (!ref.read(playerProfileProvider).isAuthenticated) {
-                          _showAuthPrompt(context, 'create a private room');
-                          return;
-                        }
-                        await ref
-                            .read(matchProvider.notifier)
-                            .createPrivateMatch();
-                        if (!context.mounted) return;
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const LobbyScreen(),
-                          ),
-                        );
-                      },
-                      icon: Icon(
-                        Icons.add_circle_outline,
-                        color: theme.player2,
-                        size: 20,
-                      ),
-                      label: const Text(
-                        'Create Room',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
+                    child: RoomActionCard(
+                      theme: theme,
+                      icon: Icons.add_circle_outline_rounded,
+                      iconColor: theme.player2,
+                      title: 'Create Room',
+                      subtitle: 'Generate a 6-letter room code',
+                      isLoading: matchState.isLoading,
+                      onTap: matchState.isLoading
+                          ? null
+                          : () async {
+                              if (!ref
+                                  .read(playerProfileProvider)
+                                  .isAuthenticated) {
+                                _showAuthPrompt(
+                                  context,
+                                  'create a private room',
+                                );
+                                return;
+                              }
+                              await ref
+                                  .read(matchProvider.notifier)
+                                  .createPrivateMatch();
+                              if (!context.mounted) return;
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const LobbyScreen(),
+                                ),
+                              );
+                            },
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: theme.surface,
-                        foregroundColor: theme.textPrimary,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        side: BorderSide(color: theme.surfaceBorder),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: () {
+                    child: RoomActionCard(
+                      theme: theme,
+                      icon: Icons.login_rounded,
+                      iconColor: theme.player1,
+                      title: 'Join Room',
+                      subtitle: 'Enter an existing room code',
+                      isLoading: false,
+                      onTap: () {
                         if (!ref.read(playerProfileProvider).isAuthenticated) {
                           _showAuthPrompt(context, 'join a private room');
                           return;
                         }
                         _showJoinDialog();
                       },
-                      icon: Icon(
-                        Icons.meeting_room_outlined,
-                        color: theme.player1,
-                        size: 20,
-                      ),
-                      label: const Text(
-                        'Join Room',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
                     ),
                   ),
                 ],

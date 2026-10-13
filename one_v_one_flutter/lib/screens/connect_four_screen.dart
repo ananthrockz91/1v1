@@ -1,7 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:game_core/game_core.dart';
+import 'package:one_v_one_client/one_v_one_client.dart';
+import '../client.dart';
+import '../models/player_session.dart';
 import '../services/sound_service.dart';
 import '../theme/theme_provider.dart';
 import '../widgets/connect_four_board.dart';
@@ -10,6 +15,7 @@ import '../widgets/connect_four_rules_dialog.dart';
 enum ConnectFourMode {
   vsAi,
   passAndPlay,
+  online,
 }
 
 enum GravityGridPreset {
@@ -52,10 +58,14 @@ enum GravityGridPreset {
 
 class ConnectFourScreen extends ConsumerStatefulWidget {
   final ConnectFourMode initialMode;
+  final GameMatch? onlineMatch;
+  final GravityGridPreset? preset;
 
   const ConnectFourScreen({
     super.key,
     this.initialMode = ConnectFourMode.vsAi,
+    this.onlineMatch,
+    this.preset,
   });
 
   @override
@@ -79,17 +89,130 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
   Timer? _turnTimer;
   int _secondsLeft = 30;
 
+  GameMatch? _onlineMatch;
+  StreamSubscription<MatchEvent>? _matchSubscription;
+  bool _isWaitingForOpponent = false;
+
   @override
   void initState() {
     super.initState();
     _engine = ConnectFourEngine();
     _mode = widget.initialMode;
-    _startNewGame();
+    if (widget.preset != null) {
+      _selectedPreset = widget.preset!;
+    }
+
+    if (_mode == ConnectFourMode.online && widget.onlineMatch != null) {
+      _onlineMatch = widget.onlineMatch;
+      _initOnlineMatch();
+    } else {
+      _startNewGame();
+    }
+  }
+
+  void _initOnlineMatch() {
+    final match = _onlineMatch!;
+    if (match.stateJson.isNotEmpty) {
+      try {
+        _state = ConnectFourState.fromJson(
+          jsonDecode(match.stateJson) as Map<String, dynamic>,
+        );
+      } catch (_) {
+        _state = ConnectFourState.initial(
+          player1Id: match.player1Id,
+          player2Id: match.player2Id ?? '',
+          rows: _selectedPreset.rows,
+          cols: _selectedPreset.cols,
+          targetStreak: _selectedPreset.targetStreak,
+        );
+      }
+    } else {
+      _state = ConnectFourState.initial(
+        player1Id: match.player1Id,
+        player2Id: match.player2Id ?? '',
+        rows: _selectedPreset.rows,
+        cols: _selectedPreset.cols,
+        targetStreak: _selectedPreset.targetStreak,
+      );
+    }
+
+    _isWaitingForOpponent = match.status == 'waiting';
+    _isGameOver = _state.isTerminal;
+
+    _matchSubscription = client.match
+        .streamMatchEvents(match.matchId)
+        .listen(
+          _handleMatchEvent,
+          onError: (_) {},
+        );
+
+    if (!_isWaitingForOpponent && !_state.isTerminal) {
+      _startTimer();
+    }
+  }
+
+  void _handleMatchEvent(MatchEvent event) {
+    if (!mounted) return;
+
+    if (event.eventType == 'matchStarted') {
+      setState(() {
+        _isWaitingForOpponent = false;
+        if (event.stateJson != null) {
+          try {
+            _state = ConnectFourState.fromJson(
+              jsonDecode(event.stateJson!) as Map<String, dynamic>,
+            );
+          } catch (_) {}
+        }
+      });
+      SoundService.playMove();
+      _startTimer();
+      return;
+    }
+
+    if (event.eventType == 'moveAccepted' ||
+        event.eventType == 'matchCompleted') {
+      if (event.stateJson != null) {
+        try {
+          final nextState = ConnectFourState.fromJson(
+            jsonDecode(event.stateJson!) as Map<String, dynamic>,
+          );
+          if (nextState.stateVersion >= _state.stateVersion) {
+            SoundService.playMove();
+            setState(() {
+              _state = nextState;
+              _secondsLeft = 30;
+            });
+          }
+        } catch (_) {}
+      }
+
+      if (event.isTerminal) {
+        _turnTimer?.cancel();
+        if (event.winnerId != null) {
+          SoundService.playVictory();
+        }
+        setState(() {
+          _isGameOver = true;
+          _showGameOverSummary = true;
+        });
+      }
+      return;
+    }
+
+    if (event.eventType == 'resigned') {
+      _turnTimer?.cancel();
+      setState(() {
+        _isGameOver = true;
+        _showGameOverSummary = true;
+      });
+    }
   }
 
   @override
   void dispose() {
     _turnTimer?.cancel();
+    _matchSubscription?.cancel();
     super.dispose();
   }
 
@@ -149,7 +272,39 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
   }
 
   void _onColumnSelected(int column) {
-    if (_state.isTerminal || _isAiThinking) return;
+    if (_state.isTerminal || _isAiThinking || _isWaitingForOpponent) return;
+
+    if (_mode == ConnectFourMode.online) {
+      if (_state.activePlayerId != PlayerSession.currentId) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Opponent's turn — please wait for their move"),
+            duration: Duration(milliseconds: 900),
+          ),
+        );
+        return;
+      }
+
+      // Optimistically apply locally
+      _applyMove(PlayerSession.currentId, ConnectFourMove.drop(column));
+
+      // Transmit to Serverpod backend
+      if (_onlineMatch != null) {
+        client.match
+            .submitMove(
+              matchId: _onlineMatch!.matchId,
+              playerId: PlayerSession.currentId,
+              node1R: 0,
+              node1C: column,
+              node2R: 0,
+              node2C: column,
+              clientStateVersion: _state.stateVersion,
+            )
+            .catchError((_) => _onlineMatch!);
+      }
+      return;
+    }
 
     final active = _state.activePlayerId;
     if (_mode == ConnectFourMode.vsAi && active != _p1Id) return;
@@ -202,6 +357,22 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
   }
 
   void _confirmExit() {
+    if (_mode == ConnectFourMode.online) {
+      if (_onlineMatch != null &&
+          !_state.isTerminal &&
+          !_isWaitingForOpponent) {
+        client.match
+            .resign(
+              matchId: _onlineMatch!.matchId,
+              playerId: PlayerSession.currentId,
+            )
+            .catchError((_) => _onlineMatch!);
+      }
+      _matchSubscription?.cancel();
+      Navigator.pop(context);
+      return;
+    }
+
     if (_state.moveHistory.isEmpty || _state.isTerminal) {
       Navigator.pop(context);
       return;
@@ -300,14 +471,15 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
               tooltip: 'Rules & Tactics Guide',
               onPressed: () => ConnectFourRulesDialog.show(context),
             ),
-            IconButton(
-              icon: Icon(
-                Icons.refresh_rounded,
-                color: theme.textSecondary,
+            if (_mode != ConnectFourMode.online)
+              IconButton(
+                icon: Icon(
+                  Icons.refresh_rounded,
+                  color: theme.textSecondary,
+                ),
+                tooltip: 'Restart Game',
+                onPressed: _startNewGame,
               ),
-              tooltip: 'Restart Game',
-              onPressed: _startNewGame,
-            ),
           ],
         ),
         body: SafeArea(
@@ -323,38 +495,98 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Mode Toggle Pill
-                    SegmentedButton<ConnectFourMode>(
-                      segments: const [
-                        ButtonSegment(
-                          value: ConnectFourMode.vsAi,
-                          label: Text('vs AI', style: TextStyle(fontSize: 11)),
-                          icon: Icon(Icons.smart_toy_outlined, size: 13),
+                    if (_mode == ConnectFourMode.online)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
                         ),
-                        ButtonSegment(
-                          value: ConnectFourMode.passAndPlay,
-                          label: Text(
-                            '2-Player',
-                            style: TextStyle(fontSize: 11),
+                        decoration: BoxDecoration(
+                          color: theme.accentSurface,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: theme.accent.withValues(alpha: 0.4),
                           ),
-                          icon: Icon(Icons.people_outline, size: 13),
                         ),
-                      ],
-                      selected: {_mode},
-                      onSelectionChanged: (selected) {
-                        setState(() {
-                          _mode = selected.first;
-                          _startNewGame();
-                        });
-                      },
-                      style: SegmentedButton.styleFrom(
-                        backgroundColor: theme.surface,
-                        selectedBackgroundColor: theme.accentSurface,
-                        selectedForegroundColor: theme.accent,
-                        foregroundColor: theme.textSecondary,
-                        visualDensity: VisualDensity.compact,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.wifi_tethering_rounded,
+                              size: 14,
+                              color: theme.accent,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'ONLINE 1V1',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: theme.accent,
+                                letterSpacing: 0.6,
+                              ),
+                            ),
+                            if (_onlineMatch != null) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: theme.surface,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  'Room #${_onlineMatch!.matchId.substring(0, _onlineMatch!.matchId.length >= 6 ? 6 : _onlineMatch!.matchId.length).toUpperCase()}',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontFamily: 'monospace',
+                                    fontWeight: FontWeight.w600,
+                                    color: theme.textSecondary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      )
+                    else
+                      // Mode Toggle Pill
+                      SegmentedButton<ConnectFourMode>(
+                        segments: const [
+                          ButtonSegment(
+                            value: ConnectFourMode.vsAi,
+                            label: Text(
+                              'vs AI',
+                              style: TextStyle(fontSize: 11),
+                            ),
+                            icon: Icon(Icons.smart_toy_outlined, size: 13),
+                          ),
+                          ButtonSegment(
+                            value: ConnectFourMode.passAndPlay,
+                            label: Text(
+                              '2-Player',
+                              style: TextStyle(fontSize: 11),
+                            ),
+                            icon: Icon(Icons.people_outline, size: 13),
+                          ),
+                        ],
+                        selected: {_mode},
+                        onSelectionChanged: (selected) {
+                          setState(() {
+                            _mode = selected.first;
+                            _startNewGame();
+                          });
+                        },
+                        style: SegmentedButton.styleFrom(
+                          backgroundColor: theme.surface,
+                          selectedBackgroundColor: theme.accentSurface,
+                          selectedForegroundColor: theme.accent,
+                          foregroundColor: theme.textSecondary,
+                          visualDensity: VisualDensity.compact,
+                        ),
                       ),
-                    ),
 
                     // Turn Timer Badge
                     Container(
@@ -400,7 +632,7 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                 ),
               ),
 
-              // Grid Preset & Hazard Controls Strip
+              // Grid Preset Strip (or Online Match Info Strip)
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 14,
@@ -412,90 +644,218 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                     bottom: BorderSide(color: theme.surfaceBorder, width: 1),
                   ),
                 ),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      // Preset chips
-                      ...GravityGridPreset.values.map((preset) {
-                        final isSelected = _selectedPreset == preset;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 6),
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(8),
-                            onTap: () {
-                              if (_selectedPreset != preset) {
-                                setState(() {
-                                  _selectedPreset = preset;
-                                  _startNewGame();
-                                });
-                              }
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? theme.accentSurface
-                                    : theme.surfaceElevated,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? theme.accent
-                                      : theme.surfaceBorder,
-                                  width: isSelected ? 1.4 : 1.0,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    preset.label,
-                                    style: TextStyle(
-                                      color: isSelected
-                                          ? theme.accent
-                                          : theme.textSecondary,
-                                      fontWeight: isSelected
-                                          ? FontWeight.bold
-                                          : FontWeight.w500,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 4,
-                                      vertical: 1,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? theme.accent.withValues(alpha: 0.2)
-                                          : theme.surface,
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      preset.badge,
-                                      style: TextStyle(
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.w700,
-                                        color: isSelected
-                                            ? theme.accent
-                                            : theme.textMuted,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                child: _mode == ConnectFourMode.online
+                    ? Row(
+                        children: [
+                          Icon(
+                            Icons.grid_view_rounded,
+                            size: 13,
+                            color: theme.accent,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Arena: ${_state.numCols}×${_state.numRows} • Win Streak: ${_state.targetStreak} in a row',
+                            style: TextStyle(
+                              color: theme.textSecondary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 11,
+                            ),
+                          ),
+                          const Spacer(),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: theme.accentSurface,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'AUTHORITATIVE SERVERPOD',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: theme.accent,
                               ),
                             ),
                           ),
-                        );
-                      }),
+                        ],
+                      )
+                    : SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            // Preset chips
+                            ...GravityGridPreset.values.map((preset) {
+                              final isSelected = _selectedPreset == preset;
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 6),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(8),
+                                  onTap: () {
+                                    if (_selectedPreset != preset) {
+                                      setState(() {
+                                        _selectedPreset = preset;
+                                        _startNewGame();
+                                      });
+                                    }
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? theme.accentSurface
+                                          : theme.surfaceElevated,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? theme.accent
+                                            : theme.surfaceBorder,
+                                        width: isSelected ? 1.4 : 1.0,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          preset.label,
+                                          style: TextStyle(
+                                            color: isSelected
+                                                ? theme.accent
+                                                : theme.textSecondary,
+                                            fontWeight: isSelected
+                                                ? FontWeight.bold
+                                                : FontWeight.w500,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 4,
+                                            vertical: 1,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: isSelected
+                                                ? theme.accent.withValues(
+                                                    alpha: 0.2,
+                                                  )
+                                                : theme.surface,
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            preset.badge,
+                                            style: TextStyle(
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.w700,
+                                              color: isSelected
+                                                  ? theme.accent
+                                                  : theme.textMuted,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
+                          ],
+                        ),
+                      ),
+              ),
+
+              // Waiting For Opponent Banner
+              if (_isWaitingForOpponent && _onlineMatch != null)
+                Container(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: theme.accentSurface.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: theme.accent.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: theme.accent,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Waiting for Challenger to join...',
+                              style: TextStyle(
+                                color: theme.textPrimary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12.5,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Room Code: ${_onlineMatch!.matchId.substring(0, _onlineMatch!.matchId.length >= 6 ? 6 : _onlineMatch!.matchId.length).toUpperCase()}',
+                              style: TextStyle(
+                                color: theme.accent,
+                                fontSize: 11,
+                                fontFamily: 'monospace',
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          Icons.copy_rounded,
+                          size: 16,
+                          color: theme.accent,
+                        ),
+                        tooltip: 'Copy Room Code',
+                        onPressed: () {
+                          final code = _onlineMatch!.matchId
+                              .substring(
+                                0,
+                                _onlineMatch!.matchId.length >= 6
+                                    ? 6
+                                    : _onlineMatch!.matchId.length,
+                              )
+                              .toUpperCase();
+                          Clipboard.setData(ClipboardData(text: code));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Copied room code $code to clipboard!',
+                              ),
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),
-              ),
 
               // Player 1 vs Player 2 Scoreboard
               Padding(
@@ -537,7 +897,14 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                _state.player1Id,
+                                _mode == ConnectFourMode.online
+                                    ? (_state.player1Id ==
+                                              PlayerSession.currentId
+                                          ? '${PlayerSession.displayName} (You)'
+                                          : (_state.player1Id.isNotEmpty
+                                                ? _state.player1Id
+                                                : 'Player 1'))
+                                    : _state.player1Id,
                                 style: TextStyle(
                                   color: isP1Active
                                       ? theme.player1
@@ -597,7 +964,16 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                _state.player2Id,
+                                _mode == ConnectFourMode.online
+                                    ? (_state.player2Id ==
+                                              PlayerSession.currentId
+                                          ? '${PlayerSession.displayName} (You)'
+                                          : (_state.player2Id.isNotEmpty
+                                                ? _state.player2Id
+                                                : (_isWaitingForOpponent
+                                                      ? 'Waiting...'
+                                                      : 'Challenger')))
+                                    : _state.player2Id,
                                 style: TextStyle(
                                   color: !isP1Active
                                       ? theme.player2
@@ -619,7 +995,7 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
               ),
               const SizedBox(height: 6),
 
-              // AI Thinking / Status Banner
+              // AI Thinking / Match Status Banner
               Container(
                 height: 24,
                 alignment: Alignment.center,
@@ -662,13 +1038,27 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                                 ? (_state.isDraw
                                       ? 'TACTICAL DRAW (BOARD FULL)'
                                       : '🏆 ${_state.winnerId?.toUpperCase()} CONNECTS ${_state.targetStreak} IN A ROW!')
-                                : '${_state.activePlayerId.toUpperCase()}\'S TURN',
+                                : (_isWaitingForOpponent
+                                      ? 'AWAITING OPPONENT TO JOIN...'
+                                      : (_mode == ConnectFourMode.online
+                                            ? (_state.activePlayerId ==
+                                                      PlayerSession.currentId
+                                                  ? 'YOUR TURN — DROP A DISC'
+                                                  : 'OPPONENT\'S TURN — PLEASE WAIT')
+                                            : '${_state.activePlayerId.toUpperCase()}\'S TURN')),
                             style: TextStyle(
                               color: _state.isTerminal
                                   ? theme.accent
-                                  : (isP1Active
-                                        ? theme.player1
-                                        : theme.player2),
+                                  : (_isWaitingForOpponent
+                                        ? theme.accent
+                                        : (_mode == ConnectFourMode.online
+                                              ? (_state.activePlayerId ==
+                                                        PlayerSession.currentId
+                                                    ? theme.player1
+                                                    : theme.player2)
+                                              : (isP1Active
+                                                    ? theme.player1
+                                                    : theme.player2))),
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 1.1,
@@ -730,31 +1120,45 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                           children: [
                             Row(
                               children: [
-                                Icon(
-                                  _state.isDraw
-                                      ? Icons.handshake_outlined
-                                      : Icons.emoji_events,
-                                  color: _state.isDraw
-                                      ? theme.textSecondary
-                                      : (_state.winnerId == _p1Id
-                                            ? theme.player1
-                                            : theme.player2),
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  _state.isDraw
-                                      ? 'Tactical Draw (Grid Full)'
-                                      : '🏆 ${_state.winnerId} Wins!',
-                                  style: TextStyle(
-                                    color: _state.isDraw
-                                        ? theme.textPrimary
-                                        : (_state.winnerId == _p1Id
+                                Builder(
+                                  builder: (context) {
+                                    final bool isP1Winner =
+                                        _state.winnerId == _state.player1Id;
+                                    final Color winnerColor = _state.isDraw
+                                        ? theme.textSecondary
+                                        : (isP1Winner
                                               ? theme.player1
-                                              : theme.player2),
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
+                                              : theme.player2);
+                                    final String winTitle = _state.isDraw
+                                        ? 'Tactical Draw (Grid Full)'
+                                        : (_state.winnerId ==
+                                                  PlayerSession.currentId
+                                              ? '🏆 Victory! You Won!'
+                                              : (_mode == ConnectFourMode.online
+                                                    ? 'Defeat — Opponent Won'
+                                                    : '🏆 ${_state.winnerId} Wins!'));
+
+                                    return Row(
+                                      children: [
+                                        Icon(
+                                          _state.isDraw
+                                              ? Icons.handshake_outlined
+                                              : Icons.emoji_events,
+                                          color: winnerColor,
+                                          size: 20,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          winTitle,
+                                          style: TextStyle(
+                                            color: winnerColor,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  },
                                 ),
                               ],
                             ),
@@ -800,11 +1204,20 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                 ),
-                                onPressed: _startNewGame,
-                                icon: const Icon(Icons.replay, size: 16),
-                                label: const Text(
-                                  'Play Rematch',
-                                  style: TextStyle(
+                                onPressed: _mode == ConnectFourMode.online
+                                    ? () => Navigator.pop(context)
+                                    : _startNewGame,
+                                icon: Icon(
+                                  _mode == ConnectFourMode.online
+                                      ? Icons.home_outlined
+                                      : Icons.replay,
+                                  size: 16,
+                                ),
+                                label: Text(
+                                  _mode == ConnectFourMode.online
+                                      ? 'Return to Hub'
+                                      : 'Play Rematch',
+                                  style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 13,
                                   ),

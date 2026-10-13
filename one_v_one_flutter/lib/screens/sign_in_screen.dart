@@ -12,23 +12,6 @@ class SignInScreen extends ConsumerStatefulWidget {
   const SignInScreen({super.key, this.child});
 
   static Future<void> show(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    if (width > 600) {
-      return showDialog(
-        context: context,
-        builder: (ctx) => Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 32,
-          ),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 440),
-            child: const SignInScreen(),
-          ),
-        ),
-      );
-    }
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -133,30 +116,29 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       }
     });
 
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth > 600;
-
-    final content = Center(
+    final content = Align(
+      alignment: Alignment.bottomCenter,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 440),
+        constraints: const BoxConstraints(maxWidth: 480),
         child: Container(
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.88,
+            maxHeight: MediaQuery.of(context).size.height * 0.90,
           ),
           decoration: BoxDecoration(
             color: theme.surface,
-            borderRadius: isDesktop
-                ? BorderRadius.circular(24)
-                : const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border.all(
-              color: theme.surfaceBorder,
-              width: 1.5,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(24),
+            ),
+            border: Border(
+              top: BorderSide(color: theme.surfaceBorder, width: 1.5),
+              left: BorderSide(color: theme.surfaceBorder, width: 1.5),
+              right: BorderSide(color: theme.surfaceBorder, width: 1.5),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.5),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
+                color: Colors.black.withValues(alpha: 0.6),
+                blurRadius: 32,
+                offset: const Offset(0, -6),
               ),
             ],
           ),
@@ -164,24 +146,23 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
             top: false,
             child: Padding(
               padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 12,
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Drag Handle (mobile only)
-                  if (!isDesktop)
-                    Center(
-                      child: Container(
-                        margin: const EdgeInsets.only(top: 12, bottom: 8),
-                        width: 44,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: theme.textMuted.withValues(alpha: 0.5),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
+                  // Sheet Drag Handle
+                  Center(
+                    child: Container(
+                      margin: const EdgeInsets.only(top: 12, bottom: 8),
+                      width: 44,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: theme.textMuted.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
+                  ),
 
                   // Header
                   Padding(

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:one_v_one_flutter/providers/player_provider.dart';
 import 'package:one_v_one_flutter/screens/home_screen.dart';
+import 'package:one_v_one_flutter/widgets/player_avatar.dart';
 
 class _AuthenticatedPlayerNotifier extends PlayerProfileNotifier {
   _AuthenticatedPlayerNotifier() {
@@ -45,8 +46,8 @@ void main() {
 
       // Verify Guest mode: only Guest indicator and Sign In action are shown
       expect(find.text('Guest'), findsOneWidget);
-      expect(find.byTooltip('Sign In'), findsOneWidget);
-      expect(find.text('Multiplayer Gaming Platform'), findsOneWidget);
+      expect(find.text('Multiplayer Online'), findsOneWidget);
+      expect(find.text('Gaming Platform'), findsOneWidget);
 
       // Verify platform options (Leaderboard & Admin Board) are hidden before login
       expect(find.byTooltip('Leaderboards'), findsNothing);
@@ -82,7 +83,7 @@ void main() {
       );
 
       // Verify authenticated user details
-      expect(find.text('NeoChampion'), findsOneWidget);
+      expect(find.byType(PlayerAvatar), findsOneWidget);
       expect(find.text('VERIFIED'), findsOneWidget);
 
       // Verify platform options are shown when logged in

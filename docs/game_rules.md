@@ -127,5 +127,97 @@ An action must be strictly validated before any state mutation. Any rejection le
 ---
 
 ## 6. Ruleset Versioning Policy
-- The engine tags every game instance with `rulesetVersion: 1.0.0`.
-- Any semantic variation (e.g., handicap starts, different scoring weights, hexagonal or truncated boards) requires a bump to a new ruleset version (e.g., `2.0.0`) with backwards-compatible replay support for historical `1.0.0` matches.
+- The engine tags every game instance with its canonical identifier and `rulesetVersion` (`triangle_tactics: 1.0.0`, `connect_four: 1.1.0`, `reversi: 1.0.0`).
+- Any semantic variation requires a bump to a new ruleset version with backwards-compatible replay support for historical matches.
+
+---
+
+## 7. Game Rules Specification: Gravity Drop Duel (Connect Four)
+
+**Game Identifier:** `connect_four`  
+**Ruleset Version:** `1.1.0`  
+**Game Family:** Vertical Falling Disc Alignment Strategy
+
+### 7.1 Board Geometry & Grid Configurations
+Played on a vertically standing grid of $C$ columns and $R$ rows. Cells are indexed as $(r, c)$ where row $0$ is the top row and row $R - 1$ is the bottom row resting on the base.
+
+The platform provides 3 selectable grid presets:
+1. **Classic Duel:** $7 \text{ columns} \times 6 \text{ rows}$, Target run length $K = 4$. Total cells = 42.
+2. **Tactical Duel:** $8 \text{ columns} \times 7 \text{ rows}$, Target run length $K = 4$. Total cells = 56.
+3. **Grand Duel:** $9 \text{ columns} \times 8 \text{ rows}$, Target run length $K = 5$. Total cells = 72.
+
+### 7.2 Core Gravity Drop Action
+- **Turn Action:** A player selects an index $c \in [0, C-1]$.
+- **Gravity Invariant:** The placed disc falls into the lowest unoccupied row in column $c$:
+  $$r^* = \max \{ r \in [0, R-1] \mid \text{Grid}[r][c] = \text{Empty} \}$$
+  If no such row exists ($\text{Grid}[0][c] \neq \text{Empty}$), the column is full and the move is rejected as illegal.
+- Upon placement, $\text{Grid}[r^*][c] \leftarrow \text{ActivePlayerDisc}$.
+
+### 7.3 Win Condition & Vector Win Scanning
+Following disc placement at $(r^*, c)$, the engine tests for victory by evaluating 4 directional vectors $D = \{ (0, 1), (1, 0), (1, 1), (-1, 1) \}$:
+1. **Horizontal:** $\vec{d} = (0, 1)$
+2. **Vertical:** $\vec{d} = (1, 0)$
+3. **Diagonal Down-Right:** $\vec{d} = (1, 1)$
+4. **Diagonal Up-Right:** $\vec{d} = (-1, 1)$
+
+For each vector $(dr, dc)$, the engine counts continuous matching tokens bidirectionally from $(r^*, c)$:
+$$\text{ChainLength} = 1 + \text{RayCount}(dr, dc) + \text{RayCount}(-dr, -dc)$$
+If $\text{ChainLength} \ge K$, the acting player wins immediately.
+
+### 7.4 Terminal States & Draws
+- **Victory:** Any valid line of $K$ contiguous friendly discs is formed.
+- **Draw:** All $C \times R$ cells are filled with zero winning lines.
+- **Turn Alternation:** Unless terminal, turns alternate strictly between Player 1 and Player 2.
+
+### 7.5 Solo AI Engine (Minimax Lookahead)
+The solo offline bot utilizes a 2-ply Minimax lookahead evaluation:
+- **Instant Win / Block Priority:** Evaluates immediate winning moves ($+10,000$ points) and opponent immediate winning threats ($-9,000$ points).
+- **Positional Heuristic:** Awards higher weights to center columns $(\lfloor C/2 \rfloor)$ due to maximal geometric line participation.
+- **Run Potential:** Scores unblocked 2-in-a-row and 3-in-a-row alignments with open endpoints.
+
+---
+
+## 8. Game Rules Specification: Reversi (Othello Duel)
+
+**Game Identifier:** `reversi`  
+**Ruleset Version:** `1.0.0`  
+**Game Family:** Flanking & Reversal Strategy
+
+### 8.1 Board Geometry & Initial Setup
+Played on an $8 \times 8$ grid ($R = 8, C = 8$, 64 total squares).
+- **Initial State:** The center 4 squares are initialized with alternating discs:
+  - $(3, 3) = \text{Player 2}$ (Dark)
+  - $(3, 4) = \text{Player 1}$ (Light)
+  - $(4, 3) = \text{Player 1}$ (Light)
+  - $(4, 4) = \text{Player 2}$ (Dark)
+- All remaining 60 squares begin empty.
+
+### 8.2 Legal Move Condition (Flanking Invariant)
+A move to square $(r, c)$ is legal if and only if:
+1. $\text{Grid}[r][c] == \text{Empty}$.
+2. In at least one of the 8 cardinal directions $\vec{d} = (dr, dc) \in \{-1, 0, 1\}^2 \setminus \{(0, 0)\}$, there exists a non-empty contiguous sequence of opponent discs terminated by a friendly disc:
+   $$\exists k \ge 2 \text{ s.t. } \forall i \in [1, k-1]: \text{Grid}[r + i \cdot dr][c + i \cdot dc] = \text{Opponent} \quad \land \quad \text{Grid}[r + k \cdot dr][c + k \cdot dc] = \text{ActingPlayer}$$
+
+### 8.3 Flanking & Disk Flipping Action
+When a legal move is placed at $(r, c)$:
+1. $\text{Grid}[r][c] \leftarrow \text{ActingPlayer}$.
+2. In every direction $\vec{d}$ satisfying the flanking condition, all trapped opponent discs between $(r, c)$ and the terminating friendly disc are flipped to $\text{ActingPlayer}$.
+
+### 8.4 Turn Progression & Automatic Passing
+- After disc placement and flipping, the engine computes the set of legal moves for the opponent.
+- If the opponent has **$\ge 1$ legal moves**, turn passes to the opponent.
+- If the opponent has **$0$ legal moves**, but the acting player has $\ge 1$ legal moves, the opponent's turn is **automatically passed**, and the acting player plays again.
+- If **both players have $0$ legal moves** (or the board is completely filled with 64 discs), the match terminates immediately.
+
+### 8.5 Victory & Scoring
+- **Score:** Total count of occupied discs: $S_1 = |\text{Player 1 Discs}|$, $S_2 = |\text{Player 2 Discs}|$.
+- **Winner:** Player with the higher disc count at terminal state.
+- **Draw:** $S_1 = S_2 = 32$.
+
+### 8.6 Solo AI Engine (Positional Heuristic Matrix)
+The solo bot uses an 8×8 positional weighting matrix factoring static board topology:
+- **Corners** $(0,0), (0,7), (7,0), (7,7)$: $+100$ points (permanent, unflappable anchor tiles).
+- **Corner Danger Zones (C-squares & X-squares):** $-20$ points (giving opponent access to corners).
+- **Edges:** $+10$ points (defensible boundary lines).
+- **Mobility Differential:** Maximizes friendly legal moves while restricting opponent options.
+

@@ -62,9 +62,118 @@ Follow these 4 simple steps to test the entire full-stack experience live:
 
 ## 🏗 Full-Stack Architecture Diagram
 
+### Visual Architectural Schematic
+```text
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                        FRONTEND — FLUTTER MULTIPLATFORM CLIENT                         │
+│  ┌─────────────────────────┐  ┌─────────────────────────┐  ┌─────────────────────────┐ │
+│  │   Flutter Cyberpunk UI  │  │   Riverpod State Engine │  │  Deterministic Replayer │ │
+│  │  (Dark Graphite Neon)   │  │  (Match / Player / ELO) │  │   (Move Scrubber/Audit) │ │
+│  └─────────────────────────┘  └─────────────────────────┘  └─────────────────────────┘ │
+│  ┌─────────────────────────┐  ┌─────────────────────────┐  ┌─────────────────────────┐ │
+│  │  Tactile Sound Engine   │  │   QR Code & Deep Link   │  │   Pure Rules Engines    │ │
+│  │ (Web Audio Synthesizer) │  │  (?room=CODE Auto-Join) │  │  (packages/game_core)   │ │
+│  └─────────────────────────┘  └─────────────────────────┘  └─────────────────────────┘ │
+└───────────────────────────────────────────┬────────────────────────────────────────────┘
+                                            │ WebSocket Streams & Type-Safe RPC
+                                            ▼
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│             SERVERPOD CLOUD PRODUCTION BACKEND (https://onevone.serverpod.space)       │
+│                                                                                        │
+│  ┌────────────────────────────────────────┐  ┌──────────────────────────────────────┐  │
+│  │ Built-in Web Server (SPA & Static)     │  │ Live Diagnostic Probe (/healthz)     │  │
+│  └────────────────────────────────────────┘  └──────────────────────────────────────┘  │
+│                                                                                        │
+│  ┌──────────────────────────────────────────────────────────────────────────────────┐  │
+│  │ Serverpod 4.0.4 RPC Endpoints (one_v_one_server/lib/src/endpoints/)              │  │
+│  │  • MatchEndpoint (Streaming WebSockets, room lobbies, live turn dispatch)        │  │
+│  │  • PlayerEndpoint (Profile cache, ELO updates, avatar signed upload descriptors) │  │
+│  │  • LeaderboardEndpoint (Compacted daily & all-time standings with 5-min TTL)     │  │
+│  │  • AdminEndpoint (Live system metrics, cache clearing, manual maintenance trigger)│  │
+│  └────────────────────────────────────────┬─────────────────────────────────────────┘  │
+│                                           │                                            │
+│  ┌────────────────────────────────────────┴─────────────────────────────────────────┐  │
+│  │ Serverpod Core Subsystems:                                                       │  │
+│  │  • Real-Time Message Hub: session.messages (WebSocket pub/sub over match channels)│  │
+│  │  • High-Performance RAM Cache: session.caches.local (Group invalidation)         │  │
+│  │  • Task Scheduler: Future Calls & Cron (DailyMaintenanceCall at 1:00 AM IST)     │  │
+│  │  • Native Cloud Storage: session.storage & FileUploader (Avatars)                │  │
+│  │  • Security & Identity: serverpod_auth_idp (JWTs, passwords, profile hooks)      │  │
+│  │  • ACID Database Transactions: session.db.transaction with Optimistic Locking    │  │
+│  └────────────────────────────────────────┬─────────────────────────────────────────┘  │
+└───────────────────────────────────────────┼────────────────────────────────────────────┘
+                                            │ ACID SQL Queries & ORM Mappings
+                                            ▼
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                        MANAGED POSTGRESQL 16 CLUSTER DATABASE                          │
+│  ┌───────────────────────────────┐  ┌───────────────────────────────┐                  │
+│  │ game_match (Optimistic Locks) │  │ match_move_record (Log Diff)  │                  │
+│  ├───────────────────────────────┤  ├───────────────────────────────┤                  │
+│  │ player_profile (ELO & Stats)  │  │ daily_leaderboard (Cron Rolls)│                  │
+│  ├───────────────────────────────┴──┴───────────────────────────────┤                  │
+│  │ scheduled_job_log (Execution audits & duration telemetry)        │                  │
+│  └──────────────────────────────────────────────────────────────────┘                  │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 🔄 End-to-End Component Flow
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                 END-TO-END INTERACTION FLOW                                  │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+
+  [ 1. USER INTERACTION ]
+       │
+       ▼
+  Flutter UI (Screens / Web Audio Synthesizer / QR Code / Match Scrubber)
+       │
+       ▼ (State Notification)
+  Riverpod Providers (MatchNotifier / PlayerNotifier / LeaderboardNotifier)
+       │
+       ├──────────────────────────────────────────────┬─────────────────────────────────────────┐
+       ▼                                              ▼                                         ▼
+  packages/game_core                            one_v_one_client                         Local Memory Cache
+  (Pure Rules Engine & Invariants)            (Type-Safe Dart SDK)                       (Optimistic UI)
+                                                      │
+                                                      ▼ [WebSocket Streaming & Type-Safe RPCs]
+  ────────────────────────────────────────────────────┼──────────────────────────────────────────
+                                                      │
+  [ 2. SERVERPOD RPC ENDPOINTS ]                      │
+       ├── MatchEndpoint        ◄─────────────────────┤ (Streaming WebSockets & Turn Broadcasts)
+       ├── PlayerEndpoint       ◄─────────────────────┤ (Profile Retrieval, Avatar Uploads, ELO)
+       ├── LeaderboardEndpoint  ◄─────────────────────┤ (Daily & All-Time Compacted Standings)
+       └── AdminEndpoint        ◄─────────────────────┘ (Live Metrics, DB Latency, Maintenance)
+       │
+       ▼
+  [ 3. SERVERPOD SUBSYSTEMS & ORM ]
+       ├── session.messages     ──► Real-Time Message Hub (WebSocket channels: match_$matchId)
+       ├── session.caches.local ──► High-Speed RAM Caching (Group invalidation: 'leaderboards')
+       ├── session.storage      ──► Native Cloud Storage (Public avatar file uploads)
+       ├── serverpod_auth_idp   ──► Auth, Password Hashing & onAfterAccountCreated profile hook
+       └── session.db.transaction ──► ACID Transactions guarding moves & optimistic locks (stateVersion)
+       │
+       ▼ [PostgreSQL Queries & Connections]
+  [ 4. MANAGED CLOUD DATABASE ]
+       ├── game_match           ──► Current match states & board payloads
+       ├── match_move_record    ──► Complete move history for deterministic scrubbing
+       ├── player_profile       ──► Player ELO ratings, avatar URLs, win/loss stats
+       ├── daily_leaderboard    ──► Compacted daily rankings
+       └── scheduled_job_log    ──► Automated maintenance audit trail
+       ▲
+       │ [Automated Nightly Execution @ 1:00 AM IST (30 19 * * * UTC)]
+  [ 5. TASK SCHEDULER & CRON ]
+       └── DailyMaintenanceCall ──► Purge stale lobbies (>30 min) + roll up daily standings
+
+────────────────────────────────────────────────────────────────────────────────────────────────
+```
+
+<details>
+<summary><b>Click to expand: Interactive Mermaid Flowchart (for GitHub preview)</b></summary>
+
 ```mermaid
 flowchart TB
-    subgraph ClientLayer["Frontend — Flutter Client (Web, Mobile, Desktop)"]
+    subgraph ClientLayer["Frontend — Flutter Client"]
         UI["Flutter UI (Dark Graphite Neon Theme)"]
         Riverpod["Riverpod State Providers"]
         Engine["Pure Dart Rules Engine (packages/game_core)"]
@@ -73,8 +182,8 @@ flowchart TB
         Replay["Deterministic Match Replay Scrubber"]
     end
 
-    subgraph ServerpodCloud["Serverpod Cloud Infrastructure (https://onevone.serverpod.space)"]
-        WebServer["Built-In Web Server (Static Bundle Hosting)"]
+    subgraph ServerpodCloud["Serverpod Cloud Infrastructure"]
+        WebServer["Built-In Web Server (Static SPA Hosting)"]
         Health["Live Health Route (/healthz)"]
         
         subgraph Endpoints["Serverpod 4.0.4 RPC Endpoints"]
@@ -85,9 +194,9 @@ flowchart TB
         end
 
         subgraph CoreServices["Serverpod Subsystems"]
-            Cache["Local & Priority Cache (Zero-IO)"]
+            Cache["Local & Priority Cache (session.caches.local)"]
             FutureCalls["Future Calls & Cron Scheduler (DailyMaintenance)"]
-            Storage["Serverpod Cloud Storage (Public Avatars)"]
+            Storage["Serverpod Cloud Storage (session.storage)"]
             Auth["serverpod_auth_idp (JWT & Passwords)"]
             ORM["Serverpod ORM & Type-Safe Codecs"]
         end
@@ -104,10 +213,10 @@ flowchart TB
     UI --> QR
     UI --> Replay
 
-    Riverpod <== "Type-Safe Client RPC & WebSocket Streams" ==> MatchEp
-    Riverpod <== "Type-Safe Client RPC" ==> PlayerEp
-    Riverpod <== "Type-Safe Client RPC" ==> LeaderEp
-    Riverpod <== "Type-Safe Client RPC" ==> AdminEp
+    Riverpod <-->|WebSocket Stream & RPC| MatchEp
+    Riverpod <-->|Type-Safe RPC| PlayerEp
+    Riverpod <-->|Type-Safe RPC| LeaderEp
+    Riverpod <-->|Type-Safe RPC| AdminEp
 
     MatchEp --> ORM
     MatchEp --> Cache
@@ -121,27 +230,31 @@ flowchart TB
     Health --> DB
 ```
 
+</details>
+
 ---
 
-## 💎 Serverpod Feature Matrix (All 15 Subsystems Implemented)
+## 💎 Serverpod Feature Matrix & Application Mapping (All 15 Subsystems)
 
-| # | Serverpod Subsystem | Implementation in 1v1 | File Reference |
+The table below maps every **Serverpod subsystem** to its exact files in the codebase and describes **Where** and **How** it is used in the **1v1 Multiplayer Platform**:
+
+| # | Serverpod Subsystem | Where in Codebase (Server & Client) | How & Where It Is Used in the 1v1 Platform |
 |---|---|---|---|
-| **1** | **Type-Safe API Endpoints & Generated Clients** | Endpoints (`MatchEndpoint`, `PlayerEndpoint`, `LeaderboardEndpoint`, `AdminEndpoint`) auto-generate client methods in `one_v_one_client`. | [`one_v_one_server/lib/src/endpoints/`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/endpoints/) |
-| **2** | **Serverpod ORM & Relational Entities** | Fully-modeled database entities with indexing, foreign keys, and serializable models (`game_match.spy.yaml`, `player_profile.spy.yaml`, etc.). | [`one_v_one_server/lib/src/models/`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/models/) |
-| **3** | **Tracked Database Schema Migrations** | Deterministic schema evolution toolchain; applied automatically upon server startup and cloud deploys. | [`one_v_one_server/migrations/`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/migrations/) |
-| **4** | **Real-Time WebSocket Streaming** | `MatchEndpoint` provides bidirectional streaming of edge moves, game state updates, ready statuses, and player resignations. | [`one_v_one_server/lib/src/endpoints/match_endpoint.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/endpoints/match_endpoint.dart) |
-| **5** | **Future Calls & Scheduled Cron Tasks** | `DailyMaintenanceFutureCall` runs at 1:00 AM IST (`30 19 * * *` UTC) to compact daily leaderboard standings and clean stale lobbies. | [`one_v_one_server/lib/src/future_calls/daily_maintenance_future_call.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/future_calls/daily_maintenance_future_call.dart) |
-| **6** | **Authentication & Password Hashing** | Uses `serverpod_auth_idp` with SHA-512 pepper hashing, guest profile auto-provisioning, and persistent auth keys. | [`one_v_one_server/lib/server.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/server.dart) |
-| **7** | **Multi-Tier Caching** | Serverpod `session.caches.local` and `localPrio` cache player profiles and leaderboards for zero-latency lobby lookups. | [`one_v_one_server/lib/src/endpoints/player_endpoint.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/endpoints/player_endpoint.dart) |
-| **8** | **Cloud File Storage** | Custom player avatar upload via `session.storage.createDirectFileUploadDescription` in public storage bucket. | [`one_v_one_server/lib/src/endpoints/player_endpoint.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/endpoints/player_endpoint.dart) |
-| **9** | **Structured Logging & Diagnostics** | Dedicated `scheduled_job_log` audit table and Serverpod server diagnostics tracking database latency and server uptime. | [`one_v_one_server/lib/src/endpoints/admin_endpoint.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/endpoints/admin_endpoint.dart) |
-| **10** | **Cloud Health Checks** | Custom `/healthz` HTTP Route returning JSON status, database connectivity, and server uptime. | [`one_v_one_server/lib/src/web/routes/health_route.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/web/routes/health_route.dart) |
-| **11** | **Database ACID Transactions** | Move validation, match state transition, and player ELO rating updates run within atomic `session.db.transaction`. | [`one_v_one_server/lib/src/endpoints/match_endpoint.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/endpoints/match_endpoint.dart) |
-| **12** | **Unified Web Serving** | Serverpod web server directly serves the compiled Flutter Web application bundle from `/web`, solving CORS issues completely. | [`one_v_one_server/web/`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/web/) |
-| **13** | **Serverpod Cloud Deployment** | Production container build and deployment running on Serverpod Cloud (`scloud deploy`). | [`.scloud/`](file:///Users/ananth/work/flutter/1v1/.scloud/) |
-| **14** | **Distributed Message Passing** | Serverpod stream messaging connects independent sessions across room channels (`match_$matchId`). | [`one_v_one_server/lib/src/endpoints/match_endpoint.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/endpoints/match_endpoint.dart) |
-| **15** | **Generated Client Models** | 100% typed client-side Dart classes for every Serverpod model with zero manual JSON parsing. | [`one_v_one_client/lib/`](file:///Users/ananth/work/flutter/1v1/one_v_one_client/lib/) |
+| **1** | **Type-Safe API Endpoints & Generated Clients** | • Server: [`lib/src/endpoints/*`](one_v_one_server/lib/src/endpoints/)<br>• Client: [`one_v_one_client/`](one_v_one_client/) | **How**: Endpoints (`MatchEndpoint`, `PlayerEndpoint`, `LeaderboardEndpoint`, `AdminEndpoint`) auto-generate strongly-typed Dart client SDKs.<br>**Where**: Consumed directly by Flutter Riverpod notifiers (`match_provider.dart`, `player_provider.dart`, etc.) with zero manual JSON parsing or REST boilerplate. |
+| **2** | **Serverpod ORM & Relational Entities** | • Models: [`lib/src/models/*.spy.yaml`](one_v_one_server/lib/src/models/)<br>• Generated: `lib/src/generated/*` | **How**: Declarative schema definitions compile into type-safe entity classes and query builders.<br>**Where**: PostgreSQL tables for `game_match` (board state), `match_move_record` (move history), `player_profile` (ELO, win/loss stats), `daily_leaderboard` (daily rankings), and `scheduled_job_log` (audit trail). |
+| **3** | **Declarative Database Migrations** | • Migrations: [`one_v_one_server/migrations/`](one_v_one_server/migrations/) | **How**: Schema evolutions are versioned into SQL scripts and automatically verified and applied on server boot (`serverpod start`).<br>**Where**: Executed seamlessly during Serverpod Cloud deployment (`scloud deploy`) and embedded PostgreSQL test runners with zero manual SQL scripts. |
+| **4** | **Real-Time WebSocket Streaming** | • Server: [`match_endpoint.dart`](one_v_one_server/lib/src/endpoints/match_endpoint.dart)<br>• Hub: `session.messages`<br>• Client: [`match_provider.dart`](one_v_one_flutter/lib/providers/match_provider.dart) | **How**: Bidirectional event streaming over Serverpod's message hub channel `match_$matchId`.<br>**Where**: Real-time 1v1 gameplay dispatches live turn events (`MatchEvent.moveMade`), player readiness, forfeit alerts, and game-over announcements in sub-50ms without polling. |
+| **5** | **Future Calls & Scheduled Cron Tasks** | • Job: [`jobs/daily_maintenance_call.dart`](one_v_one_server/lib/src/jobs/daily_maintenance_call.dart)<br>• Processor: [`daily_maintenance_processor.dart`](one_v_one_server/lib/src/services/daily_maintenance_processor.dart)<br>• Boot: [`server.dart:145`](one_v_one_server/lib/server.dart#L145) | **How**: Serverpod background cron scheduler registered at startup (`pod.registerFutureCall`) running nightly at 1:00 AM IST (`30 19 * * *` UTC).<br>**Where**: Automatically cleans up abandoned lobbies older than 30 minutes, rolls up daily match wins into leaderboard standings, flushes stale caches, and reschedules itself. |
+| **6** | **Authentication & IDP Callbacks** | • Auth: `serverpod_auth_idp`<br>• Config: [`server.dart:21`](one_v_one_server/lib/server.dart#L21)<br>• UI: [`sign_in_screen.dart`](one_v_one_flutter/lib/screens/sign_in_screen.dart) | **How**: Secure JWT authentication and password hashing. Uses `onAfterAccountCreated` lifecycle callback hook.<br>**Where**: When a new user registers via email/password or guest mode, Serverpod automatically links the auth user ID to an initial `PlayerProfile` with 1200 base ELO. |
+| **7** | **In-Memory Caching (`session.caches.local`)** | • Endpoints: [`leaderboard_endpoint.dart`](one_v_one_server/lib/src/endpoints/leaderboard_endpoint.dart), [`player_endpoint.dart`](one_v_one_server/lib/src/endpoints/player_endpoint.dart) | **How**: RAM caching with TTL and group invalidation (`session.caches.local.invalidateGroup`).<br>**Where**: Caches high-traffic leaderboard queries (5-min TTL) and player profiles (5-min TTL). Invalidated atomically when players update avatars or when daily maintenance runs. |
+| **8** | **Native Cloud Storage & File Uploads** | • Setup: [`server.dart:137`](one_v_one_server/lib/server.dart#L137)<br>• Endpoint: [`player_endpoint.dart`](one_v_one_server/lib/src/endpoints/player_endpoint.dart)<br>• Client: [`player_provider.dart`](one_v_one_flutter/lib/providers/player_provider.dart) | **How**: Secure binary upload descriptors generated via `session.storage.createUploadDescription`.<br>**Where**: Custom player avatar uploads. Flutter client streams image bytes via Serverpod's `FileUploader`; server verifies file persistence and saves public CDN URL to the profile. |
+| **9** | **Structured Logging & Audit Trails** | • Endpoint: [`admin_endpoint.dart`](one_v_one_server/lib/src/endpoints/admin_endpoint.dart)<br>• Model: `scheduled_job_log.spy.yaml`<br>• UI: [`admin_board_screen.dart`](one_v_one_flutter/lib/screens/admin_board_screen.dart) | **How**: Structured logging (`session.log`) and dedicated audit table records.<br>**Where**: Every automated and manual maintenance execution records timestamp, execution duration (ms), status, and error details, viewable live in the Admin Dashboard. |
+| **10** | **Cloud Health Checks & Diagnostics** | • Route: [`web/routes/health_route.dart`](one_v_one_server/lib/src/web/routes/health_route.dart)<br>• Mount: [`server.dart:93`](one_v_one_server/lib/server.dart#L93)<br>• UI: [`architecture_dialog.dart`](one_v_one_flutter/lib/widgets/architecture_dialog.dart) | **How**: Dedicated public diagnostic HTTP route `/healthz` mounted on `pod.webServer`.<br>**Where**: Live server health probe testing PostgreSQL connectivity, query latency (ms), server uptime, and cache counts. Consumed in real-time by the Flutter Cloud Specs modal. |
+| **11** | **Database ACID Transactions** | • Service: [`match_service.dart`](one_v_one_server/lib/src/services/match_service.dart)<br>• Job: [`daily_maintenance_processor.dart`](one_v_one_server/lib/src/services/daily_maintenance_processor.dart) | **How**: Atomic transaction block execution via `session.db.transaction`.<br>**Where**: Move submission wraps match board state update, move record logging, and ELO rating adjustments into one atomic commit, preventing game desync and partial writes. |
+| **12** | **Built-in Web Server** | • Server: [`server.dart:77-131`](one_v_one_server/lib/server.dart#L77-L131)<br>• Paths: `web/app` & `web/static` | **How**: Native HTTP web server serving static assets and SPA routing without reverse proxies.<br>**Where**: Serves the compiled Flutter Web application bundle, static assets, and runtime environment config (`/assets/assets/config.json`) directly on port 8082 / 8080. |
+| **13** | **Serverpod Cloud Production Hosting** | • Cloud: `https://onevone.serverpod.space`<br>• API: `https://onevone.api.serverpod.space` | **How**: Deployed on official Serverpod Cloud infrastructure with managed PostgreSQL.<br>**Where**: Live public endpoint serving web traffic and API WebSockets with zero third-party cloud orchestration dependencies. |
+| **14** | **Optimistic Locking (`stateVersion`)** | • Model: `game_match.spy.yaml`<br>• Service: [`match_service.dart`](one_v_one_server/lib/src/services/match_service.dart) | **How**: Version counter validation (`clientStateVersion == match.stateVersion`) inside database transactions.<br>**Where**: Prevents duplicate or interleaved player moves during rapid taps or intermittent network reconnects. Rejects invalid move sequences at the database level. |
+| **15** | **Live Admin Board & Telemetry Endpoint** | • Endpoint: [`admin_endpoint.dart`](one_v_one_server/lib/src/endpoints/admin_endpoint.dart)<br>• UI: [`admin_board_screen.dart`](one_v_one_flutter/lib/screens/admin_board_screen.dart) | **How**: Administrative RPC endpoint exposing live server diagnostics and operational controls.<br>**Where**: In-app Admin Board screen allows judges and admins to inspect server uptime, DB latency, active rooms, player stats, clear caches, and trigger cron maintenance on demand. |
 
 ---
 

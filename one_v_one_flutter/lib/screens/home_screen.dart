@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:one_v_one_flutter/screens/reversi_hub_screen.dart';
 import '../client.dart';
 import '../providers/match_provider.dart';
 import '../providers/player_provider.dart';
@@ -512,7 +513,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 style: TextStyle(
                                   fontSize: 48,
                                   fontWeight: FontWeight.w900,
-                                  color: theme.logoSecondary,
+                                  color: theme.player2,
                                   letterSpacing: -2,
                                 ),
                               ),
@@ -582,31 +583,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // // Game Touch Point 3: Chroma Reversi (Othello Duel)
-                  // _buildGameTouchPoint(
-                  //   theme: theme,
-                  //   title: 'Chroma Reversi',
-                  //   tagline: 'Othello Duel: Brisk Flanking & Mind Strategy',
-                  //   description:
-                  //       'Flank enemy discs in 8 directions across an 8x8 grid to trigger cascade flips, secure invincible corners, and dominate territory.',
-                  //   accentColor: theme.accent,
-                  //   badge: 'MIND DUEL',
-                  //   icon: Icons.radio_button_checked,
-                  //   modes: const [
-                  //     'Minimax AI Bot',
-                  //     'Pass & Play',
-                  //     'Flank Tactics',
-                  //   ],
-                  //   onTap: () {
-                  //     Navigator.push(
-                  //       context,
-                  //       MaterialPageRoute(
-                  //         builder: (_) => const ReversiHubScreen(),
-                  //       ),
-                  //     );
-                  //   },
-                  // ),
-                  // const SizedBox(height: 22),
+                  // Game Touch Point 3: Chroma Reversi (Othello Duel)
+                  _buildGameTouchPoint(
+                    theme: theme,
+                    title: 'Chroma Reversi',
+                    tagline: 'Othello Duel: Brisk Flanking & Mind Strategy',
+                    description:
+                        'Flank enemy discs in 8 directions across an 8x8 grid to trigger cascade flips, secure invincible corners, and dominate territory.',
+                    accentColor: theme.accent,
+                    badge: 'MIND DUEL',
+                    icon: Icons.radio_button_checked,
+                    modes: const [
+                      'Minimax AI Bot',
+                      'Pass & Play',
+                      'Flank Tactics',
+                    ],
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ReversiHubScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 22),
 
                   // Quick Join / Private Room Row
                   Container(

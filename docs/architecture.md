@@ -22,10 +22,13 @@ graph TD
         TM --> STR
     end
 
-    subgraph Core ["Shared Pure Rules Engine (game_core)"]
-        GE[Triangle Tactics Engine]
-        VAL[State & Invariant Validator]
-        REP[Deterministic Replayer]
+    subgraph Core ["Shared Pure Rules Engines (packages/game_core)"]
+        GE1[Triangle Tactics Engine]
+        GE2[Gravity Drop Duel Engine]
+        GE3[Reversi Engine]
+        VAL[State & Invariant Validators]
+        REP[Deterministic Replayers]
+        AI[Minimax & Heuristic Solo Bots]
     end
 
     subgraph Storage ["PostgreSQL Database"]
@@ -37,7 +40,9 @@ graph TD
     end
 
     SC <-->|WebSocket Stream & RPC| EP
-    TM --> GE
+    TM --> GE1
+    TM --> GE2
+    TM --> GE3
     TM --> VAL
     TM --> PG_M
     TM --> PG_MR
@@ -69,8 +74,10 @@ abstract class GameEngine<TState, TMove, TResult> {
 ```
 
 The game catalogue registers engines:
-- `triangle_tactics`: Active & Playable.
-- Future entries (`tic_tac_toe`, `connect_four`, `memory_duel`): Listed in catalogue with status `comingSoon`.
+- `triangle_tactics`: Active & Playable (Triangular lattice edge drawing & face capture).
+- `connect_four`: Active & Playable (Vertical gravity drop with variable 7×6, 8×7, 9×8 grids and Minimax AI).
+- `reversi`: Active & Playable (8×8 flanked disc flipping with positional matrix AI).
+- Future planned expansions (`tic_tac_toe`, `memory_duel`): Listed in catalogue with status `comingSoon`.
 
 ---
 

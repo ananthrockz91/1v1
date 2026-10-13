@@ -8,18 +8,18 @@ This document details all Serverpod features utilized across the **1v1 Multiplay
 
 | Serverpod Feature | Status | Key Implementation Files | Primary Purpose |
 | :--- | :---: | :--- | :--- |
-| **Type-Safe API Endpoints** | 🟢 Active | [`match_endpoint.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/endpoints/match_endpoint.dart), [`player_endpoint.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/endpoints/player_endpoint.dart), [`leaderboard_endpoint.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/endpoints/leaderboard_endpoint.dart), [`admin_endpoint.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/endpoints/admin_endpoint.dart) | Strongly typed RPC layer generated into `one_v_one_client`. |
-| **ORM & Database Entities** | 🟢 Active | [`one_v_one_server/lib/src/models/*.spy.yaml`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/models) | PostgreSQL table mapping for matches, moves, player profiles, and daily leaderboards. |
-| **Database Migrations** | 🟢 Active | [`one_v_one_server/migrations/`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/migrations) | Declarative schema evolution; auto-migrates on boot and in CI test runner. |
-| **Real-Time Streaming** | 🟢 Active | [`match_endpoint.dart:streamMatchEvents`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/endpoints/match_endpoint.dart#L128), [`match_service.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/services/match_service.dart) | WebSocket event dispatch using Serverpod's built-in message hub (`session.messages`). |
-| **Task Scheduling & Future Calls** | 🟢 Active | [`server.dart:145`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/server.dart#L145), [`daily_maintenance_processor.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/services/daily_maintenance_processor.dart) | Automated nightly maintenance (1:00 AM IST) for stale lobby cleanup and leaderboard rollups. |
-| **Authentication & Auth Callbacks** | 🟢 Active | [`server.dart:21`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/server.dart#L21), [`sign_in_screen.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_flutter/lib/screens/sign_in_screen.dart) | JWT authentication, password hashing, and post-registration player profile hooks. |
-| **In-Memory Caching** | 🟢 Active | [`leaderboard_endpoint.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/endpoints/leaderboard_endpoint.dart), [`player_endpoint.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/endpoints/player_endpoint.dart) | Local caching (`session.caches.local`) with TTL and cache group invalidation (`leaderboards`, `profiles`). |
-| **Cloud Storage & File Uploads** | 🟢 Active | [`server.dart:137`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/server.dart#L137), [`player_endpoint.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/endpoints/player_endpoint.dart), [`player_provider.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_flutter/lib/providers/player_provider.dart) | Direct binary upload description generation and verification for player avatars. |
-| **Health Checks & Diagnostics** | 🟢 Active | [`health_route.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/web/routes/health_route.dart), [`server.dart:93`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/server.dart#L93) | Public `/healthz` probe validating database connectivity, query latency, server uptime, and cache metrics. |
-| **Database Transactions** | 🟢 Active | [`match_service.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/services/match_service.dart), [`daily_maintenance_processor.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/services/daily_maintenance_processor.dart) | ACID transactions (`session.db.transaction`) guarding move submission and room entry. |
-| **Built-in Web Server** | 🟢 Active | [`server.dart:77-131`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/server.dart#L77-L131) | Hosts the Flutter Web SPA, runtime config `/assets/assets/config.json`, static web assets, and health checks. |
-| **Logging & Audit Trail** | 🟢 Active | [`admin_endpoint.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/endpoints/admin_endpoint.dart), [`match_service.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/services/match_service.dart) | Structured diagnostic logging (`session.log`) captured in Serverpod Insights and terminal tails. |
+| **Type-Safe API Endpoints** | 🟢 Active | [`match_endpoint.dart`](one_v_one_server/lib/src/endpoints/match_endpoint.dart), [`player_endpoint.dart`](one_v_one_server/lib/src/endpoints/player_endpoint.dart), [`leaderboard_endpoint.dart`](one_v_one_server/lib/src/endpoints/leaderboard_endpoint.dart), [`admin_endpoint.dart`](one_v_one_server/lib/src/endpoints/admin_endpoint.dart) | Strongly typed RPC layer generated into `one_v_one_client`. |
+| **ORM & Database Entities** | 🟢 Active | [`one_v_one_server/lib/src/models/*.spy.yaml`](one_v_one_server/lib/src/models) | PostgreSQL table mapping for matches, moves, player profiles, and daily leaderboards. |
+| **Database Migrations** | 🟢 Active | [`one_v_one_server/migrations/`](one_v_one_server/migrations) | Declarative schema evolution; auto-migrates on boot and in CI test runner. |
+| **Real-Time Streaming** | 🟢 Active | [`match_endpoint.dart:streamMatchEvents`](one_v_one_server/lib/src/endpoints/match_endpoint.dart#L128), [`match_service.dart`](one_v_one_server/lib/src/services/match_service.dart) | WebSocket event dispatch using Serverpod's built-in message hub (`session.messages`). |
+| **Task Scheduling & Future Calls** | 🟢 Active | [`server.dart:145`](one_v_one_server/lib/server.dart#L145), [`daily_maintenance_processor.dart`](one_v_one_server/lib/src/services/daily_maintenance_processor.dart) | Automated nightly maintenance (1:00 AM IST) for stale lobby cleanup and leaderboard rollups. |
+| **Authentication & Auth Callbacks** | 🟢 Active | [`server.dart:21`](one_v_one_server/lib/server.dart#L21), [`sign_in_screen.dart`](one_v_one_flutter/lib/screens/sign_in_screen.dart) | JWT authentication, password hashing, and post-registration player profile hooks. |
+| **In-Memory Caching** | 🟢 Active | [`leaderboard_endpoint.dart`](one_v_one_server/lib/src/endpoints/leaderboard_endpoint.dart), [`player_endpoint.dart`](one_v_one_server/lib/src/endpoints/player_endpoint.dart) | Local caching (`session.caches.local`) with TTL and cache group invalidation (`leaderboards`, `profiles`). |
+| **Cloud Storage & File Uploads** | 🟢 Active | [`server.dart:137`](one_v_one_server/lib/server.dart#L137), [`player_endpoint.dart`](one_v_one_server/lib/src/endpoints/player_endpoint.dart), [`player_provider.dart`](one_v_one_flutter/lib/providers/player_provider.dart) | Direct binary upload description generation and verification for player avatars. |
+| **Health Checks & Diagnostics** | 🟢 Active | [`health_route.dart`](one_v_one_server/lib/src/web/routes/health_route.dart), [`server.dart:93`](one_v_one_server/lib/server.dart#L93) | Public `/healthz` probe validating database connectivity, query latency, server uptime, and cache metrics. |
+| **Database Transactions** | 🟢 Active | [`match_service.dart`](one_v_one_server/lib/src/services/match_service.dart), [`daily_maintenance_processor.dart`](one_v_one_server/lib/src/services/daily_maintenance_processor.dart) | ACID transactions (`session.db.transaction`) guarding move submission and room entry. |
+| **Built-in Web Server** | 🟢 Active | [`server.dart:77-131`](one_v_one_server/lib/server.dart#L77-L131) | Hosts the Flutter Web SPA, runtime config `/assets/assets/config.json`, static web assets, and health checks. |
+| **Logging & Audit Trail** | 🟢 Active | [`admin_endpoint.dart`](one_v_one_server/lib/src/endpoints/admin_endpoint.dart), [`match_service.dart`](one_v_one_server/lib/src/services/match_service.dart) | Structured diagnostic logging (`session.log`) captured in Serverpod Insights and terminal tails. |
 
 ---
 
@@ -28,7 +28,7 @@ This document details all Serverpod features utilized across the **1v1 Multiplay
 Serverpod offers high-performance in-memory caching to bypass unnecessary database queries. The application implements caching across two critical read paths:
 
 ### 2.1 Leaderboard Caching
-- **Implementation**: [`one_v_one_server/lib/src/endpoints/leaderboard_endpoint.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/endpoints/leaderboard_endpoint.dart)
+- **Implementation**: [`one_v_one_server/lib/src/endpoints/leaderboard_endpoint.dart`](one_v_one_server/lib/src/endpoints/leaderboard_endpoint.dart)
 - **Daily Leaderboard**:
   ```dart
   final cacheKey = 'daily_leaderboard_${date}_$limit';
@@ -46,13 +46,13 @@ Serverpod offers high-performance in-memory caching to bypass unnecessary databa
   ```
 - **All-Time Leaderboard**: Cached for 2 minutes under the same `'leaderboards'` group.
 - **Cache Invalidation**:
-  When [`DailyMaintenanceProcessor.run`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/services/daily_maintenance_processor.dart) aggregates daily stats at 1:00 AM IST, it immediately invalidates the entire group:
+  When [`DailyMaintenanceProcessor.run`](one_v_one_server/lib/src/services/daily_maintenance_processor.dart) aggregates daily stats at 1:00 AM IST, it immediately invalidates the entire group:
   ```dart
   await session.caches.local.invalidateGroup('leaderboards');
   ```
 
 ### 2.2 Player Profile Caching
-- **Implementation**: [`one_v_one_server/lib/src/endpoints/player_endpoint.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/endpoints/player_endpoint.dart)
+- **Implementation**: [`one_v_one_server/lib/src/endpoints/player_endpoint.dart`](one_v_one_server/lib/src/endpoints/player_endpoint.dart)
 - Cached on `getProfile` and `getOrCreateProfile` for 5 minutes under group `'profiles'`.
 - Whenever a player updates their profile (display name or avatar) via `updateProfile` or `verifyAvatarUpload`, the specific key is invalidated:
   ```dart
@@ -60,7 +60,7 @@ Serverpod offers high-performance in-memory caching to bypass unnecessary databa
   ```
 
 ### 2.3 Administrative Cache Clearing
-- [`AdminEndpoint.clearCaches`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/endpoints/admin_endpoint.dart) allows clearing `local` and `localPrio` caches on demand during deployments or maintenance.
+- [`AdminEndpoint.clearCaches`](one_v_one_server/lib/src/endpoints/admin_endpoint.dart) allows clearing `local` and `localPrio` caches on demand during deployments or maintenance.
 
 ---
 
@@ -68,8 +68,8 @@ Serverpod offers high-performance in-memory caching to bypass unnecessary databa
 
 Serverpod includes container orchestration ports on port `8080` (with Kubernetes `/livez` and `/readyz` probes). In addition, a comprehensive public diagnostic route is provided on the web server:
 
-- **Route File**: [`one_v_one_server/lib/src/web/routes/health_route.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/web/routes/health_route.dart)
-- **Mount Point**: Mounted at `/healthz` on `pod.webServer` in [`server.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/server.dart).
+- **Route File**: [`one_v_one_server/lib/src/web/routes/health_route.dart`](one_v_one_server/lib/src/web/routes/health_route.dart)
+- **Mount Point**: Mounted at `/healthz` on `pod.webServer` in [`server.dart`](one_v_one_server/lib/server.dart).
 - **Checks Performed**:
   1. **PostgreSQL Connectivity**: Runs an active count query on `ScheduledJobLog.db.count(session)`.
   2. **Query Latency**: Stopwatch measurement in milliseconds (`latencyMs`).
@@ -106,7 +106,7 @@ Serverpod includes container orchestration ports on port `8080` (with Kubernetes
 Rather than bloating database rows with huge base64-encoded strings, Serverpod provides built-in Cloud Storage abstraction (supporting S3, Google Cloud, or PostgreSQL database byte storage).
 
 ### 4.1 Storage Provider Setup
-Configured in [`server.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/server.dart#L137):
+Configured in [`server.dart`](one_v_one_server/lib/server.dart#L137):
 ```dart
 pod.addCloudStorage(
   await ServerpodCloudProvider.public(
@@ -116,7 +116,7 @@ pod.addCloudStorage(
 ```
 
 ### 4.2 Direct Upload Endpoints
-Implemented in [`PlayerEndpoint`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/endpoints/player_endpoint.dart):
+Implemented in [`PlayerEndpoint`](one_v_one_server/lib/src/endpoints/player_endpoint.dart):
 1. **`getAvatarUploadDescription`**:
    Creates an authorized upload descriptor for path `avatars/$playerId.png`:
    ```dart
@@ -129,7 +129,7 @@ Implemented in [`PlayerEndpoint`](file:///Users/ananth/work/flutter/1v1/one_v_on
    Verifies the binary payload has landed in storage, resolves its public CDN/download URL via `session.storage.publicDownloadUrl(...)`, updates `PlayerProfile.avatarSeed` with the URL, and flushes the cache.
 
 ### 4.3 Flutter Client Upload Flow
-In [`one_v_one_flutter/lib/providers/player_provider.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_flutter/lib/providers/player_provider.dart), `PlayerProfileNotifier.updateAvatar`:
+In [`one_v_one_flutter/lib/providers/player_provider.dart`](one_v_one_flutter/lib/providers/player_provider.dart), `PlayerProfileNotifier.updateAvatar`:
 - Detects if an image was picked from a mobile camera/photo library or desktop file picker (represented as a `data:` URI).
 - Requests the upload descriptor from `client.player.getAvatarUploadDescription(...)`.
 - Streams raw image bytes directly using Serverpod's `FileUploader`:
@@ -167,9 +167,9 @@ sequenceDiagram
 ```
 
 - **Subscription**:
-  [`MatchEndpoint.streamMatchEvents`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/endpoints/match_endpoint.dart#L128) listens to channel `'match_$matchId'`.
+  [`MatchEndpoint.streamMatchEvents`](one_v_one_server/lib/src/endpoints/match_endpoint.dart#L128) listens to channel `'match_$matchId'`.
 - **Broadcast**:
-  In [`MatchService.submitMove`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/services/match_service.dart), every authoritative move publishes a `MatchEvent` with the updated state, scores, and active turn.
+  In [`MatchService.submitMove`](one_v_one_server/lib/src/services/match_service.dart), every authoritative move publishes a `MatchEvent` with the updated state, scores, and active turn.
 
 ---
 
@@ -178,7 +178,7 @@ sequenceDiagram
 Automated server tasks are handled via Serverpod's cron scheduler without external cron tools:
 
 - **Schedule Registration**:
-  Configured in [`server.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/server.dart#L145):
+  Configured in [`server.dart`](one_v_one_server/lib/server.dart#L145):
   ```dart
   pod.registerFutureCall(
     DailyMaintenanceCall(),
@@ -191,7 +191,7 @@ Automated server tasks are handled via Serverpod's cron scheduler without extern
   );
   ```
 - **Job Execution**:
-  [`DailyMaintenanceProcessor.run`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/services/daily_maintenance_processor.dart):
+  [`DailyMaintenanceProcessor.run`](one_v_one_server/lib/src/services/daily_maintenance_processor.dart):
   1. Finds and expires abandoned matchmaking lobbies older than 30 minutes.
   2. Aggregates daily match stats across all completed games for the date.
   3. Writes ranked entries into `DailyLeaderboard`.
@@ -206,7 +206,7 @@ Automated server tasks are handled via Serverpod's cron scheduler without extern
 Built using `serverpod_auth_server` and `serverpod_auth_idp`:
 
 - **Configuration**:
-  Configured in [`server.dart`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/server.dart#L21) with `JwtConfigFromPasswords()` and `EmailIdpConfigFromPasswords()`.
+  Configured in [`server.dart`](one_v_one_server/lib/server.dart#L21) with `JwtConfigFromPasswords()` and `EmailIdpConfigFromPasswords()`.
 - **Onboarding Hook**:
   Uses `onAfterAccountCreated` callback to link new user registrations with their player identity:
   ```dart
@@ -233,7 +233,7 @@ Built using `serverpod_auth_server` and `serverpod_auth_idp`:
 
 To maintain absolute game state integrity and prevent race conditions:
 
-- Every move submission in [`MatchService.submitMove`](file:///Users/ananth/work/flutter/1v1/one_v_one_server/lib/src/services/match_service.dart#L229) executes inside a PostgreSQL ACID transaction:
+- Every move submission in [`MatchService.submitMove`](one_v_one_server/lib/src/services/match_service.dart#L229) executes inside a PostgreSQL ACID transaction:
   ```dart
   await session.db.transaction((tx) async {
     final match = await GameMatch.db.findById(session, matchId, transaction: tx);

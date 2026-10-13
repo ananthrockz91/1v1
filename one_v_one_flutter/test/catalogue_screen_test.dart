@@ -24,16 +24,16 @@ void main() {
     expect(find.text('ACTIVE TITLES'), findsOneWidget);
     expect(
       find.text('COMING SOON'),
-      findsNWidgets(4),
-    ); // 1 section header + 3 game badges
+      findsNWidgets(3),
+    ); // 1 section header + 2 upcoming game badges
 
     // Verify Triangle Tactics playable card
     expect(find.text('Triangle Tactics'), findsOneWidget);
     expect(find.text('PLAYABLE NOW'), findsOneWidget);
 
-    // Verify future titles
+    // Verify titles
     expect(find.text('Tic-Tac-Toe Duel'), findsOneWidget);
-    expect(find.text('Connect Four'), findsOneWidget);
+    expect(find.text('Gravity Drop Duel'), findsOneWidget);
     expect(find.text('Memory Duel'), findsOneWidget);
   });
 }

@@ -226,5 +226,78 @@ void main() {
 
       expect(submittedN1, isNull);
     });
+
+    testWidgets(
+      'single tap keeps node selected and does not disappear on pointer up',
+      (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 300,
+                  height: 300,
+                  child: TriangleTacticsBoard(
+                    state: initialState,
+                    currentUserId: 'p1',
+                    isInteractive: true,
+                    onMoveSubmitted: (n1, n2) {},
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final boardFinder = find.byType(TriangleTacticsBoard);
+        final boardTopLeft = tester.getTopLeft(boardFinder);
+        final n0Pos = boardTopLeft + const Offset(150, 30);
+
+        // Single tap on node (0, 0)
+        await tester.tapAt(n0Pos);
+        await tester.pump();
+
+        // Find the CustomPaint inside TriangleTacticsBoard
+        final customPaintFinder = find.descendant(
+          of: boardFinder,
+          matching: find.byType(CustomPaint),
+        );
+        expect(customPaintFinder, findsWidgets);
+
+        // Verify the painter has selectedNode == (0, 0) persistently
+        final customPaints = tester.widgetList<CustomPaint>(customPaintFinder);
+        bool foundSelectedNode = false;
+        for (final cp in customPaints) {
+          final painter = cp.painter;
+          if (painter != null && painter.toString().contains('_BoardPainter')) {
+            // Dynamic inspection of selectedNode
+            dynamic dynPainter = painter;
+            if (dynPainter.selectedNode == const GridNode(0, 0)) {
+              foundSelectedNode = true;
+              break;
+            }
+          }
+        }
+        expect(foundSelectedNode, isTrue);
+
+        // Tap on node (0, 0) again to deselect
+        await tester.tapAt(n0Pos);
+        await tester.pump();
+
+        bool stillSelected = false;
+        for (final cp in tester.widgetList<CustomPaint>(customPaintFinder)) {
+          final painter = cp.painter;
+          if (painter != null && painter.toString().contains('_BoardPainter')) {
+            dynamic dynPainter = painter;
+            if (dynPainter.selectedNode != null) {
+              stillSelected = true;
+            }
+          }
+        }
+        expect(stillSelected, isFalse);
+      },
+    );
   });
 }

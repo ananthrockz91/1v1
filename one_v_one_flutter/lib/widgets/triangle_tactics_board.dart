@@ -28,6 +28,9 @@ class _TriangleTacticsBoardState extends State<TriangleTacticsBoard>
   Offset? _dragPosition;
   GridNode? _hoveredSnapNode;
   bool _isDragging = false;
+  Offset? _pointerDownPos;
+  GridNode? _pointerDownNode;
+  bool _tapProcessedThisGesture = false;
 
   GridNode? _optimisticBandStart;
   GridNode? _optimisticBandEnd;
@@ -135,6 +138,9 @@ class _TriangleTacticsBoardState extends State<TriangleTacticsBoard>
   }
 
   void _handleTap(Offset localPosition, Size size) {
+    if (_tapProcessedThisGesture) return;
+    _tapProcessedThisGesture = true;
+
     if (!widget.isInteractive) return;
     if (widget.state.isTerminal) return;
     if (widget.state.activePlayerId != widget.currentUserId) return;
@@ -146,49 +152,68 @@ class _TriangleTacticsBoardState extends State<TriangleTacticsBoard>
     final nodePositions = _computeNodePositions(size, geometry);
     final clickedNode = _findNearestNode(localPosition, nodePositions);
 
-    if (clickedNode == null) return;
+    // 1. Tapped empty board area -> deselect if any node is currently selected
+    if (clickedNode == null) {
+      if (_selectedNode != null || _hoveredSnapNode != null) {
+        setState(() {
+          _selectedNode = null;
+          _hoveredSnapNode = null;
+        });
+      }
+      return;
+    }
 
+    // 2. No node currently selected -> select clickedNode if it has valid moves
     if (_selectedNode == null) {
       final validTargets = _getValidTargets(clickedNode, geometry);
       if (validTargets.isNotEmpty) {
         setState(() {
           _selectedNode = clickedNode;
+          _hoveredSnapNode = null;
         });
       }
+      return;
+    }
+
+    // 3. Tapped the same already-selected node -> toggle deselect
+    if (_selectedNode == clickedNode) {
+      setState(() {
+        _selectedNode = null;
+        _hoveredSnapNode = null;
+      });
+      return;
+    }
+
+    // 4. Check if clickedNode is a valid target from the selected node
+    final validTargets = _getValidTargets(_selectedNode!, geometry);
+    if (validTargets.contains(clickedNode)) {
+      final first = _selectedNode!;
+      final activeColor = widget.state.activePlayerId == widget.state.player1Id
+          ? AppColors.player1
+          : AppColors.player2;
+      setState(() {
+        _selectedNode = null;
+        _hoveredSnapNode = null;
+        _optimisticBandStart = first;
+        _optimisticBandEnd = clickedNode;
+        _optimisticBandColor = activeColor;
+      });
+      widget.onMoveSubmitted(first, clickedNode);
+      return;
+    }
+
+    // 5. Clicked a different node: switch selection if it has valid moves, else deselect
+    final newTargets = _getValidTargets(clickedNode, geometry);
+    if (newTargets.isNotEmpty) {
+      setState(() {
+        _selectedNode = clickedNode;
+        _hoveredSnapNode = null;
+      });
     } else {
-      if (_selectedNode == clickedNode) {
-        setState(() {
-          _selectedNode = null;
-        });
-      } else {
-        final validTargets = _getValidTargets(_selectedNode!, geometry);
-        if (validTargets.contains(clickedNode)) {
-          final first = _selectedNode!;
-          final activeColor =
-              widget.state.activePlayerId == widget.state.player1Id
-              ? AppColors.player1
-              : AppColors.player2;
-          setState(() {
-            _selectedNode = null;
-            _optimisticBandStart = first;
-            _optimisticBandEnd = clickedNode;
-            _optimisticBandColor = activeColor;
-          });
-          widget.onMoveSubmitted(first, clickedNode);
-        } else {
-          // Check if clickedNode has valid targets and switch selection
-          final newTargets = _getValidTargets(clickedNode, geometry);
-          if (newTargets.isNotEmpty) {
-            setState(() {
-              _selectedNode = clickedNode;
-            });
-          } else {
-            setState(() {
-              _selectedNode = null;
-            });
-          }
-        }
-      }
+      setState(() {
+        _selectedNode = null;
+        _hoveredSnapNode = null;
+      });
     }
   }
 
@@ -204,15 +229,9 @@ class _TriangleTacticsBoardState extends State<TriangleTacticsBoard>
     final nodePositions = _computeNodePositions(size, geometry);
     final nearest = _findNearestNode(details.localPosition, nodePositions);
 
-    if (nearest != null) {
-      final targets = _getValidTargets(nearest, geometry);
-      if (targets.isNotEmpty) {
-        _dragStartNode = nearest;
-        _dragPosition = details.localPosition;
-        _hoveredSnapNode = null;
-        _isDragging = false;
-      }
-    }
+    _pointerDownPos = details.localPosition;
+    _pointerDownNode = nearest;
+    _tapProcessedThisGesture = false;
   }
 
   void _onPanStart(DragStartDetails details, Size size) {
@@ -225,118 +244,159 @@ class _TriangleTacticsBoardState extends State<TriangleTacticsBoard>
       shape: widget.state.boardShape,
     );
     final nodePositions = _computeNodePositions(size, geometry);
+    final startPos = _pointerDownPos ?? details.localPosition;
+    final dragNode =
+        _pointerDownNode ??
+        _findNearestNode(startPos, nodePositions) ??
+        _selectedNode;
 
-    _dragStartNode ??= _findNearestNode(details.localPosition, nodePositions);
-
-    if (_dragStartNode != null) {
-      final targets = _getValidTargets(_dragStartNode!, geometry);
+    if (dragNode != null) {
+      final targets = _getValidTargets(dragNode, geometry);
       if (targets.isNotEmpty) {
+        final validTargets = targets;
+        GridNode? snapTarget;
+        double minTargetDist = 48.0;
+        for (final target in validTargets) {
+          final targetPos = nodePositions[target];
+          if (targetPos != null) {
+            final d = (details.localPosition - targetPos).distance;
+            if (d <= minTargetDist) {
+              minTargetDist = d;
+              snapTarget = target;
+            }
+          }
+        }
+
         setState(() {
+          _isDragging = true;
+          _dragStartNode = dragNode;
           _dragPosition = details.localPosition;
-          _hoveredSnapNode = null;
-          _isDragging = false;
-          _selectedNode ??= _dragStartNode;
+          _hoveredSnapNode = snapTarget;
         });
-      } else {
-        _dragStartNode = null;
       }
     }
   }
 
   void _onPanUpdate(DragUpdateDetails details, Size size) {
-    if (_dragStartNode == null) return;
+    if (!widget.isInteractive) return;
+    if (widget.state.isTerminal) return;
+    if (widget.state.activePlayerId != widget.currentUserId) return;
 
-    final geometry = BoardGeometry(
-      widget.state.boardSize,
-      shape: widget.state.boardShape,
-    );
-    final nodePositions = _computeNodePositions(size, geometry);
-    final startPos = nodePositions[_dragStartNode!];
-    if (startPos == null) return;
+    final startPos = _pointerDownPos ?? details.localPosition;
+    final dist = (details.localPosition - startPos).distance;
 
-    final distanceDragged = (details.localPosition - startPos).distance;
-
-    final validTargets = _getValidTargets(_dragStartNode!, geometry);
-    GridNode? snapTarget;
-    double minTargetDist = 48.0;
-
-    for (final target in validTargets) {
-      final targetPos = nodePositions[target];
-      if (targetPos != null) {
-        final d = (details.localPosition - targetPos).distance;
-        if (d <= minTargetDist) {
-          minTargetDist = d;
-          snapTarget = target;
-        }
-      }
-    }
-
-    setState(() {
-      _isDragging = distanceDragged > 8.0;
-      _dragPosition = details.localPosition;
-      _hoveredSnapNode = snapTarget;
-    });
-  }
-
-  void _onPanEnd(DragEndDetails details, Size size) {
-    if (_dragStartNode == null) return;
-
-    final start = _dragStartNode!;
-    GridNode? snapped = _hoveredSnapNode;
-
-    if (snapped == null && _dragPosition != null) {
+    // Only engage drag mode once movement exceeds 10 logical pixels
+    if (!_isDragging && dist > 10.0) {
       final geometry = BoardGeometry(
         widget.state.boardSize,
         shape: widget.state.boardShape,
       );
       final nodePositions = _computeNodePositions(size, geometry);
-      final validTargets = _getValidTargets(start, geometry);
-      double minD = 52.0;
-      for (final t in validTargets) {
-        final tp = nodePositions[t];
-        if (tp != null) {
-          final d = (_dragPosition! - tp).distance;
-          if (d <= minD) {
-            minD = d;
-            snapped = t;
-          }
+      final dragNode =
+          _pointerDownNode ??
+          _findNearestNode(startPos, nodePositions) ??
+          _selectedNode;
+
+      if (dragNode != null) {
+        final targets = _getValidTargets(dragNode, geometry);
+        if (targets.isNotEmpty) {
+          _isDragging = true;
+          _dragStartNode = dragNode;
         }
       }
     }
 
-    final wasDragging = _isDragging;
-    final activeColor = widget.state.activePlayerId == widget.state.player1Id
-        ? AppColors.player1
-        : AppColors.player2;
+    if (_isDragging && _dragStartNode != null) {
+      final geometry = BoardGeometry(
+        widget.state.boardSize,
+        shape: widget.state.boardShape,
+      );
+      final nodePositions = _computeNodePositions(size, geometry);
+      final validTargets = _getValidTargets(_dragStartNode!, geometry);
 
-    setState(() {
-      _dragStartNode = null;
-      _dragPosition = null;
-      _hoveredSnapNode = null;
-      _isDragging = false;
-      if (snapped != null) {
-        _optimisticBandStart = start;
-        _optimisticBandEnd = snapped;
-        _optimisticBandColor = activeColor;
+      GridNode? snapTarget;
+      double minTargetDist = 48.0;
+
+      for (final target in validTargets) {
+        final targetPos = nodePositions[target];
+        if (targetPos != null) {
+          final d = (details.localPosition - targetPos).distance;
+          if (d <= minTargetDist) {
+            minTargetDist = d;
+            snapTarget = target;
+          }
+        }
       }
-    });
 
-    if (wasDragging && snapped != null) {
       setState(() {
-        _selectedNode = null;
+        _dragPosition = details.localPosition;
+        _hoveredSnapNode = snapTarget;
       });
-      widget.onMoveSubmitted(start, snapped);
-    } else if (!wasDragging) {
-      if (_selectedNode == start && snapped != null) {
-        setState(() {
+    }
+  }
+
+  void _onPanEnd(DragEndDetails details, Size size) {
+    if (_isDragging && _dragStartNode != null) {
+      final start = _dragStartNode!;
+      GridNode? snapped = _hoveredSnapNode;
+
+      if (snapped == null && _dragPosition != null) {
+        final geometry = BoardGeometry(
+          widget.state.boardSize,
+          shape: widget.state.boardShape,
+        );
+        final nodePositions = _computeNodePositions(size, geometry);
+        final validTargets = _getValidTargets(start, geometry);
+        double minD = 52.0;
+        for (final t in validTargets) {
+          final tp = nodePositions[t];
+          if (tp != null) {
+            final d = (_dragPosition! - tp).distance;
+            if (d <= minD) {
+              minD = d;
+              snapped = t;
+            }
+          }
+        }
+      }
+
+      final activeColor = widget.state.activePlayerId == widget.state.player1Id
+          ? AppColors.player1
+          : AppColors.player2;
+
+      setState(() {
+        _dragStartNode = null;
+        _dragPosition = null;
+        _hoveredSnapNode = null;
+        _isDragging = false;
+        _pointerDownPos = null;
+        _pointerDownNode = null;
+        if (snapped != null) {
+          _optimisticBandStart = start;
+          _optimisticBandEnd = snapped;
+          _optimisticBandColor = activeColor;
           _selectedNode = null;
-        });
+        }
+      });
+
+      if (snapped != null) {
         widget.onMoveSubmitted(start, snapped);
       }
-    } else {
-      setState(() {
-        _selectedNode = null;
-      });
+      return;
+    }
+
+    // Clean up drag tracking flags
+    _dragStartNode = null;
+    _dragPosition = null;
+    _hoveredSnapNode = null;
+    _isDragging = false;
+
+    // If pointer was released without dragging, handle tap on web/desktop if onTapUp was bypassed
+    final tapPos = _pointerDownPos;
+    _pointerDownPos = null;
+    _pointerDownNode = null;
+    if (tapPos != null) {
+      _handleTap(tapPos, size);
     }
   }
 
@@ -346,6 +406,8 @@ class _TriangleTacticsBoardState extends State<TriangleTacticsBoard>
       _dragPosition = null;
       _hoveredSnapNode = null;
       _isDragging = false;
+      _pointerDownPos = null;
+      _pointerDownNode = null;
     });
   }
 
@@ -402,31 +464,77 @@ class _TriangleTacticsBoardState extends State<TriangleTacticsBoard>
         return LayoutBuilder(
           builder: (context, constraints) {
             final boardSize = Size(constraints.maxWidth, constraints.maxHeight);
-            return GestureDetector(
-              onTapUp: (details) =>
-                  _handleTap(details.localPosition, boardSize),
-              onPanDown: (details) => _onPanDown(details, boardSize),
-              onPanStart: (details) => _onPanStart(details, boardSize),
-              onPanUpdate: (details) => _onPanUpdate(details, boardSize),
-              onPanEnd: (details) => _onPanEnd(details, boardSize),
-              onPanCancel: _onPanCancel,
-              child: CustomPaint(
-                size: boardSize,
-                painter: _BoardPainter(
-                  state: widget.state,
-                  selectedNode: _selectedNode,
-                  dragStartNode: _dragStartNode,
-                  dragPosition: _dragPosition,
-                  hoveredSnapNode: _hoveredSnapNode,
-                  optimisticBandStart: _optimisticBandStart,
-                  optimisticBandEnd: _optimisticBandEnd,
-                  optimisticBandColor: _optimisticBandColor,
-                  pulseValue: _pulseController.value,
-                  newlyClaimedTriangleIds: _newlyClaimedTriangleIds,
-                  conquerAnimationProgress: _conquerController.isAnimating
-                      ? _conquerController.value
-                      : 1.0,
-                  computePositions: _computeNodePositions,
+            return MouseRegion(
+              cursor:
+                  widget.isInteractive &&
+                      !widget.state.isTerminal &&
+                      widget.state.activePlayerId == widget.currentUserId
+                  ? SystemMouseCursors.click
+                  : SystemMouseCursors.basic,
+              onHover: (event) {
+                if (_selectedNode != null && !_isDragging) {
+                  final geometry = BoardGeometry(
+                    widget.state.boardSize,
+                    shape: widget.state.boardShape,
+                  );
+                  final nodePositions = _computeNodePositions(
+                    boardSize,
+                    geometry,
+                  );
+                  final nearest = _findNearestNode(
+                    event.localPosition,
+                    nodePositions,
+                    threshold: 30.0,
+                  );
+                  final validTargets = _getValidTargets(
+                    _selectedNode!,
+                    geometry,
+                  );
+                  final target =
+                      (nearest != null && validTargets.contains(nearest))
+                      ? nearest
+                      : null;
+                  if (target != _hoveredSnapNode) {
+                    setState(() {
+                      _hoveredSnapNode = target;
+                    });
+                  }
+                }
+              },
+              onExit: (_) {
+                if (!_isDragging && _hoveredSnapNode != null) {
+                  setState(() {
+                    _hoveredSnapNode = null;
+                  });
+                }
+              },
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTapUp: (details) =>
+                    _handleTap(details.localPosition, boardSize),
+                onPanDown: (details) => _onPanDown(details, boardSize),
+                onPanStart: (details) => _onPanStart(details, boardSize),
+                onPanUpdate: (details) => _onPanUpdate(details, boardSize),
+                onPanEnd: (details) => _onPanEnd(details, boardSize),
+                onPanCancel: _onPanCancel,
+                child: CustomPaint(
+                  size: boardSize,
+                  painter: _BoardPainter(
+                    state: widget.state,
+                    selectedNode: _selectedNode,
+                    dragStartNode: _dragStartNode,
+                    dragPosition: _dragPosition,
+                    hoveredSnapNode: _hoveredSnapNode,
+                    optimisticBandStart: _optimisticBandStart,
+                    optimisticBandEnd: _optimisticBandEnd,
+                    optimisticBandColor: _optimisticBandColor,
+                    pulseValue: _pulseController.value,
+                    newlyClaimedTriangleIds: _newlyClaimedTriangleIds,
+                    conquerAnimationProgress: _conquerController.isAnimating
+                        ? _conquerController.value
+                        : 1.0,
+                    computePositions: _computeNodePositions,
+                  ),
                 ),
               ),
             );

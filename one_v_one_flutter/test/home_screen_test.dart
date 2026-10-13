@@ -20,21 +20,23 @@ void main() {
       ),
     );
 
-    // Verify brand header
-    expect(find.text('PLAY. COMPETE. WIN.'), findsOneWidget);
+    // Verify brand header and arena selector
+    expect(find.text('SELECT YOUR ARENA'), findsOneWidget);
     expect(find.byType(RichText), findsWidgets);
 
-    // Verify main action buttons
-    expect(find.text('Play Online (Quick Match)'), findsOneWidget);
-    expect(find.text('Create Room'), findsOneWidget);
-    expect(find.text('Join Room'), findsOneWidget);
+    // Verify game touch points
+    expect(find.text('Triangle Tactics'), findsOneWidget);
+    expect(find.text('Gravity Drop Duel'), findsOneWidget);
+    expect(find.text('Play'), findsNWidgets(2));
 
-    // Verify list tiles and actions
+    // Verify platform actions & theme toggle
+    expect(find.text('Teal Cyber'), findsOneWidget);
     expect(find.byTooltip('Leaderboards'), findsOneWidget);
     expect(find.byTooltip('Serverpod Live Admin Board'), findsOneWidget);
-    expect(find.text('Game Catalogue'), findsOneWidget);
+    expect(find.text('Full Catalogue'), findsOneWidget);
 
-    // Verify Serverpod Live Board banner
-    expect(find.text('SERVERPOD LIVE BOARD'), findsOneWidget);
+    // Verify private room card
+    expect(find.text('Have a Private Room Code?'), findsOneWidget);
+    expect(find.text('Join Room'), findsOneWidget);
   });
 }

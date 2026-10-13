@@ -34,6 +34,8 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
   static const String _p2HumanId = 'Player 2';
 
   bool _isAiThinking = false;
+  bool _isGameOver = false;
+  bool _showGameOverSummary = true;
   Timer? _turnTimer;
   int _secondsLeft = 30;
 
@@ -60,6 +62,8 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
         player2Id: p2,
       );
       _isAiThinking = false;
+      _isGameOver = false;
+      _showGameOverSummary = true;
       _secondsLeft = 30;
     });
     _startTimer();
@@ -92,8 +96,9 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
             isTerminal: true,
             winnerId: opponent,
           );
+          _isGameOver = true;
+          _showGameOverSummary = true;
           timer.cancel();
-          _showGameOverDialog();
         }
       });
     });
@@ -128,7 +133,11 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
         if (next.winnerId != null) {
           SoundService.playVictory();
         }
-        _showGameOverDialog();
+        // Seamlessly update game over state while keeping board in full view
+        setState(() {
+          _isGameOver = true;
+          _showGameOverSummary = true;
+        });
         return;
       }
 
@@ -153,155 +162,6 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
       setState(() => _isAiThinking = false);
       _applyColumnMove(_p2AiId, botCol);
     });
-  }
-
-  void _showGameOverDialog() {
-    final winner = _state.winnerId;
-    final isDraw = _state.isDraw;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: AppColors.surfaceBorder),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: isDraw
-                    ? AppColors.textMuted.withValues(alpha: 0.2)
-                    : (winner == _p1Id
-                          ? AppColors.player1.withValues(alpha: 0.2)
-                          : AppColors.player2.withValues(alpha: 0.2)),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                isDraw ? Icons.handshake_outlined : Icons.emoji_events,
-                color: isDraw
-                    ? AppColors.textSecondary
-                    : (winner == _p1Id ? AppColors.player1 : AppColors.player2),
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              isDraw ? 'Tactical Draw!' : 'Match Finished!',
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              isDraw
-                  ? 'All 42 grid slots were filled without an unbroken 4-in-a-row alignment.'
-                  : '🏆 $winner connects four discs and claims victory in Gravity Drop Duel!',
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 14,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceElevated,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.surfaceBorder),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  Column(
-                    children: [
-                      const Text(
-                        'Total Drops',
-                        style: TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 11,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${_state.moveHistory.length}',
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Column(
-                    children: [
-                      const Text(
-                        'Game Mode',
-                        style: TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 11,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _mode == ConnectFourMode.vsAi
-                            ? 'Solo vs AI'
-                            : 'Pass & Play',
-                        style: const TextStyle(
-                          color: AppColors.player1,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.pop(context);
-            },
-            child: const Text(
-              'Exit to Menu',
-              style: TextStyle(color: AppColors.textMuted),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.player1,
-              foregroundColor: Colors.black,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            onPressed: () {
-              Navigator.pop(ctx);
-              _startNewGame();
-            },
-            child: const Text(
-              'Play Rematch',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   void _confirmExit() {
@@ -654,18 +514,35 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                           ),
                         ],
                       )
-                    : Text(
-                        _state.isTerminal
-                            ? 'MATCH COMPLETED'
-                            : '${_state.activePlayerId.toUpperCase()}\'S TURN',
-                        style: TextStyle(
-                          color: isP1Active
-                              ? AppColors.player1
-                              : AppColors.player2,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.5,
-                        ),
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (_state.isTerminal) ...[
+                            const Icon(
+                              Icons.stars_rounded,
+                              color: Colors.amberAccent,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 6),
+                          ],
+                          Text(
+                            _state.isTerminal
+                                ? (_state.isDraw
+                                      ? 'TACTICAL DRAW (BOARD FULL)'
+                                      : '🏆 ${_state.winnerId?.toUpperCase()} CONNECTS 4 IN A ROW!')
+                                : '${_state.activePlayerId.toUpperCase()}\'S TURN',
+                            style: TextStyle(
+                              color: _state.isTerminal
+                                  ? Colors.amberAccent
+                                  : (isP1Active
+                                        ? AppColors.player1
+                                        : AppColors.player2),
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.4,
+                            ),
+                          ),
+                        ],
                       ),
               ),
 
@@ -685,48 +562,262 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                 ),
               ),
 
-              // Footer Bar with Quick Tips
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
-                ),
-                color: AppColors.surface,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Move #${_state.moveHistory.length + 1}',
-                      style: const TextStyle(
-                        color: AppColors.textMuted,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
+              // Footer / Game Over Controls
+              if (_state.isTerminal || _isGameOver) ...[
+                if (_showGameOverSummary)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 14,
                     ),
-                    InkWell(
-                      onTap: () => ConnectFourRulesDialog.show(context),
-                      child: const Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            size: 14,
-                            color: AppColors.player1,
-                          ),
-                          SizedBox(width: 4),
-                          Text(
-                            'How to Win',
-                            style: TextStyle(
-                              color: AppColors.player1,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceElevated,
+                      border: Border(
+                        top: BorderSide(
+                          color: _state.isDraw
+                              ? AppColors.surfaceBorder
+                              : (_state.winnerId == _p1Id
+                                    ? AppColors.player1
+                                    : AppColors.player2),
+                          width: 2.0,
+                        ),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.6),
+                          blurRadius: 12,
+                          offset: const Offset(0, -4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  _state.isDraw
+                                      ? Icons.handshake_outlined
+                                      : Icons.emoji_events,
+                                  color: _state.isDraw
+                                      ? AppColors.textSecondary
+                                      : (_state.winnerId == _p1Id
+                                            ? AppColors.player1
+                                            : AppColors.player2),
+                                  size: 22,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  _state.isDraw
+                                      ? 'Tactical Draw (Grid Full)'
+                                      : '🏆 ${_state.winnerId} Wins!',
+                                  style: TextStyle(
+                                    color: _state.isDraw
+                                        ? AppColors.textPrimary
+                                        : (_state.winnerId == _p1Id
+                                              ? AppColors.player1
+                                              : AppColors.player2),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                        ],
-                      ),
+                            OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                visualDensity: VisualDensity.compact,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
+                                side: const BorderSide(
+                                  color: Colors.amberAccent,
+                                ),
+                                foregroundColor: Colors.amberAccent,
+                              ),
+                              onPressed: () =>
+                                  setState(() => _showGameOverSummary = false),
+                              icon: const Icon(
+                                Icons.remove_red_eye_outlined,
+                                size: 14,
+                              ),
+                              label: const Text(
+                                'View Full Board',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              flex: 2,
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.player1,
+                                  foregroundColor: Colors.black,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                onPressed: _startNewGame,
+                                icon: const Icon(
+                                  Icons.replay_rounded,
+                                  size: 18,
+                                ),
+                                label: const Text(
+                                  'Play Rematch',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              flex: 1,
+                              child: OutlinedButton(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.textSecondary,
+                                  side: const BorderSide(
+                                    color: AppColors.surfaceBorder,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('Exit'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                  ],
+                  )
+                else
+                  // Minimal Inspector Pill at bottom
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    color: AppColors.surface,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(
+                              Icons.stars_rounded,
+                              color: Colors.amberAccent,
+                              size: 18,
+                            ),
+                            SizedBox(width: 6),
+                            Text(
+                              'Inspecting Connected Dots',
+                              style: TextStyle(
+                                color: Colors.amberAccent,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            TextButton(
+                              style: TextButton.styleFrom(
+                                visualDensity: VisualDensity.compact,
+                                foregroundColor: AppColors.textSecondary,
+                              ),
+                              onPressed: () =>
+                                  setState(() => _showGameOverSummary = true),
+                              child: const Text(
+                                'Show Menu',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.player1,
+                                foregroundColor: Colors.black,
+                                visualDensity: VisualDensity.compact,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                ),
+                              ),
+                              onPressed: _startNewGame,
+                              child: const Text(
+                                'Rematch',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+              ] else ...[
+                // Normal In-game footer bar
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                  color: AppColors.surface,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Move #${_state.moveHistory.length + 1}',
+                        style: const TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      InkWell(
+                        onTap: () => ConnectFourRulesDialog.show(context),
+                        child: const Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              size: 14,
+                              color: AppColors.player1,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'How to Win',
+                              style: TextStyle(
+                                color: AppColors.player1,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),

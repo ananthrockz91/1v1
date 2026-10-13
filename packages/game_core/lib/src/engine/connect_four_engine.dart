@@ -82,6 +82,15 @@ class ConnectFourEngine
     );
 
     final isWin = winningStreak != null && winningStreak.isNotEmpty;
+    final List<List<int>> sortedCoords = [];
+    if (isWin) {
+      sortedCoords.addAll(winningStreak);
+      sortedCoords.sort((a, b) {
+        final colComp = a[1].compareTo(b[1]);
+        if (colComp != 0) return colComp;
+        return a[0].compareTo(b[0]);
+      });
+    }
     final totalPlaced = state.totalPiecesPlaced + 1;
     final isBoardFull =
         totalPlaced >= (ConnectFourState.rows * ConnectFourState.cols);
@@ -99,7 +108,7 @@ class ConnectFourEngine
       isTerminal: isTerminal,
       winnerId: isWin ? playerId : null,
       isDraw: isDraw,
-      winningCoords: isWin ? winningStreak : const [],
+      winningCoords: isWin ? sortedCoords : const [],
       moveHistory: [...state.moveHistory, move.column],
     );
 

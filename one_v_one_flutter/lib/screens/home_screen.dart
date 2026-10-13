@@ -5,16 +5,15 @@ import '../client.dart';
 import '../providers/match_provider.dart';
 import '../providers/player_provider.dart';
 import '../theme/app_colors.dart';
+import '../theme/theme_provider.dart';
 import '../widgets/player_avatar.dart';
 import 'admin_board_screen.dart';
 import 'game_catalogue_screen.dart';
 import 'game_screen.dart';
 import 'leaderboard_screen.dart';
-import 'lobby_screen.dart';
 import 'sign_in_screen.dart';
-import 'connect_four_screen.dart';
-import '../widgets/game_rules_dialog.dart';
-import '../widgets/connect_four_rules_dialog.dart';
+import 'triangle_tactics_hub_screen.dart';
+import 'connect_four_hub_screen.dart';
 import '../widgets/architecture_dialog.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -105,38 +104,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.player1.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: AppColors.player1.withValues(alpha: 0.2),
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.lightbulb_outline,
-                    size: 16,
-                    color: AppColors.player1,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Testing on 1 computer? Open an Incognito / Private window to join as Player 2.',
-                      style: TextStyle(
-                        color: AppColors.player1.withValues(alpha: 0.9),
-                        fontSize: 11.5,
-                        height: 1.3,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ],
         ),
         actions: [
@@ -167,108 +134,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     context,
                     MaterialPageRoute(builder: (_) => const GameScreen()),
                   );
-                } else {
-                  final err = ref.read(matchProvider).errorMessage;
-                  if (err != null && mounted) {
-                    _showJoinRoomErrorDialog(context, code, err);
-                  }
                 }
               }
             },
             child: const Text(
               'Join Room',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showJoinRoomErrorDialog(
-    BuildContext context,
-    String code,
-    String message,
-  ) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: AppColors.surfaceBorder),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.error.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.group_off_rounded,
-                color: AppColors.error,
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 10),
-            const Expanded(
-              child: Text(
-                'Cannot Join Room',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceElevated,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: AppColors.surfaceBorder),
-              ),
-              child: Text(
-                'ROOM CODE: $code',
-                style: const TextStyle(
-                  fontFamily: 'monospace',
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  color: AppColors.player1,
-                ),
-              ),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              message,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 14,
-                height: 1.4,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.player1,
-              foregroundColor: Colors.black,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text(
-              'Understood',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
@@ -301,7 +171,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ],
         ),
         content: Text(
-          'Please sign in or create an account to $action. It only takes a few seconds and keeps your matches and stats saved!',
+          'Please sign in or create an account to $action. It keeps your matches and stats saved across devices!',
           style: const TextStyle(
             color: AppColors.textSecondary,
             fontSize: 13.5,
@@ -338,108 +208,63 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Future<void> _triggerDemoDailyJob() async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Triggering 1:00 AM IST Daily Maintenance Job...',
-        ),
-        backgroundColor: AppColors.surfaceElevated,
-      ),
-    );
-    try {
-      final log = await client.admin.triggerDailyMaintenance();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Job Completed! Cleaned ${log.staleLobbiesCleaned} lobbies, ${log.leaderboardsAggregated} players aggregated.',
-            ),
-            backgroundColor: AppColors.success,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    ref.listen<MatchUiState>(matchProvider, (prev, next) {
-      if (next.errorMessage != null &&
-          next.errorMessage != prev?.errorMessage) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.errorMessage!),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
-    });
-
-    final matchState = ref.watch(matchProvider);
     final playerState = ref.watch(playerProfileProvider);
+    final theme = ref.watch(currentThemeProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.background,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 580),
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Top Player Status Chip
+                  // Top Header: Player Profile + Telemetry Icons
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: playerState.isAuthenticated
-                                ? AppColors.player1.withValues(alpha: 0.6)
-                                : AppColors.surfaceBorder,
+                      // Player Profile Chip
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
                           ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            GestureDetector(
-                              onTap: () {
-                                AvatarPickerSheet.show(
-                                  context: context,
-                                  initialSeed: playerState.avatarSeed,
-                                  onSelected: (newSeed) {
-                                    ref
-                                        .read(playerProfileProvider.notifier)
-                                        .updateAvatar(newSeed);
-                                  },
-                                );
-                              },
-                              child: Tooltip(
-                                message: 'Change Profile Picture',
+                          decoration: BoxDecoration(
+                            color: theme.surfaceElevated,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: playerState.isAuthenticated
+                                  ? theme.accent.withValues(alpha: 0.6)
+                                  : theme.surfaceBorder,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              GestureDetector(
+                                onTap: () {
+                                  AvatarPickerSheet.show(
+                                    context: context,
+                                    initialSeed: playerState.avatarSeed,
+                                    onSelected: (newSeed) {
+                                      ref
+                                          .read(playerProfileProvider.notifier)
+                                          .updateAvatar(newSeed);
+                                    },
+                                  );
+                                },
                                 child: Stack(
                                   children: [
                                     PlayerAvatar(
                                       avatarSeed: playerState.avatarSeed,
                                       displayName: playerState.displayName,
-                                      size: 24,
+                                      size: 26,
                                       borderColor: playerState.isAuthenticated
                                           ? AppColors.player1
                                           : AppColors.player2,
@@ -448,7 +273,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       right: 0,
                                       bottom: 0,
                                       child: Container(
-                                        padding: const EdgeInsets.all(1.5),
+                                        padding: const EdgeInsets.all(1),
                                         decoration: const BoxDecoration(
                                           color: AppColors.surface,
                                           shape: BoxShape.circle,
@@ -463,86 +288,150 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   ],
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            GestureDetector(
-                              onTap: () => SignInScreen.show(context),
+                              const SizedBox(width: 8),
+                              GestureDetector(
+                                onTap: () => SignInScreen.show(context),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    ConstrainedBox(
+                                      constraints: const BoxConstraints(
+                                        maxWidth: 80,
+                                      ),
+                                      child: Text(
+                                        playerState.displayName,
+                                        style: const TextStyle(
+                                          color: AppColors.textPrimary,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: playerState.isAuthenticated
+                                            ? AppColors.player1.withValues(
+                                                alpha: 0.15,
+                                              )
+                                            : AppColors.surfaceElevated,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        playerState.isAuthenticated
+                                            ? 'VERIFIED'
+                                            : 'GUEST',
+                                        style: TextStyle(
+                                          color: playerState.isAuthenticated
+                                              ? AppColors.player1
+                                              : AppColors.textMuted,
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+
+                      // Platform Actions & Theme Switcher
+                      Row(
+                        children: [
+                          // Theme Switcher Toggle Pill
+                          InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: () {
+                              ref.read(themeModeProvider.notifier).toggle();
+                              final nextModeIsMono = !theme.isMonochrome;
+                              ScaffoldMessenger.of(
+                                context,
+                              ).hideCurrentSnackBar();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  duration: const Duration(milliseconds: 1400),
+                                  backgroundColor: nextModeIsMono
+                                      ? const Color(0xFF18181B)
+                                      : const Color(0xFF131B2E),
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    side: BorderSide(
+                                      color: nextModeIsMono
+                                          ? const Color(0xFF3F3F46)
+                                          : const Color(0xFF14B8A6),
+                                    ),
+                                  ),
+                                  content: Text(
+                                    nextModeIsMono
+                                        ? 'Switched to B&W Minimal Theme'
+                                        : 'Switched to Teal Cyber Theme',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12.5,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 9,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: theme.surfaceElevated,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: theme.isMonochrome
+                                      ? const Color(0xFF3F3F46)
+                                      : const Color(
+                                          0xFF14B8A6,
+                                        ).withValues(alpha: 0.6),
+                                ),
+                              ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  ConstrainedBox(
-                                    constraints: const BoxConstraints(
-                                      maxWidth: 120,
-                                    ),
-                                    child: Text(
-                                      playerState.displayName,
-                                      style: const TextStyle(
-                                        color: AppColors.textPrimary,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 1,
-                                    ),
+                                  Icon(
+                                    theme.isMonochrome
+                                        ? Icons.contrast_rounded
+                                        : Icons.palette_outlined,
+                                    size: 14,
+                                    color: theme.accent,
                                   ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 6,
-                                      vertical: 2,
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    theme.name,
+                                    style: TextStyle(
+                                      color: theme.textPrimary,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
                                     ),
-                                    decoration: BoxDecoration(
-                                      color: playerState.isAuthenticated
-                                          ? AppColors.player1.withValues(
-                                              alpha: 0.15,
-                                            )
-                                          : AppColors.surfaceElevated,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      playerState.isAuthenticated
-                                          ? 'VERIFIED'
-                                          : 'GUEST',
-                                      style: TextStyle(
-                                        color: playerState.isAuthenticated
-                                            ? AppColors.player1
-                                            : AppColors.textMuted,
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  const Icon(
-                                    Icons.keyboard_arrow_down,
-                                    size: 16,
-                                    color: AppColors.textMuted,
                                   ),
                                 ],
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                      Row(
-                        children: [
+                          ),
+                          const SizedBox(width: 4),
                           IconButton(
                             icon: Icon(
-                              playerState.isAuthenticated
-                                  ? Icons.account_circle
-                                  : Icons.account_circle_outlined,
-                              color: playerState.isAuthenticated
-                                  ? AppColors.player1
-                                  : AppColors.textSecondary,
-                            ),
-                            tooltip: 'Player Account',
-                            onPressed: () => SignInScreen.show(context),
-                          ),
-                          IconButton(
-                            icon: const Icon(
                               Icons.memory_rounded,
-                              color: AppColors.player1,
+                              color: theme.isMonochrome
+                                  ? Colors.white70
+                                  : AppColors.teal,
+                              size: 20,
                             ),
                             tooltip: 'Serverpod Live Admin Board',
                             onPressed: () {
@@ -555,17 +444,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             },
                           ),
                           IconButton(
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.hub_outlined,
-                              color: Colors.cyanAccent,
+                              color: theme.isMonochrome
+                                  ? Colors.white70
+                                  : AppColors.tealLight,
+                              size: 20,
                             ),
-                            tooltip: 'Serverpod Cloud Architecture & Specs',
+                            tooltip: 'Serverpod Architecture & Cloud Specs',
                             onPressed: () => ArchitectureDialog.show(context),
                           ),
                           IconButton(
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.leaderboard_outlined,
-                              color: AppColors.player2,
+                              color: theme.isMonochrome
+                                  ? Colors.white70
+                                  : Colors.amberAccent,
+                              size: 20,
                             ),
                             tooltip: 'Leaderboards',
                             onPressed: () {
@@ -581,450 +476,177 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 28),
 
-                  // Brand Hero Banner
+                  // Brand Hero Header (Both 1s are Teal in Teal mode; White in B&W mode)
                   Center(
                     child: Column(
                       children: [
                         RichText(
-                          text: const TextSpan(
+                          text: TextSpan(
                             children: [
                               TextSpan(
                                 text: '1',
                                 style: TextStyle(
-                                  fontSize: 54,
+                                  fontSize: 48,
                                   fontWeight: FontWeight.w900,
-                                  color: AppColors.player1,
+                                  color: theme.logoPrimary,
                                   letterSpacing: -2,
                                 ),
                               ),
                               TextSpan(
                                 text: 'v',
                                 style: TextStyle(
-                                  fontSize: 36,
+                                  fontSize: 32,
                                   fontWeight: FontWeight.w900,
-                                  color: AppColors.textMuted,
+                                  color: theme.logoVs,
                                 ),
                               ),
                               TextSpan(
                                 text: '1',
                                 style: TextStyle(
-                                  fontSize: 54,
+                                  fontSize: 48,
                                   fontWeight: FontWeight.w900,
-                                  color: AppColors.player2,
+                                  color: theme.logoSecondary,
                                   letterSpacing: -2,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          'PLAY. COMPETE. WIN.',
+                        const SizedBox(height: 4),
+                        Text(
+                          'SELECT YOUR ARENA',
                           style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 13,
+                            color: theme.textSecondary,
+                            fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            letterSpacing: 4,
+                            letterSpacing: 3,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 28),
 
-                  // Featured Game Card (Triangle Tactics)
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppColors.surfaceElevated,
-                          AppColors.surface,
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: AppColors.player1.withValues(alpha: 0.3),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.player1.withValues(alpha: 0.08),
-                          blurRadius: 24,
-                          offset: const Offset(0, 8),
+                  // Game Touch Point 1: Triangle Tactics
+                  _buildGameTouchPoint(
+                    theme: theme,
+                    title: 'Triangle Tactics',
+                    tagline: 'Territory Strategy on a Triangular Lattice',
+                    description:
+                        'Span elastic bands straight across 4 pegs to complete triangles, capture territory, and trigger bonus turns.',
+                    accentColor: AppColors.teal,
+                    badge: 'POPULAR',
+                    icon: Icons.change_history,
+                    modes: const ['Online 1v1', 'Tactical AI', 'Pass & Play'],
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const TriangleTacticsHubScreen(),
                         ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.player1.withValues(
-                                  alpha: 0.15,
-                                ),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Text(
-                                'NOW PLAYING',
-                                style: TextStyle(
-                                  color: AppColors.player1,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1.5,
-                                ),
-                              ),
-                            ),
-                            const Text(
-                              'Standard Board',
-                              style: TextStyle(
-                                color: AppColors.textMuted,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'Triangle Tactics',
-                          style: TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          'Tactical territory strategy. Connect pegs, complete triangles, capture territory, and claim victory.',
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 13,
-                            height: 1.4,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        InkWell(
-                          onTap: () => GameRulesDialog.show(context),
-                          borderRadius: BorderRadius.circular(10),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.surfaceElevated,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: AppColors.player1.withValues(
-                                  alpha: 0.35,
-                                ),
-                              ),
-                            ),
-                            child: const Row(
-                              children: [
-                                Icon(
-                                  Icons.menu_book_rounded,
-                                  size: 16,
-                                  color: AppColors.player1,
-                                ),
-                                SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'How to Play & Game Rules',
-                                    style: TextStyle(
-                                      color: AppColors.player1,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                Text(
-                                  'View Guide',
-                                  style: TextStyle(
-                                    color: AppColors.textMuted,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                SizedBox(width: 4),
-                                Icon(
-                                  Icons.chevron_right,
-                                  size: 16,
-                                  color: AppColors.textMuted,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        InkWell(
-                          onTap: () => ArchitectureDialog.show(context),
-                          borderRadius: BorderRadius.circular(10),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.surfaceElevated,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: Colors.cyanAccent.withValues(
-                                  alpha: 0.35,
-                                ),
-                              ),
-                            ),
-                            child: const Row(
-                              children: [
-                                Icon(
-                                  Icons.hub_outlined,
-                                  size: 16,
-                                  color: Colors.cyanAccent,
-                                ),
-                                SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'Serverpod Full-Stack Architecture & Cloud Specs',
-                                    style: TextStyle(
-                                      color: Colors.cyanAccent,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                Text(
-                                  'View Specs',
-                                  style: TextStyle(
-                                    color: AppColors.textMuted,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                SizedBox(width: 4),
-                                Icon(
-                                  Icons.chevron_right,
-                                  size: 16,
-                                  color: AppColors.textMuted,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-
-                        // Play vs AI (Tactical Bot)
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.player2,
-                            foregroundColor: Colors.black,
-                            minimumSize: const Size.fromHeight(46),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 0,
-                          ),
-                          onPressed: () {
-                            ref.read(matchProvider.notifier).startAiMatch();
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const GameScreen(),
-                              ),
-                            );
-                          },
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.smart_toy_outlined, size: 20),
-                              SizedBox(width: 8),
-                              Text(
-                                'Play vs AI (Tactical Bot)',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-
-                        // Play Online (Quick Match)
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.player1,
-                            foregroundColor: Colors.black,
-                            minimumSize: const Size.fromHeight(46),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 0,
-                          ),
-                          onPressed: matchState.isLoading
-                              ? null
-                              : () async {
-                                  await ref
-                                      .read(matchProvider.notifier)
-                                      .playOnline();
-                                  if (!context.mounted) return;
-                                  final match = ref.read(matchProvider).match;
-                                  if (match == null) return;
-                                  if (match.status == 'in_progress') {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => const GameScreen(),
-                                      ),
-                                    );
-                                  } else {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => const LobbyScreen(),
-                                      ),
-                                    );
-                                  }
-                                },
-                          child: matchState.isLoading
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.black,
-                                  ),
-                                )
-                              : const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.bolt, size: 20),
-                                    SizedBox(width: 8),
-                                    Text(
-                                      'Play Online (Quick Match)',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                        ),
-                        const SizedBox(height: 10),
-
-                        // Pass & Play (Local 2-Player)
-                        OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.player1,
-                            side: BorderSide(
-                              color: AppColors.player1.withValues(alpha: 0.6),
-                            ),
-                            minimumSize: const Size.fromHeight(44),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          onPressed: () {
-                            ref.read(matchProvider.notifier).startLocalMatch();
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const GameScreen(),
-                              ),
-                            );
-                          },
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.people_outline, size: 18),
-                              SizedBox(width: 8),
-                              Text(
-                                'Pass & Play (Local 2-Player)',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 16),
 
-                  // Private Room Actions Grid
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            backgroundColor: AppColors.surface,
-                            foregroundColor: AppColors.textPrimary,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            side: const BorderSide(
-                              color: AppColors.surfaceBorder,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
+                  // Game Touch Point 2: Gravity Drop Duel (Connect Four)
+                  _buildGameTouchPoint(
+                    theme: theme,
+                    title: 'Gravity Drop Duel',
+                    tagline: 'Connect Four: Vertical Column Tactics',
+                    description:
+                        'Drop neon discs down 7 columns obeying gravity physics. Align four consecutive discs to trigger the victory laser.',
+                    accentColor: AppColors.tealLight,
+                    badge: 'NEW TITLE',
+                    icon: Icons.blur_linear,
+                    modes: const [
+                      'Minimax AI Bot',
+                      'Pass & Play',
+                      'Vector Guide',
+                    ],
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ConnectFourHubScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 22),
+
+                  // Quick Join / Private Room Row
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.surfaceElevated,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: theme.surfaceBorder),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: theme.isMonochrome
+                                ? const Color(0xFF27272A)
+                                : AppColors.teal.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                          onPressed: () async {
-                            if (!ref
-                                .read(playerProfileProvider)
-                                .isAuthenticated) {
-                              _showAuthPrompt(context, 'create a private room');
-                              return;
-                            }
-                            await ref
-                                .read(matchProvider.notifier)
-                                .createPrivateMatch();
-                            if (!context.mounted) return;
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const LobbyScreen(),
-                              ),
-                            );
-                          },
-                          child: const Column(
+                          child: Icon(
+                            Icons.vpn_key_outlined,
+                            color: theme.isMonochrome
+                                ? Colors.white
+                                : AppColors.tealLight,
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(
-                                Icons.add_circle_outline,
-                                color: AppColors.player2,
-                                size: 26,
-                              ),
-                              SizedBox(height: 8),
                               Text(
-                                'Create Room',
+                                'Have a Private Room Code?',
                                 style: TextStyle(
+                                  color: theme.textPrimary,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 14,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              Text(
+                                'Join a 6-letter match code from a friend',
+                                style: TextStyle(
+                                  color: theme.textSecondary,
+                                  fontSize: 11.5,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            backgroundColor: AppColors.surface,
-                            foregroundColor: AppColors.textPrimary,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            side: const BorderSide(
-                              color: AppColors.surfaceBorder,
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.isMonochrome
+                                ? const Color(0xFF27272A)
+                                : theme.surface,
+                            foregroundColor: theme.accent,
+                            side: BorderSide(
+                              color: theme.isMonochrome
+                                  ? const Color(0xFF3F3F46)
+                                  : AppColors.teal.withValues(alpha: 0.5),
+                            ),
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
                             ),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(10),
                             ),
                           ),
                           onPressed: () {
@@ -1036,411 +658,104 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             }
                             _showJoinDialog();
                           },
-                          child: const Column(
-                            children: [
-                              Icon(
-                                Icons.meeting_room_outlined,
-                                color: AppColors.player1,
-                                size: 26,
-                              ),
-                              SizedBox(height: 8),
-                              Text(
-                                'Join Room',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
+                          child: const Text(
+                            'Join Room',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
                           ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+
+                  // Upcoming Titles Section
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'UPCOMING TITLES',
+                        style: TextStyle(
+                          color: theme.textMuted,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const GameCatalogueScreen(),
+                            ),
+                          );
+                        },
+                        child: Row(
+                          children: [
+                            Text(
+                              'Full Catalogue',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: theme.isMonochrome
+                                    ? Colors.white70
+                                    : AppColors.teal,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.chevron_right,
+                              size: 16,
+                              color: theme.isMonochrome
+                                  ? Colors.white70
+                                  : AppColors.teal,
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                  // Gravity Drop Duel (Featured Title Banner)
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          const Color(0xFF132338),
-                          AppColors.surface,
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.blueAccent.withValues(alpha: 0.35),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blueAccent.withValues(
-                                      alpha: 0.15,
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Icon(
-                                    Icons.blur_linear,
-                                    color: Colors.blueAccent,
-                                    size: 18,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  'Gravity Drop Duel',
-                                  style: TextStyle(
-                                    color: AppColors.textPrimary,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.blueAccent.withValues(
-                                  alpha: 0.15,
-                                ),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: const Text(
-                                'CONNECT 4',
-                                style: TextStyle(
-                                  color: Colors.blueAccent,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.0,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          '7x6 vertical column drop tactics. Align 4 neon discs before your opponent!',
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 12.5,
-                            height: 1.35,
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blueAccent,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 10,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  elevation: 0,
-                                ),
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const ConnectFourScreen(
-                                        initialMode: ConnectFourMode.vsAi,
-                                      ),
-                                    ),
-                                  );
-                                },
-                                icon: const Icon(
-                                  Icons.smart_toy_outlined,
-                                  size: 16,
-                                ),
-                                label: const Text(
-                                  'Play vs AI',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: Colors.blueAccent,
-                                  side: BorderSide(
-                                    color: Colors.blueAccent.withValues(
-                                      alpha: 0.5,
-                                    ),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 10,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                ),
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const ConnectFourScreen(
-                                        initialMode:
-                                            ConnectFourMode.passAndPlay,
-                                      ),
-                                    ),
-                                  );
-                                },
-                                icon: const Icon(
-                                  Icons.people_outline,
-                                  size: 16,
-                                ),
-                                label: const Text(
-                                  'Pass & Play',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.help_outline_rounded,
-                                color: Colors.blueAccent,
-                                size: 20,
-                              ),
-                              tooltip: 'Connect 4 Rules',
-                              onPressed: () =>
-                                  ConnectFourRulesDialog.show(context),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
 
-                  // Game Catalogue Navigation Button
-                  ListTile(
-                    tileColor: AppColors.surface,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      side: const BorderSide(color: AppColors.surfaceBorder),
-                    ),
-                    leading: const Icon(
-                      Icons.grid_view_rounded,
-                      color: AppColors.textPrimary,
-                    ),
-                    title: const Text(
-                      'Game Catalogue',
-                      style: TextStyle(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    subtitle: const Text(
-                      'View all games & upcoming titles',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 12,
-                      ),
-                    ),
-                    trailing: const Icon(
-                      Icons.chevron_right,
-                      color: AppColors.textMuted,
-                    ),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const GameCatalogueScreen(),
+                  // Coming soon horizontal cards
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildUpcomingTile(
+                          theme: theme,
+                          title: 'Tic-Tac-Toe Duel',
+                          accentColor: theme.isMonochrome
+                              ? Colors.white70
+                              : AppColors.teal,
+                          icon: Icons.grid_3x3,
                         ),
-                      );
-                    },
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _buildUpcomingTile(
+                          theme: theme,
+                          title: 'Memory Duel',
+                          accentColor: theme.isMonochrome
+                              ? Colors.white70
+                              : AppColors.tealLight,
+                          icon: Icons.psychology_outlined,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 24),
 
-                  // Serverpod Live Command Center Banner
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppColors.surfaceElevated,
-                          AppColors.surface,
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+                  // Footer Telemetry Bar
+                  Center(
+                    child: Text(
+                      'Full-Stack Dart • Serverpod Cloud • Real-Time WebSockets',
+                      style: TextStyle(
+                        color: theme.textMuted.withValues(alpha: 0.6),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
                       ),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: AppColors.player1.withValues(alpha: 0.35),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.player1.withValues(alpha: 0.08),
-                          blurRadius: 18,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.player1.withValues(
-                                      alpha: 0.15,
-                                    ),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.memory_rounded,
-                                    color: AppColors.player1,
-                                    size: 18,
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                const Text(
-                                  'SERVERPOD LIVE BOARD',
-                                  style: TextStyle(
-                                    color: AppColors.player1,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 1.2,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.success.withValues(
-                                  alpha: 0.15,
-                                ),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.circle,
-                                    color: AppColors.success,
-                                    size: 7,
-                                  ),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'BACKEND LIVE',
-                                    style: TextStyle(
-                                      color: AppColors.success,
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        const Text(
-                          'Inspect live PostgreSQL tables, in-memory caches, cron job logs, and real-time streaming metrics directly from the authoritative server.',
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 12,
-                            height: 1.4,
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        Row(
-                          children: [
-                            Expanded(
-                              flex: 3,
-                              child: ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.player1,
-                                  foregroundColor: Colors.black,
-                                  minimumSize: const Size.fromHeight(42),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  elevation: 0,
-                                ),
-                                icon: const Icon(
-                                  Icons.dashboard_customize_outlined,
-                                  size: 18,
-                                ),
-                                label: const Text(
-                                  'Open Admin Board',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const AdminBoardScreen(),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              flex: 2,
-                              child: OutlinedButton.icon(
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: Colors.amber,
-                                  side: BorderSide(
-                                    color: Colors.amber.withValues(alpha: 0.5),
-                                  ),
-                                  minimumSize: const Size.fromHeight(42),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                ),
-                                icon: const Icon(Icons.play_arrow, size: 18),
-                                label: const Text(
-                                  'Run Cron',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                onPressed: _triggerDemoDailyJob,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
                     ),
                   ),
                 ],
@@ -1448,6 +763,250 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildGameTouchPoint({
+    required AppThemeData theme,
+    required String title,
+    required String tagline,
+    required String description,
+    required Color accentColor,
+    required String badge,
+    required IconData icon,
+    required List<String> modes,
+    required VoidCallback onTap,
+  }) {
+    final effectiveAccent = theme.isMonochrome ? Colors.white : accentColor;
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.cardBackground,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: theme.isMonochrome
+              ? const Color(0xFF27272A)
+              : effectiveAccent.withValues(alpha: 0.35),
+        ),
+        boxShadow: theme.isMonochrome
+            ? null
+            : [
+                BoxShadow(
+                  color: effectiveAccent.withValues(alpha: 0.08),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header Row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: theme.isMonochrome
+                                  ? const Color(0xFF18181B)
+                                  : effectiveAccent.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(12),
+                              border: theme.isMonochrome
+                                  ? Border.all(color: const Color(0xFF3F3F46))
+                                  : null,
+                            ),
+                            child: Icon(icon, color: effectiveAccent, size: 24),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  title,
+                                  style: TextStyle(
+                                    color: theme.textPrimary,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  tagline,
+                                  style: TextStyle(
+                                    color: theme.isMonochrome
+                                        ? theme.textSecondary
+                                        : effectiveAccent.withValues(
+                                            alpha: 0.85,
+                                          ),
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.badgeBackground,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: theme.badgeBorder),
+                      ),
+                      child: Text(
+                        badge,
+                        style: TextStyle(
+                          color: theme.badgeText,
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Description
+                Text(
+                  description,
+                  style: TextStyle(
+                    color: theme.textSecondary,
+                    fontSize: 12.5,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Modes pills row + Enter button
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: modes.map((mode) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: theme.surfaceElevated,
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: theme.surfaceBorder,
+                              ),
+                            ),
+                            child: Text(
+                              mode,
+                              style: TextStyle(
+                                color: theme.textMuted,
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.buttonBackground,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Play',
+                            style: TextStyle(
+                              color: theme.buttonForeground,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.arrow_forward_rounded,
+                            size: 15,
+                            color: theme.buttonForeground,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUpcomingTile({
+    required AppThemeData theme,
+    required String title,
+    required Color accentColor,
+    required IconData icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: theme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.surfaceBorder),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: accentColor, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: theme.textPrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  'Coming Soon',
+                  style: TextStyle(color: theme.textMuted, fontSize: 10),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

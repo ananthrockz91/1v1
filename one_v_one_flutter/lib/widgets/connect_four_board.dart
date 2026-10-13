@@ -452,8 +452,16 @@ class _ConnectFourPainter extends CustomPainter {
   void _drawVictoryLaser(Canvas canvas, Set<String> winningSet, double radius) {
     if (state.winningCoords.isEmpty) return;
 
-    final first = state.winningCoords.first;
-    final last = state.winningCoords.last;
+    // Ensure sorted along connection line
+    final sorted = List<List<int>>.from(state.winningCoords)
+      ..sort((a, b) {
+        final colComp = a[1].compareTo(b[1]);
+        if (colComp != 0) return colComp;
+        return a[0].compareTo(b[0]);
+      });
+
+    final first = sorted.first;
+    final last = sorted.last;
 
     final pStart = Offset(
       first[1] * cellSize + cellSize / 2,
@@ -464,20 +472,61 @@ class _ConnectFourPainter extends CustomPainter {
       last[0] * cellSize + cellSize / 2,
     );
 
-    // Outer neon glow laser
-    final laserGlow = Paint()
-      ..color = Colors.amberAccent.withValues(alpha: 0.7 + 0.3 * pulseValue)
-      ..strokeWidth = 10.0 + (pulseValue * 4.0)
+    // 1. Ultra-wide neon background glow beam
+    final wideGlow = Paint()
+      ..color = Colors.amberAccent.withValues(alpha: 0.4 + 0.3 * pulseValue)
+      ..strokeWidth = 20.0 + (pulseValue * 6.0)
       ..strokeCap = StrokeCap.round
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 16);
+    canvas.drawLine(pStart, pEnd, wideGlow);
+
+    // 2. Focused vibrant laser beam
+    final laserGlow = Paint()
+      ..color = Colors.amberAccent.withValues(alpha: 0.85 + 0.15 * pulseValue)
+      ..strokeWidth = 9.0 + (pulseValue * 2.5)
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
     canvas.drawLine(pStart, pEnd, laserGlow);
 
-    // Inner bright beam
+    // 3. Inner brilliant white hot core
     final laserCore = Paint()
       ..color = Colors.white
-      ..strokeWidth = 4.0
+      ..strokeWidth = 4.2
       ..strokeCap = StrokeCap.round;
     canvas.drawLine(pStart, pEnd, laserCore);
+
+    // 4. Draw highlighted target beacons on each of the 4 connected dots
+    final beaconRingPaint = Paint()
+      ..color = Colors.amberAccent.withValues(alpha: 0.85 + 0.15 * pulseValue)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.2;
+
+    final beaconFillPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+
+    for (int i = 0; i < sorted.length; i++) {
+      final dotCenter = Offset(
+        sorted[i][1] * cellSize + cellSize / 2,
+        sorted[i][0] * cellSize + cellSize / 2,
+      );
+
+      // Outer pulse shockwave ring
+      canvas.drawCircle(
+        dotCenter,
+        radius + 3.0 + (pulseValue * 4.0),
+        beaconRingPaint,
+      );
+
+      // Center bright white star node
+      canvas.drawCircle(dotCenter, 6.0, beaconFillPaint);
+
+      // Inner amber spark
+      final spark = Paint()
+        ..color = Colors.amberAccent
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(dotCenter, 3.2, spark);
+    }
   }
 
   @override

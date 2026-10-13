@@ -1,11 +1,11 @@
 {
-    "name": "one_v_one_flutter",
-    "short_name": "one_v_one_flutter",
+    "name": "1v1 — Competitive Multiplayer Platform",
+    "short_name": "1v1",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0B101E",
+    "theme_color": "#0B101E",
+    "description": "1v1 competitive real-time turn-based multiplayer gaming platform built with Serverpod and Flutter.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

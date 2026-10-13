@@ -12,7 +12,7 @@
 **1v1** is a full-stack, competitive, real-time multiplayer gaming platform built from the ground up in **Dart**, combining **Serverpod 4.0.4** and **Flutter Web/Mobile**.
 
 Unlike standard hackathon prototypes that run on mock databases and polling, **1v1** is deployed live on **Serverpod Cloud** with a managed PostgreSQL cluster, leveraging **15 distinct Serverpod core subsystems**:
-- **Real-Time Streaming WebSockets** with deterministic state reconciliation.
+- **Multi-Game Deterministic Architecture**: Featuring two competitive titles: **Triangle Tactics** (hexagonal territory strategy) and **Gravity Drop Duel** (Connect Four with gravity drops, 4-angle vector win detection, and tactical AI bot).
 - **Pure Rules Engine Isolation** (`packages/game_core`) with formal invariant assertions and deterministic replay.
 - **Native Serverpod Cloud Storage** for avatar uploads.
 - **Serverpod Cron & Future Calls** for daily leaderboard compaction and stale lobby cleanup.
@@ -52,6 +52,11 @@ Follow these 4 simple steps to test the entire full-stack experience live:
 2. Inspect live server metrics: Uptime, DB Latency (ms), Active Rooms, Total Players, and Cache Entries.
 3. Scroll down to inspect the **Recent Matches** table and **Cron Maintenance Audit Logs**.
 4. Click **"Trigger Daily Maintenance"** to execute the Serverpod Future Call and watch the log table update immediately!
+
+### 5. Play Gravity Drop Duel (Connect Four)
+1. On the Home screen or Game Catalogue, click **"Play vs AI"** on the **Gravity Drop Duel** card.
+2. Drop discs down columns with column guides and bouncy physics.
+3. Observe the AI blocking moves and 4-in-a-row victory laser beam!
 
 ---
 

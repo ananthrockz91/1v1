@@ -239,6 +239,56 @@ dart analyze packages/game_core one_v_one_server one_v_one_flutter
 
 ---
 
+## 🚀 Deployment & CI/CD Pipeline
+
+**1v1** is deployed live on **Serverpod Cloud** with a managed PostgreSQL cluster, automatic SSL termination, and integrated static Flutter Web SPA bundle serving:
+- **Production Web Application:** [https://onevone.serverpod.space/](https://onevone.serverpod.space/)
+- **Production Serverpod Cloud API:** [https://onevone.api.serverpod.space/](https://onevone.api.serverpod.space/)
+- **Live Health & Diagnostics Probe:** [https://onevone.serverpod.space/healthz](https://onevone.serverpod.space/healthz)
+
+### Automated Local CI/CD Script (`tool/deploy.sh`)
+
+To ensure rock-solid production releases, a dedicated local CI/CD pipeline script [`tool/deploy.sh`](tool/deploy.sh) orchestrates the entire deployment sequence in four automated steps:
+
+```text
+[1/4] Quality Gates      ──► dart format + dart analyze + 24 test suites
+[2/4] Web SPA Build      ──► flutter build web --release into one_v_one_server/web/app
+[3/4] Migration Check    ──► Verifies database schema migrations integrity
+[4/4] Cloud Deployment   ──► serverpod cloud deploy uploads bundle & activates build
+```
+
+#### Pipeline Usage:
+
+```bash
+# 1. Run complete automated CI/CD pipeline (quality gates -> web build -> cloud deploy)
+./tool/deploy.sh
+
+# 2. Fast hotfix deployment (skips test suites)
+./tool/deploy.sh --skip-tests
+
+# 3. Dry-run preview (runs quality gates & web build, previews cloud upload files)
+./tool/deploy.sh --dry-run
+
+# 4. Build-only (compiles Flutter Web release into one_v_one_server/web/app without deploying)
+./tool/deploy.sh --build-only
+```
+
+### Manual Deployment via Serverpod CLI
+
+If preferred, the deployment steps can also be performed manually:
+
+```bash
+# 1. Compile the Flutter Web client into the server's web directory
+cd one_v_one_flutter
+flutter build web --release --base-href / --output ../one_v_one_server/web/app
+cd ..
+
+# 2. Deploy to Serverpod Cloud via Serverpod CLI
+serverpod cloud deploy
+```
+
+---
+
 ## 📚 Documentation Directory
 
 | Document | Purpose & Description |

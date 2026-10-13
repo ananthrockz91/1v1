@@ -23,6 +23,5 @@ pubspec_overrides.yaml
 Thumbs.db
 *.log
 
-# Test & verification run outputs
-tool/release_check_report.json
-
+# Build output
+build/

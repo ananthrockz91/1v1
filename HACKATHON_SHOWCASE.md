@@ -309,6 +309,9 @@ cd ../../one_v_one_flutter && dart analyze
 
 # Run Server analysis
 cd ../one_v_one_server && dart analyze
+
+# Or run the complete automated CI/CD validation & deployment pipeline:
+./tool/deploy.sh --dry-run
 ```
 
 ---

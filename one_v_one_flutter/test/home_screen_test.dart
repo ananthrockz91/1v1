@@ -27,7 +27,8 @@ void main() {
     // Verify game touch points
     expect(find.text('Triangle Tactics'), findsOneWidget);
     expect(find.text('Gravity Drop Duel'), findsOneWidget);
-    expect(find.text('Play'), findsNWidgets(2));
+    expect(find.text('Chroma Reversi'), findsOneWidget);
+    expect(find.text('Play'), findsNWidgets(3));
 
     // Verify platform actions (theme toggle hidden for now)
     expect(find.text('Teal Cyber'), findsNothing);

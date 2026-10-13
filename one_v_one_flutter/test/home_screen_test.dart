@@ -46,6 +46,7 @@ void main() {
       // Verify Guest mode: only Guest indicator and Sign In action are shown
       expect(find.text('Guest'), findsOneWidget);
       expect(find.byTooltip('Sign In'), findsOneWidget);
+      expect(find.text('Multiplayer Gaming Platform'), findsOneWidget);
 
       // Verify platform options (Leaderboard & Admin Board) are hidden before login
       expect(find.byTooltip('Leaderboards'), findsNothing);

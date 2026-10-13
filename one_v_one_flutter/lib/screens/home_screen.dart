@@ -15,6 +15,7 @@ import 'sign_in_screen.dart';
 import 'triangle_tactics_hub_screen.dart';
 import 'connect_four_hub_screen.dart';
 import '../widgets/architecture_dialog.dart';
+import '../widgets/brand_favicon_logo.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -226,163 +227,49 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Top Header: Player Profile + Telemetry Icons
+                  // Top Header: Branding (Favicon Logo + "1v1 Multiplayer Gaming Platform") on left;
+                  // Platform actions and Guest/Profile on the right extreme.
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // Player Profile Chip
-                      if (!playerState.isAuthenticated)
-                        // Guest mode: only "Guest" with Sign In icon and action
-                        InkWell(
-                          borderRadius: BorderRadius.circular(20),
-                          onTap: () => SignInScreen.show(context),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: theme.surfaceElevated,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: theme.surfaceBorder,
+                      // Left: Favicon Logo + Brand Name & Platform Label
+                      Flexible(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const BrandFaviconLogo(size: 34),
+                            const SizedBox(width: 10),
+                            Flexible(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    '1v1',
+                                    style: TextStyle(
+                                      color: theme.textPrimary,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Multiplayer Gaming Platform',
+                                    style: TextStyle(
+                                      color: theme.textSecondary,
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w500,
+                                      letterSpacing: 0.2,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
                               ),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'Guest',
-                                  style: TextStyle(
-                                    color: theme.textSecondary,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.3,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Tooltip(
-                                  message: 'Sign In',
-                                  child: Icon(
-                                    Icons.login_rounded,
-                                    size: 16,
-                                    color: theme.accent,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        )
-                      else
-                        // Authenticated Profile Chip
-                        Flexible(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: theme.surfaceElevated,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: theme.accent.withValues(alpha: 0.6),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                GestureDetector(
-                                  onTap: () {
-                                    AvatarPickerSheet.show(
-                                      context: context,
-                                      initialSeed: playerState.avatarSeed,
-                                      onSelected: (newSeed) {
-                                        ref
-                                            .read(
-                                              playerProfileProvider.notifier,
-                                            )
-                                            .updateAvatar(newSeed);
-                                      },
-                                    );
-                                  },
-                                  child: Stack(
-                                    children: [
-                                      PlayerAvatar(
-                                        avatarSeed: playerState.avatarSeed,
-                                        displayName: playerState.displayName,
-                                        size: 26,
-                                        borderColor: theme.player1,
-                                      ),
-                                      Positioned(
-                                        right: 0,
-                                        bottom: 0,
-                                        child: Container(
-                                          padding: const EdgeInsets.all(1),
-                                          decoration: BoxDecoration(
-                                            color: theme.surface,
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Icon(
-                                            Icons.photo_camera,
-                                            size: 8,
-                                            color: theme.textSecondary,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                GestureDetector(
-                                  onTap: () => SignInScreen.show(context),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      ConstrainedBox(
-                                        constraints: const BoxConstraints(
-                                          maxWidth: 90,
-                                        ),
-                                        child: Text(
-                                          playerState.displayName,
-                                          style: TextStyle(
-                                            color: theme.textPrimary,
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 6,
-                                          vertical: 2,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: theme.player1.withValues(
-                                            alpha: 0.15,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            6,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          'VERIFIED',
-                                          style: TextStyle(
-                                            color: theme.player1,
-                                            fontSize: 9,
-                                            fontWeight: FontWeight.bold,
-                                            letterSpacing: 0.5,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                          ],
                         ),
+                      ),
                       const SizedBox(width: 8),
 
                       // Platform Actions & Theme Switcher
@@ -517,7 +404,159 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 );
                               },
                             ),
+                            const SizedBox(width: 4),
                           ],
+
+                          // Guest / User Profile Chip on the Right Extreme
+                          if (!playerState.isAuthenticated)
+                            InkWell(
+                              borderRadius: BorderRadius.circular(20),
+                              onTap: () => SignInScreen.show(context),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: theme.surfaceElevated,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: theme.surfaceBorder,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'Guest',
+                                      style: TextStyle(
+                                        color: theme.textSecondary,
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 0.3,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Tooltip(
+                                      message: 'Sign In',
+                                      child: Icon(
+                                        Icons.login_rounded,
+                                        size: 15,
+                                        color: theme.accent,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                          else
+                            // Authenticated Profile Chip
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: theme.surfaceElevated,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: theme.accent.withValues(alpha: 0.6),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  GestureDetector(
+                                    onTap: () {
+                                      AvatarPickerSheet.show(
+                                        context: context,
+                                        initialSeed: playerState.avatarSeed,
+                                        onSelected: (newSeed) {
+                                          ref
+                                              .read(
+                                                playerProfileProvider.notifier,
+                                              )
+                                              .updateAvatar(newSeed);
+                                        },
+                                      );
+                                    },
+                                    child: Stack(
+                                      children: [
+                                        PlayerAvatar(
+                                          avatarSeed: playerState.avatarSeed,
+                                          displayName: playerState.displayName,
+                                          size: 24,
+                                          borderColor: theme.player1,
+                                        ),
+                                        Positioned(
+                                          right: 0,
+                                          bottom: 0,
+                                          child: Container(
+                                            padding: const EdgeInsets.all(1),
+                                            decoration: BoxDecoration(
+                                              color: theme.surface,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: Icon(
+                                              Icons.photo_camera,
+                                              size: 8,
+                                              color: theme.textSecondary,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  GestureDetector(
+                                    onTap: () => SignInScreen.show(context),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        ConstrainedBox(
+                                          constraints: const BoxConstraints(
+                                            maxWidth: 80,
+                                          ),
+                                          child: Text(
+                                            playerState.displayName,
+                                            style: TextStyle(
+                                              color: theme.textPrimary,
+                                              fontSize: 12.5,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 5,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: theme.player1.withValues(
+                                              alpha: 0.15,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              6,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            'VERIFIED',
+                                            style: TextStyle(
+                                              color: theme.player1,
+                                              fontSize: 8.5,
+                                              fontWeight: FontWeight.bold,
+                                              letterSpacing: 0.5,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                         ],
                       ),
                     ],
@@ -561,11 +600,47 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                         ),
                         const SizedBox(height: 4),
+                        // Dynamic Duel Underline Accent from the Favicon
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 24,
+                              height: 3,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF59E0B),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                              ),
+                              child: Container(
+                                width: 5,
+                                height: 5,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF38BDF8),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                            Container(
+                              width: 24,
+                              height: 3,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF06B6D4),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
                         Text(
                           'SELECT YOUR ARENA',
                           style: TextStyle(
                             color: theme.textSecondary,
-                            fontSize: 12,
+                            fontSize: 11.5,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 3,
                           ),
@@ -822,7 +897,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   // Footer Telemetry Bar
                   Center(
                     child: Text(
-                      'Full-Stack Dart • Serverpod Cloud • Real-Time WebSockets',
+                      '1v1 • ',
                       style: TextStyle(
                         color: theme.textMuted.withValues(alpha: 0.6),
                         fontSize: 11,

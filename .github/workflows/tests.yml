@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       VERSION: '4.0.4'
-      SERVERPOD_PASSWORD_database: 'UM8IChRFdl__hvA4OCf6E_gVmIwtciqT'
-      SERVERPOD_PASSWORD_redis: 'mxxw3RROn7IkMmYD0JEDuiBsa1AmxJPx'
+      SERVERPOD_PASSWORD_database: 'postgres'
+      SERVERPOD_PASSWORD_redis: 'redis'
 
     steps:
       - uses: actions/checkout@v4

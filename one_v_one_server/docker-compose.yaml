@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_DB: one_v_one
-      POSTGRES_PASSWORD: "cvid8rgRs81khevMkc5XA4qNADmnrrID"
+      POSTGRES_PASSWORD: "postgres"
     volumes:
       - one_v_one_data:/var/lib/postgresql/data
 
@@ -15,7 +15,7 @@ services:
     image: redis:6.2.6
     ports:
       - "8091:6379"
-    command: redis-server --requirepass "UV8Twxqavn7nIkO6TVpKFGyzPy4rd0HO"
+    command: redis-server
     environment:
       - REDIS_REPLICATION_MODE=master
 
@@ -27,7 +27,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_DB: one_v_one_test
-      POSTGRES_PASSWORD: "UM8IChRFdl__hvA4OCf6E_gVmIwtciqT"
+      POSTGRES_PASSWORD: "postgres"
     volumes:
       - one_v_one_test_data:/var/lib/postgresql/data
 
@@ -35,7 +35,7 @@ services:
     image: redis:6.2.6
     ports:
       - "9091:6379"
-    command: redis-server --requirepass "mxxw3RROn7IkMmYD0JEDuiBsa1AmxJPx"
+    command: redis-server
     environment:
       - REDIS_REPLICATION_MODE=master
 

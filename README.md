@@ -55,6 +55,7 @@ A vertical column tactical game featuring full online multiplayer and variable a
 
 ## ✨ Platform Features
 
+- **100% Authoritative Server Move Validation:** Zero client trust. Every online move across both game titles is validated authoritatively by Serverpod inside ACID PostgreSQL transactions (`session.db.transaction`) with optimistic concurrency checks (`clientStateVersion == match.stateVersion`) before state transitions or broadcasts occur.
 - **Real-Time Multiplayer over WebSockets:** Sub-50ms bidirectional move synchronization using Serverpod stream channels (`session.messages`), eliminating HTTP polling.
 - **Instant Room Sharing & Deep Linking:** Dynamically generated in-app QR codes and auto-join URLs (`?room=CODE`) that pre-fill room codes upon opening.
 - **Deterministic Match Replay Scrubber:** Step-by-step interactive replayer allowing players to scrub forward, backward, or auto-play completed matches move-by-move.

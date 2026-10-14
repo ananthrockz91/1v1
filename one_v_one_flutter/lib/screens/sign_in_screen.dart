@@ -1058,10 +1058,24 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   AvatarPickerSheet.show(
                     context: context,
                     initialSeed: state.avatarSeed,
-                    onSelected: (newSeed) {
-                      ref
+                    onSelected: (newSeed) async {
+                      final success = await ref
                           .read(playerProfileProvider.notifier)
                           .updateAvatar(newSeed);
+                      if (!mounted) return;
+                      if (!success) {
+                        final error = ref
+                            .read(playerProfileProvider)
+                            .errorMessage;
+                        if (error != null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(error),
+                              backgroundColor: theme.statusError,
+                            ),
+                          );
+                        }
+                      }
                     },
                   );
                 },
@@ -1136,10 +1150,24 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                         AvatarPickerSheet.show(
                           context: context,
                           initialSeed: state.avatarSeed,
-                          onSelected: (newSeed) {
-                            ref
+                          onSelected: (newSeed) async {
+                            final success = await ref
                                 .read(playerProfileProvider.notifier)
                                 .updateAvatar(newSeed);
+                            if (!mounted) return;
+                            if (!success) {
+                              final error = ref
+                                  .read(playerProfileProvider)
+                                  .errorMessage;
+                              if (error != null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(error),
+                                    backgroundColor: theme.statusError,
+                                  ),
+                                );
+                              }
+                            }
                           },
                         );
                       },

@@ -44,6 +44,42 @@ void main() {
       expect(reFetched!.displayName, equals('UpdatedCachedPlayer'));
     });
 
+    test('profile custom avatar (data URI) persists across reload', () async {
+      const testPlayerId = 'avatar_persistence_user';
+      const customAvatar =
+          'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+      // 1. Initial creation
+      await endpoints.player.getOrCreateProfile(
+        sessionBuilder,
+        playerId: testPlayerId,
+        displayName: 'AvatarPlayer',
+        avatarSeed: 'avatar_1',
+      );
+
+      // 2. User updates their profile picture with a custom image
+      final updated = await endpoints.player.updateProfile(
+        sessionBuilder,
+        playerId: testPlayerId,
+        avatarSeed: customAvatar,
+      );
+      expect(updated.avatarSeed, equals(customAvatar));
+
+      // 3. Simulating browser reload: getOrCreateProfile called with no avatarSeed
+      final reloaded = await endpoints.player.getOrCreateProfile(
+        sessionBuilder,
+        playerId: testPlayerId,
+      );
+      expect(reloaded.avatarSeed, equals(customAvatar));
+
+      // 4. getProfile also returns the custom avatar
+      final fetched = await endpoints.player.getProfile(
+        sessionBuilder,
+        testPlayerId,
+      );
+      expect(fetched?.avatarSeed, equals(customAvatar));
+    });
+
     test('leaderboard caching and clearCaches administrative tool', () async {
       // 1. Fetch daily leaderboard (warms cache)
       final daily = await endpoints.leaderboard.getDailyLeaderboard(

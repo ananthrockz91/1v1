@@ -246,9 +246,9 @@ class LobbyScreen extends ConsumerWidget {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
                                         content: Text(
-                                          'Invite URL copied! Open in phone or another window.',
+                                          'Invite URL copied! To test 2 players on this computer, open the link in an Incognito / Private window or another browser.',
                                         ),
-                                        duration: Duration(seconds: 3),
+                                        duration: Duration(seconds: 4),
                                       ),
                                     );
                                   },
@@ -294,7 +294,7 @@ class LobbyScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            'Open a second browser tab or invite a peer to start playing instantly.',
+                            'Open in an Incognito / Private window or invite a peer to start playing.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: theme.textSecondary,

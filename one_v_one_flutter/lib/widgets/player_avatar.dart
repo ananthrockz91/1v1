@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -332,9 +333,9 @@ class _AvatarPickerSheetState extends ConsumerState<AvatarPickerSheet> {
       final picker = ImagePicker();
       final XFile? image = await picker.pickImage(
         source: source,
-        maxWidth: 400,
-        maxHeight: 400,
-        imageQuality: 85,
+        maxWidth: 256,
+        maxHeight: 256,
+        imageQuality: 80,
       );
 
       if (image == null) {
@@ -342,12 +343,13 @@ class _AvatarPickerSheetState extends ConsumerState<AvatarPickerSheet> {
         return;
       }
 
-      final bytes = await image.readAsBytes();
-      final mimeType = image.mimeType ?? 'image/jpeg';
-      final base64Data = 'data:$mimeType;base64,${base64Encode(bytes)}';
+      final rawBytes = await image.readAsBytes();
+      // Compress and resize to standard avatar dimensions (160x160)
+      // This ensures Web, Desktop, and Mobile all generate lightweight (~15-30KB) data
+      final processedBase64 = await _processImageToAvatarData(rawBytes);
 
       setState(() {
-        _selectedSeed = base64Data;
+        _selectedSeed = processedBase64;
         _currentTab = AvatarPickerTab.device;
         _isPickingImage = false;
       });
@@ -363,6 +365,27 @@ class _AvatarPickerSheetState extends ConsumerState<AvatarPickerSheet> {
         );
       }
     }
+  }
+
+  static Future<String> _processImageToAvatarData(Uint8List rawBytes) async {
+    try {
+      final codec = await ui.instantiateImageCodec(
+        rawBytes,
+        targetWidth: 160,
+        targetHeight: 160,
+      );
+      final frameInfo = await codec.getNextFrame();
+      final byteData = await frameInfo.image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
+      if (byteData != null) {
+        final pngBytes = byteData.buffer.asUint8List();
+        return 'data:image/png;base64,${base64Encode(pngBytes)}';
+      }
+    } catch (e) {
+      debugPrint('Avatar compression notice: $e');
+    }
+    return 'data:image/jpeg;base64,${base64Encode(rawBytes)}';
   }
 
   String get _previewLabel {

@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:one_v_one_client/one_v_one_client.dart';
 import '../client.dart';
@@ -160,8 +162,14 @@ class PlayerProfileNotifier extends StateNotifier<PlayerProfileState> {
   }
 
   Future<bool> updateAvatar(String newAvatarSeed) async {
-    final clean = newAvatarSeed.trim();
+    String clean = newAvatarSeed.trim();
     if (clean.isEmpty) return false;
+
+    // Ensure that if data URI is passed, it is compressed to avoid large payloads
+    if (clean.startsWith('data:')) {
+      clean = await _ensureCompressedAvatar(clean);
+    }
+
     PlayerSession.setAvatarSeed(clean);
     state = state.copyWith(avatarSeed: clean);
 
@@ -208,19 +216,53 @@ class PlayerProfileNotifier extends StateNotifier<PlayerProfileState> {
         playerId: PlayerSession.currentId,
         avatarSeed: clean,
       );
+      PlayerSession.setAvatarSeed(updated.avatarSeed);
       state = state.copyWith(
         profile: updated,
         avatarSeed: updated.avatarSeed,
         successMessage: 'Profile picture updated',
       );
       return true;
-    } catch (_) {
+    } catch (e) {
+      if (PlayerSession.isAuthenticated) {
+        state = state.copyWith(
+          errorMessage: 'Failed to update profile picture: $e',
+        );
+        return false;
+      }
       // Local fallback for guest sessions
       state = state.copyWith(
         successMessage: 'Profile picture updated',
       );
       return true;
     }
+  }
+
+  static Future<String> _ensureCompressedAvatar(String dataUri) async {
+    try {
+      final commaIndex = dataUri.indexOf(',');
+      final base64String = commaIndex != -1
+          ? dataUri.substring(commaIndex + 1)
+          : dataUri;
+      final rawBytes = base64Decode(base64String);
+      if (rawBytes.length <= 40960) {
+        return dataUri;
+      }
+      final codec = await ui.instantiateImageCodec(
+        rawBytes,
+        targetWidth: 160,
+        targetHeight: 160,
+      );
+      final frameInfo = await codec.getNextFrame();
+      final byteData = await frameInfo.image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
+      if (byteData != null) {
+        final pngBytes = byteData.buffer.asUint8List();
+        return 'data:image/png;base64,${base64Encode(pngBytes)}';
+      }
+    } catch (_) {}
+    return dataUri;
   }
 
   Future<bool> login({

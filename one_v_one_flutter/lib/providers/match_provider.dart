@@ -44,12 +44,12 @@ class MatchUiState {
   }
 
   String get player1Avatar {
+    if (player1Profile != null && player1Profile!.avatarSeed.isNotEmpty) {
+      return player1Profile!.avatarSeed;
+    }
     if (match?.player1Id == PlayerSession.currentId &&
         PlayerSession.hasCustomAvatar) {
       return PlayerSession.avatarSeed;
-    }
-    if (player1Profile != null && player1Profile!.avatarSeed.isNotEmpty) {
-      return player1Profile!.avatarSeed;
     }
     if (match?.player1Id == PlayerSession.currentId) {
       return PlayerSession.avatarSeed;
@@ -60,11 +60,11 @@ class MatchUiState {
   String get player2Name {
     if (isAiMatch) return 'Tactical Bot (AI)';
     if (isLocal) return 'Player 2';
-    if (match?.player2Id == PlayerSession.currentId) {
-      return PlayerSession.displayName;
-    }
     if (player2Profile != null && player2Profile!.displayName.isNotEmpty) {
       return player2Profile!.displayName;
+    }
+    if (match?.player2Id == PlayerSession.currentId) {
+      return PlayerSession.displayName;
     }
     return match?.player2Id != null ? 'Player 2' : 'Waiting...';
   }
@@ -72,12 +72,12 @@ class MatchUiState {
   String get player2Avatar {
     if (isAiMatch) return 'avatar_5';
     if (isLocal) return 'avatar_2';
+    if (player2Profile != null && player2Profile!.avatarSeed.isNotEmpty) {
+      return player2Profile!.avatarSeed;
+    }
     if (match?.player2Id == PlayerSession.currentId &&
         PlayerSession.hasCustomAvatar) {
       return PlayerSession.avatarSeed;
-    }
-    if (player2Profile != null && player2Profile!.avatarSeed.isNotEmpty) {
-      return player2Profile!.avatarSeed;
     }
     if (match?.player2Id == PlayerSession.currentId) {
       return PlayerSession.avatarSeed;

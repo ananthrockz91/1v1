@@ -408,6 +408,9 @@ class _GameScreenState extends ConsumerState<GameScreen> {
     final isMatchActive = isLocal || match?.status == 'in_progress';
     final isMyTurn = isLocal ? true : (gState.activePlayerId == currentUserId);
     final isP1Me = isLocal ? true : (match?.player1Id == currentUserId);
+    final isP2Me = isLocal
+        ? false
+        : (match?.player2Id != null && match?.player2Id == currentUserId);
     final p1Id = isLocal ? 'Player 1' : match?.player1Id;
     final p2Id = isLocal ? 'Player 2' : match?.player2Id;
 
@@ -729,7 +732,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                                                   ? 'Player 2'
                                                   : (match?.player2Id == null
                                                         ? 'Waiting...'
-                                                        : (!isP1Me
+                                                        : (isP2Me
                                                               ? '${matchState.player2Name} (You)'
                                                               : matchState
                                                                     .player2Name))),

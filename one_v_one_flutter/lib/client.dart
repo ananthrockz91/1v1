@@ -30,5 +30,9 @@ Future<void> initializeClient() async {
   client = Client(await serverUrl)
     ..connectivityMonitor = FlutterConnectivityMonitor()
     ..authSessionManager = FlutterAuthSessionManager();
-  unawaited(client.auth.initialize());
+  try {
+    await client.auth.initialize();
+  } catch (e) {
+    // Graceful fallback for offline / test environments
+  }
 }

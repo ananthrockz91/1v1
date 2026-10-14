@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -46,6 +47,38 @@ class OneVOneApp extends ConsumerWidget {
         dialogTheme: DialogThemeData(
           backgroundColor: theme.surface,
         ),
+        scrollbarTheme: ScrollbarThemeData(
+          thumbVisibility: const WidgetStatePropertyAll(false),
+          trackVisibility: const WidgetStatePropertyAll(false),
+          thickness: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.hovered) ||
+                states.contains(WidgetState.dragged)) {
+              return 6.0;
+            }
+            return 4.0;
+          }),
+          radius: const Radius.circular(8),
+          thumbColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.dragged)) {
+              return theme.accent.withValues(alpha: 0.8);
+            }
+            if (states.contains(WidgetState.hovered)) {
+              return theme.accent.withValues(alpha: 0.6);
+            }
+            return theme.textSecondary.withValues(alpha: 0.25);
+          }),
+          crossAxisMargin: 2.0,
+          mainAxisMargin: 4.0,
+        ),
+      ),
+      scrollBehavior: const MaterialScrollBehavior().copyWith(
+        scrollbars: false,
+        dragDevices: {
+          PointerDeviceKind.touch,
+          PointerDeviceKind.mouse,
+          PointerDeviceKind.trackpad,
+          PointerDeviceKind.stylus,
+        },
       ),
       home: const HomeScreen(),
     );

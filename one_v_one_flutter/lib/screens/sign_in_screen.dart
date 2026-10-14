@@ -39,6 +39,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       client: client,
       startScreen: EmailFlowScreen.login,
       onAuthenticated: () async {
+        PlayerSession.clear();
         final email = _authController.emailController.text.trim();
         if (email.contains('@')) {
           final prefix = email.split('@').first;
@@ -54,6 +55,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         }
         await ref.read(playerProfileProvider.notifier).refreshProfile();
         if (mounted) {
+          _callsignController.text = ref
+              .read(playerProfileProvider)
+              .displayName;
           Navigator.of(context).maybePop();
         }
       },
@@ -96,6 +100,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     }
 
     ref.listen<PlayerProfileState>(playerProfileProvider, (prev, next) {
+      if (next.displayName != prev?.displayName &&
+          _callsignController.text != next.displayName) {
+        _callsignController.text = next.displayName;
+      }
       if (next.errorMessage != null &&
           next.errorMessage != prev?.errorMessage) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1309,6 +1317,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               ? null
               : () async {
                   await ref.read(playerProfileProvider.notifier).signOut();
+                  if (mounted) {
+                    _callsignController.text = ref
+                        .read(playerProfileProvider)
+                        .displayName;
+                  }
                 },
         ),
       ],

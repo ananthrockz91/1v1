@@ -28,6 +28,7 @@ class PlayerProfileState {
 
   PlayerProfileState copyWith({
     PlayerProfile? profile,
+    bool clearProfile = false,
     bool? isLoading,
     String? errorMessage,
     String? successMessage,
@@ -37,7 +38,7 @@ class PlayerProfileState {
     String? avatarSeed,
   }) {
     return PlayerProfileState(
-      profile: profile ?? this.profile,
+      profile: clearProfile ? null : (profile ?? this.profile),
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage,
       successMessage: successMessage,
@@ -68,12 +69,27 @@ class PlayerProfileNotifier extends StateNotifier<PlayerProfileState> {
   }
 
   void _onAuthStatusChanged() {
-    state = state.copyWith(
-      isAuthenticated: PlayerSession.isAuthenticated,
-      playerId: PlayerSession.currentId,
-      displayName: PlayerSession.displayName,
-      avatarSeed: PlayerSession.avatarSeed,
-    );
+    final isAuth = PlayerSession.isAuthenticated;
+    if (!isAuth) {
+      PlayerSession.clear();
+      state = PlayerProfileState(
+        profile: null,
+        isAuthenticated: false,
+        playerId: PlayerSession.currentId,
+        displayName: PlayerSession.displayName,
+        avatarSeed: 'avatar_1',
+      );
+    } else {
+      PlayerSession.clear();
+      state = state.copyWith(
+        clearProfile: true,
+        isAuthenticated: true,
+        playerId: PlayerSession.currentId,
+        displayName: PlayerSession.displayName,
+        avatarSeed: PlayerSession.avatarSeed,
+        isLoading: true,
+      );
+    }
     refreshProfile();
   }
 
@@ -302,10 +318,12 @@ class PlayerProfileNotifier extends StateNotifier<PlayerProfileState> {
     try {
       await client.auth.signOutDevice();
       PlayerSession.clear();
-      state = state.copyWith(
+      state = PlayerProfileState(
+        profile: null,
         isAuthenticated: false,
         playerId: PlayerSession.currentId,
         displayName: PlayerSession.displayName,
+        avatarSeed: 'avatar_1',
         isLoading: false,
         successMessage: 'Signed out successfully.',
       );

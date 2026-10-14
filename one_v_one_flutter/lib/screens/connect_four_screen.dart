@@ -1184,7 +1184,16 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                             _state.isTerminal
                                 ? (_state.isDraw
                                       ? 'TACTICAL DRAW (BOARD FULL)'
-                                      : '🏆 ${_getPlayerName(_state.winnerId).toUpperCase()} CONNECTS ${_state.targetStreak} IN A ROW!')
+                                      : (_state.winnerId ==
+                                                    PlayerSession.currentId ||
+                                                (_mode ==
+                                                        ConnectFourMode.vsAi &&
+                                                    _state.winnerId ==
+                                                        _state.player1Id)
+                                            ? '🏆 VICTORY! YOU CONNECTED ${_state.targetStreak} IN A ROW!'
+                                            : (_mode == ConnectFourMode.vsAi
+                                                  ? 'DEFEAT — TACTICAL BOT CONNECTED ${_state.targetStreak} IN A ROW'
+                                                  : '🏆 ${_getPlayerName(_state.winnerId).toUpperCase()} CONNECTS ${_state.targetStreak} IN A ROW!')))
                                 : (_isWaitingForOpponent
                                       ? 'AWAITING OPPONENT TO JOIN...'
                                       : (_mode == ConnectFourMode.online
@@ -1192,7 +1201,13 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                                                       PlayerSession.currentId
                                                   ? 'YOUR TURN — DROP A DISC'
                                                   : 'OPPONENT\'S TURN — PLEASE WAIT')
-                                            : '${_getPlayerName(_state.activePlayerId).toUpperCase()}\'S TURN')),
+                                            : (_mode == ConnectFourMode.vsAi
+                                                  ? (isP1Active
+                                                        ? 'YOUR TURN — DROP A DISC'
+                                                        : 'OPPONENT\'S TURN — TACTICAL BOT')
+                                                  : (isP1Active
+                                                        ? 'PLAYER 1\'S TURN'
+                                                        : 'PLAYER 2\'S TURN')))),
                             style: TextStyle(
                               color: _state.isTerminal
                                   ? theme.accent
@@ -1203,9 +1218,13 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                                                         PlayerSession.currentId
                                                     ? theme.player1
                                                     : theme.player2)
-                                              : (isP1Active
-                                                    ? theme.player1
-                                                    : theme.player2))),
+                                              : (_mode == ConnectFourMode.vsAi
+                                                    ? (isP1Active
+                                                          ? theme.player1
+                                                          : theme.player2)
+                                                    : (isP1Active
+                                                          ? theme.player1
+                                                          : theme.player2)))),
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 1.1,
@@ -1288,14 +1307,23 @@ class _ConnectFourScreenState extends ConsumerState<ConnectFourScreen> {
                                         : (isP1Winner
                                               ? theme.player1
                                               : theme.player2);
+                                    final bool isUserWinner =
+                                        _state.winnerId ==
+                                            PlayerSession.currentId ||
+                                        (_mode == ConnectFourMode.vsAi &&
+                                            _state.winnerId ==
+                                                _state.player1Id);
                                     final String winTitle = _state.isDraw
                                         ? 'Tactical Draw (Grid Full)'
-                                        : (_state.winnerId ==
-                                                  PlayerSession.currentId
+                                        : (isUserWinner
                                               ? '🏆 Victory! You Won!'
-                                              : (_mode == ConnectFourMode.online
-                                                    ? 'Defeat — ${_getPlayerName(_state.winnerId)} Won'
-                                                    : '🏆 ${_getPlayerName(_state.winnerId)} Wins!'));
+                                              : (_mode == ConnectFourMode.vsAi
+                                                    ? 'Defeat — Tactical Bot Won'
+                                                    : (_mode ==
+                                                              ConnectFourMode
+                                                                  .online
+                                                          ? 'Defeat — ${_getPlayerName(_state.winnerId)} Won'
+                                                          : '🏆 ${_getPlayerName(_state.winnerId)} Wins!')));
 
                                     return Row(
                                       children: [
